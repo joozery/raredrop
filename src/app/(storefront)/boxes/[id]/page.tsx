@@ -33,7 +33,7 @@ export default function BoxDetailPage({ params }: { params: { id: string } }) {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 lg:bg-[#F8F8F8] relative pb-24 font-sans">
+    <div className="flex flex-col min-h-screen bg-slate-50 lg:bg-[#F8F8F8] relative pb-24 font-sans overflow-x-hidden">
       {/* Top Navigation */}
       <div className="sticky top-0 z-50 bg-slate-50 lg:bg-[#F8F8F8] border-b lg:border-none border-slate-200">
         <div className="max-w-5xl mx-auto w-full px-4 py-3 flex items-center justify-between">
