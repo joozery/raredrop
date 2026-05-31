@@ -1,0 +1,207 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { 
+  LayoutDashboard, Package, FolderTree, Percent,
+  Box, Boxes, Diamond, Users, Wallet, UserPlus,
+  ArrowRightLeft, Store, ShoppingCart, BarChart3,
+  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const menuGroups = [
+  {
+    title: "จัดการกล่องสุ่ม",
+    items: [
+      { name: "กล่องสุ่มทั้งหมด", icon: Package, href: "/admin/boxes" },
+      { name: "หมวดหมู่", icon: FolderTree, href: "/admin/categories" },
+      { name: "อัตราดรอป", icon: Percent, href: "/admin/probabilities" },
+    ]
+  },
+  {
+    title: "จัดการไอเทม",
+    items: [
+      { name: "คลังไอเทม", icon: Box, href: "/admin/items" },
+      { name: "สต็อกสินค้า", icon: Boxes, href: "/admin/inventories" },
+      { name: "ระดับความหายาก", icon: Diamond, href: "/admin/rarities" },
+    ]
+  },
+  {
+    title: "ผู้ใช้และการเงิน",
+    items: [
+      { name: "จัดการผู้เล่น", icon: Users, href: "/admin/users" },
+      { name: "จัดการแอดมิน", icon: UserPlus, href: "/admin/manage-admins" },
+      { name: "กระเป๋าเงิน (Wallet)", icon: Wallet, href: "/admin/wallet" },
+      { name: "ประวัติธุรกรรม", icon: ArrowRightLeft, href: "/admin/transactions" },
+    ]
+  },
+  {
+    title: "ตลาดซื้อขาย",
+    items: [
+      { name: "ตลาดซื้อขาย (Marketplace)", icon: Store, href: "/admin/marketplace" },
+      { name: "ออเดอร์คำสั่งซื้อ", icon: ShoppingCart, href: "/admin/orders" },
+    ]
+  },
+  {
+    title: "วิเคราะห์ข้อมูล",
+    items: [
+      { name: "รายงานและสถิติ", icon: BarChart3, href: "/admin/reports" },
+    ]
+  },
+  {
+    title: "ตั้งค่าระบบ",
+    items: [
+      { name: "ตั้งค่าเว็บไซต์", icon: Settings, href: "/admin/settings" },
+      { name: "บันทึกระบบ (Logs)", icon: ScrollText, href: "/admin/logs" },
+    ]
+  }
+];
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { data: session } = useSession();
+
+  return (
+    <div className="flex h-screen w-full bg-[#F8FAFC] text-slate-800 font-sans overflow-hidden">
+      {/* Sidebar */}
+      <aside className={cn("bg-white border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300", isSidebarOpen ? "w-64" : "w-20")}>
+        <div className={cn("flex flex-col h-full", isSidebarOpen ? "w-64" : "w-20")}>
+          <div className={cn("h-20 flex items-center shrink-0 border-b border-slate-100", isSidebarOpen ? "px-6" : "px-0 justify-center")}>
+            <Link href="/admin" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-black text-xl leading-none shrink-0">R</div>
+              {isSidebarOpen && (
+                <div className="flex flex-col overflow-hidden">
+                  <span className="font-black text-sm tracking-tight leading-none text-slate-900 truncate">RAREDROP</span>
+                  <span className="text-[9px] font-bold text-slate-400 tracking-wider truncate">ADMIN PANEL</span>
+                </div>
+              )}
+            </Link>
+          </div>
+
+          <div className={cn("flex-1 overflow-y-auto hide-scrollbar py-6", isSidebarOpen ? "px-4" : "px-3")}>
+            <Link 
+              href="/admin"
+              title={!isSidebarOpen ? "Dashboard" : undefined}
+              className={cn(
+                "flex items-center rounded-lg mb-6 transition-colors group",
+                isSidebarOpen ? "gap-3 px-3 py-2.5" : "justify-center py-3",
+                pathname === "/admin" 
+                  ? "bg-red-600 text-white shadow-md shadow-red-500/20" 
+                  : "text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              <LayoutDashboard size={isSidebarOpen ? 18 : 22} strokeWidth={pathname === "/admin" ? 2.5 : 2} className={cn(!isSidebarOpen && pathname !== "/admin" && "text-slate-400 group-hover:text-slate-600")} />
+              {isSidebarOpen && <span className={cn("text-sm", pathname === "/admin" ? "font-bold" : "font-medium")}>Dashboard</span>}
+            </Link>
+
+            {menuGroups.map((group, i) => (
+              <div key={i} className="mb-6">
+                {isSidebarOpen ? (
+                  <h3 className="px-3 text-[10px] font-bold text-slate-400 tracking-wider mb-2">{group.title}</h3>
+                ) : (
+                  <div className="w-full flex justify-center mb-2"><div className="w-4 h-[1px] bg-slate-200"></div></div>
+                )}
+                <div className="flex flex-col gap-1">
+                  {group.items.map((item) => {
+                    const isActive = pathname.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        title={!isSidebarOpen ? item.name : undefined}
+                        className={cn(
+                          "flex items-center rounded-lg transition-colors group",
+                          isSidebarOpen ? "gap-3 px-3 py-2" : "justify-center py-3",
+                          isActive ? "text-red-600 bg-red-50" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        )}
+                      >
+                        <item.icon size={isSidebarOpen ? 18 : 22} className={isActive ? "text-red-600" : "text-slate-400 group-hover:text-slate-600"} strokeWidth={2} />
+                        {isSidebarOpen && <span className={cn("text-sm truncate", isActive ? "font-bold" : "font-medium")}>{item.name}</span>}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Need Help Box */}
+          <div className="p-4 shrink-0 border-t border-slate-100">
+            {isSidebarOpen ? (
+              <div className="bg-red-50 rounded-xl p-3 flex items-center justify-between cursor-pointer hover:bg-red-100 transition-colors border border-red-100/50">
+                <div className="flex items-center gap-3">
+                  <div className="text-red-500"><HelpCircle size={20} strokeWidth={2.5} /></div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold text-slate-800">Need Help?</span>
+                    <span className="text-[10px] text-slate-500 font-medium">Contact Support</span>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-red-400" />
+              </div>
+            ) : (
+              <div className="flex justify-center" title="Need Help? Contact Support">
+                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center cursor-pointer hover:bg-red-100 transition-colors border border-red-100/50 text-red-500">
+                  <HelpCircle size={22} strokeWidth={2.5} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Header */}
+        <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-slate-400 hover:text-slate-600 transition-colors"><Menu size={20} /></button>
+            <h1 className="text-xl font-bold text-slate-800">Dashboard</h1>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <button className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 shadow-sm">
+              <Calendar size={14} className="text-slate-400" />
+              13 พ.ค. 2025 - 19 พ.ค. 2025
+            </button>
+            
+            <button className="relative text-slate-500 hover:text-slate-700">
+              <Bell size={20} />
+              <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">12</span>
+            </button>
+            
+            <div className="flex items-center gap-3 pl-6 border-l border-slate-200 cursor-pointer group relative">
+              <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden">
+                <img src={session?.user?.image || `https://api.dicebear.com/9.x/avataaars/svg?seed=${session?.user?.name || 'Admin'}`} alt="Admin" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-800 leading-tight">{session?.user?.name || "Loading..."}</span>
+                <span className="text-[10px] text-slate-500 font-medium uppercase">{(session?.user as any)?.role || "Admin"}</span>
+              </div>
+              
+              {/* Dropdown Menu */}
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <div className="p-2 flex flex-col">
+                  <button 
+                    onClick={() => signOut({ callbackUrl: '/admin-login' })}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full text-left"
+                  >
+                    <LogOut size={16} />
+                    ออกจากระบบ (Logout)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
