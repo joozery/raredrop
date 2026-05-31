@@ -110,11 +110,47 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
+    async jwt({ token, user, account }) {
+      if (user) {
+        // user is only passed on the first sign in
+        try {
+           await connectToDatabase();
+           let dbUser;
+           if (user.email) {
+             dbUser = await User.findOne({ email: user.email });
+           } else if (account?.provider === "line") {
+             dbUser = await User.findOne({ lineId: user.id });
+           } else if (user.name) {
+             dbUser = await User.findOne({ name: user.name });
+           }
+           
+           if (dbUser) {
+             token.id = dbUser._id.toString();
+           }
+        } catch(e) {}
+      }
+      return token;
+    },
     async session({ session, token }) {
-      if (session.user && session.user.email) {
+      if (token && token.id) {
          try {
            await connectToDatabase();
-           const dbUser = await User.findOne({ email: session.user.email });
+           const dbUser = await User.findById(token.id);
+           if (dbUser) {
+             (session.user as any).id = dbUser._id.toString();
+             (session.user as any).coins = dbUser.coins;
+             (session.user as any).vipLevel = dbUser.vipLevel;
+             (session.user as any).role = dbUser.role;
+           }
+         } catch(e) {}
+      } else if (token && token.sub) {
+         // Fallback for existing users without token.id (e.g. LINE users)
+         try {
+           await connectToDatabase();
+           let dbUser = await User.findOne({ lineId: token.sub });
+           if (!dbUser && session.user && session.user.email) {
+             dbUser = await User.findOne({ email: session.user.email });
+           }
            if (dbUser) {
              (session.user as any).id = dbUser._id.toString();
              (session.user as any).coins = dbUser.coins;

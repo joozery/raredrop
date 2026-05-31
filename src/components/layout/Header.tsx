@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Search, Bell, Coins } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { TopupModal } from "@/components/payment/TopupModal";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function Header() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isTopupOpen, setIsTopupOpen] = useState(false);
   const { data: session } = useSession();
   const pathname = usePathname();
 
@@ -91,7 +93,10 @@ export function Header() {
                   <span className="text-[10px] text-gray-500">THB</span>
                 </div>
               </div>
-              <button className="bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
+              <button 
+                onClick={() => setIsTopupOpen(true)}
+                className="bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+              >
                 เติมเงิน
               </button>
             </div>
@@ -121,10 +126,9 @@ export function Header() {
         </div>
       </header>
       
-      <LoginModal 
-        isOpen={isLoginOpen} 
-        onClose={() => setIsLoginOpen(false)} 
-      />
+      {/* Modals */}
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
     </>
   );
 }

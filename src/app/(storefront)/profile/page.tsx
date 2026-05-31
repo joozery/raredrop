@@ -3,9 +3,11 @@
 import React from 'react';
 import { useSession, signOut } from "next-auth/react";
 import { Copy, ChevronRight, Wallet, Coins, Ticket, Gift, UserPlus, MessageCircle, Gamepad2, History, Swords, Truck, Settings, LogOut } from 'lucide-react';
+import { TopupModal } from "@/components/payment/TopupModal";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
+  const [isTopupOpen, setIsTopupOpen] = React.useState(false);
 
   return (
     <div className="flex flex-col min-h-full bg-white pb-24">
@@ -75,14 +77,17 @@ export default function ProfilePage() {
                 <Wallet size={14} /> ยอดเงินที่ใช้ได้ <ChevronRight size={14} />
               </div>
               <div className="text-2xl font-bold tracking-tight">
-                ฿ 0.00
+                ฿ {session ? ((session.user as any)?.coins || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) : "0.00"}
               </div>
             </div>
             <div className="flex gap-2">
               <button className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors active:scale-95">
                 ถอนเงิน
               </button>
-              <button className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors active:scale-95 shadow-sm">
+              <button 
+                onClick={() => setIsTopupOpen(true)}
+                className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors active:scale-95 shadow-sm"
+              >
                 + เติมเงิน
               </button>
             </div>
@@ -150,6 +155,8 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
     </div>
   );
 }
