@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongoose";
 import User from "@/models/User";
+import Transaction from "@/models/Transaction";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
@@ -36,6 +37,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!updatedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    // Log the transaction
+    await Transaction.create({
+      userId: updatedUser._id,
+      type: "admin_adjust",
+      amount: amount,
+      balanceAfter: updatedUser.coins,
+      description: "แอดมินเติมเงินให้"
+    });
 
     return NextResponse.json(updatedUser);
   } catch (error: any) {

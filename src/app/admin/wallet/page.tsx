@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, TrendingUp, ArrowDownRight, ArrowUpRight, ShieldCheck } from "lucide-react";
+import { Wallet, TrendingUp, ArrowDownRight, ArrowUpRight, ShieldCheck, User } from "lucide-react";
 
 export default function WalletOverview() {
   const [stats, setStats] = useState({

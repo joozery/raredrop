@@ -81,25 +81,27 @@ export function Header() {
           </div>
           
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 bg-gray-50 py-1.5 px-3 rounded-full border border-gray-100">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center shadow-sm">
-                  <span className="text-white text-xs font-bold">฿</span>
+            {session && (
+              <div className="flex items-center gap-4 bg-gray-50 py-1.5 px-3 rounded-full border border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center shadow-sm">
+                    <span className="text-white text-xs font-bold">฿</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-gray-900 text-sm leading-none">
+                      {((session.user as any)?.coins || 0).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-gray-500">THB</span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-bold text-gray-900 text-sm leading-none">
-                    {session ? ((session.user as any)?.coins || 0).toLocaleString() : "2,450.00"}
-                  </span>
-                  <span className="text-[10px] text-gray-500">THB</span>
-                </div>
+                <button 
+                  onClick={() => setIsTopupOpen(true)}
+                  className="bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+                >
+                  เติมเงิน
+                </button>
               </div>
-              <button 
-                onClick={() => setIsTopupOpen(true)}
-                className="bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
-              >
-                เติมเงิน
-              </button>
-            </div>
+            )}
             
             <button className="relative text-gray-500 hover:text-gray-800 transition-colors">
               <Bell size={22} />

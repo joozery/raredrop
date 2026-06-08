@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import User from "@/models/User";
+import Transaction from "@/models/Transaction";
 
 export async function POST(req: Request) {
   try {
@@ -56,6 +57,16 @@ export async function POST(req: Request) {
       { new: true }
     );
     console.log("Updated User Result:", user);
+    
+    if (user) {
+      await Transaction.create({
+        userId: user._id,
+        type: "topup",
+        amount: amount,
+        balanceAfter: user.coins,
+        description: `เติมเงินผ่านสลิปสำเร็จ`
+      });
+    }
     
     return NextResponse.json({ success: true, amount, user });
 
