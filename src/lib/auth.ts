@@ -126,6 +126,7 @@ export const authOptions: NextAuthOptions = {
            
            if (dbUser) {
              token.id = dbUser._id.toString();
+             token.role = dbUser.role;
            }
         } catch(e) {}
       }

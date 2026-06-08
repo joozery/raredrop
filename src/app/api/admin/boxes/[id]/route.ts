@@ -6,30 +6,24 @@ import { authOptions } from "@/lib/auth";
 import Item from "@/models/Item";
 import Rarity from "@/models/Rarity";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !["admin", "super_admin"].includes(session.user?.role as string)) {
+    if (!session || !["admin", "super_admin"].includes((session.user as any)?.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     await connectToDatabase();
-    
-    // Make sure models are registered for populate
-    // Populate nested items.itemId to get item details, and then nested item.rarityId
+
     const box = await Box.findById(id)
-      .populate('categoryId', 'name')
+      .populate("categoryId", "name")
       .populate({
-        path: 'items.itemId',
+        path: "items.itemId",
         model: Item,
-        populate: {
-          path: 'rarityId',
-          model: Rarity,
-          select: 'name color'
-        }
+        populate: { path: "rarityId", model: Rarity, select: "name color" },
       });
-      
+
     if (!box) {
       return NextResponse.json({ error: "Box not found" }, { status: 404 });
     }
@@ -40,14 +34,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !["admin", "super_admin"].includes(session.user?.role as string)) {
+    if (!session || !["admin", "super_admin"].includes((session.user as any)?.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     if (body.categoryId === "") {
@@ -56,8 +50,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     await connectToDatabase();
     const updatedBox = await Box.findByIdAndUpdate(id, body, { new: true })
-      .populate('categoryId', 'name');
-    
+      .populate("categoryId", "name");
+
     if (!updatedBox) {
       return NextResponse.json({ error: "Box not found" }, { status: 404 });
     }
@@ -68,16 +62,16 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !["admin", "super_admin"].includes(session.user?.role as string)) {
+    if (!session || !["admin", "super_admin"].includes((session.user as any)?.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     await connectToDatabase();
-    
+
     const deletedBox = await Box.findByIdAndDelete(id);
     if (!deletedBox) {
       return NextResponse.json({ error: "Box not found" }, { status: 404 });
