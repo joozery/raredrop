@@ -29,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${notoSansThai.variable}`}>
+    <html lang="en" className={`${inter.variable} ${notoSansThai.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning className={`${notoSansThai.className} bg-[#F8F8F8] text-gray-900 flex h-screen overflow-hidden`}>
         <Providers>
           {children}
