@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Search, X, Image as ImageIcon, Box, Coins } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, X, Box, Coins, Image as ImageIcon } from "lucide-react";
+import { UploadInput } from "@/components/ui/UploadInput";
 
 interface RarityData {
   _id: string;
@@ -19,7 +20,8 @@ interface ItemData {
   name: string;
   description?: string;
   image: string;
-  rarityId: RarityData | string; // Can be populated object or just ID
+  animation?: string;
+  rarityId: RarityData | string;
   categoryId?: CategoryData | string;
   price: number;
   stock: number;
@@ -285,21 +287,24 @@ export default function ManageItems() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">URL รูปภาพ <span className="text-red-500">*</span></label>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden p-1">
-                    {currentItem.image ? <img src={currentItem.image} alt="preview" className="w-full h-full object-contain" /> : <ImageIcon size={20} className="text-slate-400" />}
-                  </div>
-                  <input 
-                    type="text" 
-                    value={currentItem.image || ""}
-                    onChange={(e) => setCurrentItem({...currentItem, image: e.target.value})}
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-medium text-slate-800"
-                    placeholder="https://..."
-                  />
-                </div>
-              </div>
+              <UploadInput
+                label="รูปภาพไอเทม *"
+                value={currentItem.image || ""}
+                onChange={(url) => setCurrentItem({ ...currentItem, image: url })}
+                folder="items"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                placeholder="https://... หรืออัพโหลดรูปภาพ"
+              />
+
+              <UploadInput
+                label="Animation ไอเทม (ไม่บังคับ) — แสดงตอนผู้เล่นได้รับ"
+                value={currentItem.animation || ""}
+                onChange={(url) => setCurrentItem({ ...currentItem, animation: url })}
+                folder="animations"
+                accept="video/mp4,video/webm,image/gif"
+                placeholder="/animationbox.mp4 หรืออัพโหลด .mp4/.gif"
+                isVideo
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

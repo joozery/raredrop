@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Search, X, Image as ImageIcon, Package, Percent } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, X, Package, Percent } from "lucide-react";
+import { UploadInput } from "@/components/ui/UploadInput";
 import Link from "next/link";
 
 interface CategoryData {
@@ -14,7 +15,9 @@ interface BoxData {
   name: string;
   description?: string;
   image: string;
+  animation?: string;
   price: number;
+  pityThreshold: number;
   categoryId?: CategoryData | string;
   isFeatured: boolean;
   isActive: boolean;
@@ -56,10 +59,11 @@ export default function ManageBoxes() {
 
   const openAddModal = () => {
     setModalMode("add");
-    setCurrentBox({ 
-      isActive: true, 
+    setCurrentBox({
+      isActive: true,
       isFeatured: false,
-      price: 0, 
+      price: 0,
+      pityThreshold: 100,
       categoryId: ""
     });
     setIsModalOpen(true);
@@ -269,30 +273,33 @@ export default function ManageBoxes() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">URL รูปภาพกล่อง <span className="text-red-500">*</span></label>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden p-1">
-                    {currentBox.image ? <img src={currentBox.image} alt="preview" className="w-full h-full object-contain" /> : <ImageIcon size={20} className="text-slate-400" />}
-                  </div>
-                  <input 
-                    type="text" 
-                    value={currentBox.image || ""}
-                    onChange={(e) => setCurrentBox({...currentBox, image: e.target.value})}
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-medium text-slate-800"
-                    placeholder="https://..."
-                  />
-                </div>
-              </div>
+              <UploadInput
+                label="รูปภาพกล่อง *"
+                value={currentBox.image || ""}
+                onChange={(url) => setCurrentBox({ ...currentBox, image: url })}
+                folder="boxes"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                placeholder="https://... หรืออัพโหลดรูปภาพ"
+              />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">ราคาต่อการเปิด 1 ครั้ง (บาท) <span className="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={currentBox.price ?? 0}
                     onChange={(e) => setCurrentBox({...currentBox, price: parseFloat(e.target.value) || 0})}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-black text-red-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Pity (การันตีทุกกี่ครั้ง)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={currentBox.pityThreshold ?? 100}
+                    onChange={(e) => setCurrentBox({...currentBox, pityThreshold: parseInt(e.target.value) || 100})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-black text-slate-800"
                   />
                 </div>
                 <div>
@@ -308,9 +315,19 @@ export default function ManageBoxes() {
                 </div>
               </div>
 
+              <UploadInput
+                label="Animation เปิดกล่อง (ไม่บังคับ)"
+                value={currentBox.animation || ""}
+                onChange={(url) => setCurrentBox({ ...currentBox, animation: url })}
+                folder="animations"
+                accept="video/mp4,video/webm,image/gif"
+                placeholder="https://... หรืออัพโหลดวิดีโอ/gif"
+                isVideo
+              />
+
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">รายละเอียดกล่อง (ไม่บังคับ)</label>
-                <textarea 
+                <textarea
                   value={currentBox.description || ""}
                   onChange={(e) => setCurrentBox({...currentBox, description: e.target.value})}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-medium text-slate-800 min-h-[60px]"

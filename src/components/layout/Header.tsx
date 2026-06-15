@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Bell, Coins } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Bell } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { TopupModal } from "@/components/payment/TopupModal";
 import { useSession } from "next-auth/react";
@@ -11,8 +11,16 @@ import { usePathname } from "next/navigation";
 export function Header() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("/logo/logo.png");
   const { data: session } = useSession();
   const pathname = usePathname();
+
+  useEffect(() => {
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => { if (d.site_logo) setLogoUrl(d.site_logo); })
+      .catch(() => {});
+  }, []);
 
   // Hide on box detail page
   if (pathname.match(/^\/boxes\/[^/]+$/)) {
@@ -25,7 +33,7 @@ export function Header() {
         {/* Mobile Top Bar */}
         <div className="flex lg:hidden w-full items-center justify-between px-4 py-3">
           <div className="flex items-center">
-            <img src="/logo/logo.png" alt="RareDrop Logo" className="h-7 w-auto object-contain" />
+            <img src={logoUrl} alt="RareDrop Logo" className="h-7 w-auto object-contain" />
           </div>
           <div className="flex items-center gap-4">
             <button className="relative text-gray-500 hover:text-gray-800 transition-colors">

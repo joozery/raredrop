@@ -39,7 +39,7 @@ export async function GET(
       }
     } catch {}
 
-    return NextResponse.json({ ...box.toObject(), pityCount, pityThreshold: 100 });
+    return NextResponse.json({ ...box.toObject(), pityCount });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

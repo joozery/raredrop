@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Save, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { Settings, Save, RefreshCw, CheckCircle2, ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UploadInput } from "@/components/ui/UploadInput";
 
 interface SettingItem {
   _id: string;
@@ -21,16 +22,42 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoSaving, setLogoSaving] = useState(false);
+  const [logoSaved, setLogoSaved] = useState(false);
 
   const fetchSettings = () => {
     setLoading(true);
     fetch("/api/admin/settings")
       .then((r) => r.json())
-      .then((d) => { if (Array.isArray(d)) setSettings(d); })
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setSettings(d);
+          const logoSetting = d.find((s: SettingItem) => s.key === "site_logo");
+          if (logoSetting) setLogoUrl(String(logoSetting.value));
+        }
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchSettings(); }, []);
+
+  const saveLogo = async () => {
+    setLogoSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "site_logo", value: logoUrl }),
+      });
+      if (res.ok) {
+        setLogoSaved(true);
+        setTimeout(() => setLogoSaved(false), 2000);
+      }
+    } finally {
+      setLogoSaving(false);
+    }
+  };
 
   const getValue = (s: SettingItem) =>
     pending[s.key] !== undefined ? pending[s.key] : s.value;
@@ -63,7 +90,8 @@ export default function SettingsPage() {
     }
   };
 
-  const groups = [...new Set(settings.map((s) => s.group))];
+  const displaySettings = settings.filter((s) => s.key !== "site_logo");
+  const groups = [...new Set(displaySettings.map((s) => s.group))];
 
   if (loading) {
     return (
@@ -92,6 +120,40 @@ export default function SettingsPage() {
         </button>
       </div>
 
+      {/* Logo Upload Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">โลโก้และแบรนด์</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="โลโก้เว็บไซต์"
+            value={logoUrl}
+            onChange={setLogoUrl}
+            folder="branding"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            placeholder="/logo/logo.png หรืออัพโหลดโลโก้"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveLogo}
+              disabled={logoSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {logoSaving ? <Loader2 size={13} className="animate-spin" /> : logoSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {logoSaved ? "บันทึกแล้ว!" : "บันทึกโลโก้"}
+            </button>
+            {logoUrl && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>ตัวอย่าง:</span>
+                <img src={logoUrl} alt="logo preview" className="h-7 object-contain border border-slate-200 rounded p-0.5" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {groups.map((group) => (
         <div key={group} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
@@ -99,7 +161,7 @@ export default function SettingsPage() {
             <h2 className="text-sm font-bold text-slate-700">{group}</h2>
           </div>
           <div className="divide-y divide-slate-50">
-            {settings
+            {displaySettings
               .filter((s) => s.group === group)
               .map((s) => {
                 const currentVal = getValue(s);

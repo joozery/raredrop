@@ -8,12 +8,13 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { LoginModal } from "@/components/auth/LoginModal";
 
 interface RarityData { name: string; color: string; order: number }
 interface ItemData { _id: string; name: string; image: string; price: number; rarityId: RarityData }
 interface BoxItem { itemId: ItemData; probability: number }
 interface BoxData {
-  _id: string; name: string; description?: string; image: string;
+  _id: string; name: string; description?: string; image: string; animation?: string;
   price: number; items: BoxItem[]; pityCount: number; pityThreshold: number;
 }
 interface DrawResult {
@@ -29,6 +30,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   const [box, setBox] = useState<BoxData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedDraw, setSelectedDraw] = useState<{ times: number; price: number } | null>(null);
   const [playAnimation, setPlayAnimation] = useState(true);
@@ -63,7 +65,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   };
 
   const handleDrawClick = (times: number) => {
-    if (!session) { router.push("/?login=1"); return; }
+    if (!session) { setIsLoginOpen(true); return; }
     if (!box) return;
     setSelectedDraw({ times, price: box.price * times });
     setIsPaymentModalOpen(true);
@@ -440,10 +442,33 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       {/* Animation Overlay */}
       {isAnimating && (
         <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center">
-          <video src="/animationbox.mp4" autoPlay playsInline className="w-full h-full object-cover sm:object-contain"
-            onEnded={() => { setIsAnimating(false); setShowResult(true); }} />
-          <button onClick={() => { setIsAnimating(false); setShowResult(true); }}
-            className="absolute top-6 right-6 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full font-bold text-sm backdrop-blur-md transition-colors">
+          {box.animation ? (
+            box.animation.match(/\.(mp4|webm|mov)$/i) ? (
+              <video
+                src={box.animation}
+                autoPlay playsInline
+                className="w-full h-full object-cover sm:object-contain"
+                onEnded={() => { setIsAnimating(false); setShowResult(true); }}
+              />
+            ) : (
+              <img
+                src={box.animation}
+                alt="opening"
+                className="w-full h-full object-cover sm:object-contain"
+                onLoad={() => setTimeout(() => { setIsAnimating(false); setShowResult(true); }, 2000)}
+              />
+            )
+          ) : (
+            // fallback: ไม่มี animation ข้ามตรงไปผลลัพธ์เลย
+            <div className="text-white text-2xl font-black animate-pulse"
+              ref={(el) => { if (el) setTimeout(() => { setIsAnimating(false); setShowResult(true); }, 800); }}>
+              กำลังเปิดกล่อง...
+            </div>
+          )}
+          <button
+            onClick={() => { setIsAnimating(false); setShowResult(true); }}
+            className="absolute top-6 right-6 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full font-bold text-sm backdrop-blur-md transition-colors"
+          >
             ข้าม (Skip)
           </button>
         </div>
@@ -483,6 +508,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           </div>
         </div>
       )}
+
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
 
       <style dangerouslySetInnerHTML={{ __html: `@keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }` }} />
     </div>

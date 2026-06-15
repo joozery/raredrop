@@ -9,6 +9,7 @@ export interface IItem extends Document {
   price: number; // Value of the item
   stock: number;
   isActive: boolean;
+  animation?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +23,7 @@ const ItemSchema: Schema = new Schema({
   price: { type: Number, required: true, min: 0 },
   stock: { type: Number, default: 0, min: 0 },
   isActive: { type: Boolean, default: true },
+  animation: { type: String },
 }, { timestamps: true });
 
 export default mongoose.models.Item || mongoose.model<IItem>("Item", ItemSchema);

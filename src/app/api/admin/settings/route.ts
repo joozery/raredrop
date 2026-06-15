@@ -6,6 +6,14 @@ import Setting from "@/models/Setting";
 
 const DEFAULT_SETTINGS = [
   {
+    key: "site_logo",
+    value: "/logo/logo.png",
+    label: "โลโก้เว็บไซต์",
+    description: "URL รูปโลโก้ที่แสดงในแถบด้านบน",
+    type: "text",
+    group: "ทั่วไป",
+  },
+  {
     key: "site_name",
     value: "RAREDROP",
     label: "ชื่อเว็บไซต์",
@@ -88,9 +96,8 @@ const DEFAULT_SETTINGS = [
 ];
 
 async function seedDefaultSettings() {
-  const count = await Setting.countDocuments();
-  if (count === 0) {
-    await Setting.insertMany(DEFAULT_SETTINGS);
+  for (const s of DEFAULT_SETTINGS) {
+    await Setting.updateOne({ key: s.key }, { $setOnInsert: s }, { upsert: true });
   }
 }
 

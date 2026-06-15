@@ -14,6 +14,8 @@ export interface IBox extends Document {
   isFeatured: boolean;
   isActive: boolean;
   items: IBoxItem[];
+  animation?: string;
+  pityThreshold: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +34,8 @@ const BoxSchema: Schema = new Schema({
   isFeatured: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   items: [BoxItemSchema],
+  animation: { type: String },
+  pityThreshold: { type: Number, default: 100, min: 1 },
 }, { timestamps: true });
 
 export default mongoose.models.Box || mongoose.model<IBox>("Box", BoxSchema);
