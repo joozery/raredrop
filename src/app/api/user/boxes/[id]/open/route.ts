@@ -10,7 +10,6 @@ import Inventory from "@/models/Inventory";
 import Transaction from "@/models/Transaction";
 import PityCounter from "@/models/PityCounter";
 
-const PITY_THRESHOLD = 100; // การันตีของ rare ทุก 100 ครั้ง
 const PITY_MIN_RARITY_ORDER = 3; // rarity.order >= 3 ถือว่า "rare"
 
 function weightedRandom(items: { itemId: any; probability: number }[]): string {
@@ -62,6 +61,8 @@ export async function POST(
       return NextResponse.json({ error: "เหรียญไม่เพียงพอ กรุณาเติมเงิน" }, { status: 400 });
     }
 
+    const PITY_THRESHOLD = box.pityThreshold ?? 100;
+
     // ดึง/สร้าง pity counter
     let pityDoc = await PityCounter.findOne({ userId, boxId });
     if (!pityDoc) {
@@ -107,9 +108,23 @@ export async function POST(
       });
     }
 
-    // Atomic: หักเหรียญ + บันทึก inventory + transaction
+    // นับว่าแต่ละ item ถูกสุ่มได้กี่ครั้ง เพื่อหักสต็อกรวมครั้งเดียว
+    const stockDeductions: Record<string, number> = {};
+    for (const inv of inventoryDocs) {
+      const id = inv.itemId.toString();
+      stockDeductions[id] = (stockDeductions[id] || 0) + 1;
+    }
+
+    // Atomic: หักเหรียญ + บันทึก inventory + transaction + หัก stock
     await User.findByIdAndUpdate(userId, { $inc: { coins: -totalCost, xp: times } });
     const inventories = await Inventory.insertMany(inventoryDocs);
+
+    // หัก stock ทีละ item
+    await Promise.all(
+      Object.entries(stockDeductions).map(([itemId, count]) =>
+        Item.findByIdAndUpdate(itemId, { $inc: { stock: -count } })
+      )
+    );
 
     const updatedUser = await User.findById(userId);
     await Transaction.create({
@@ -127,7 +142,7 @@ export async function POST(
       success: true,
       results,
       pityCount: pityDoc.count,
-      pityThreshold: PITY_THRESHOLD,
+      pityThreshold: box.pityThreshold ?? 100,
       coinsSpent: totalCost,
       coinsLeft: updatedUser!.coins,
     });
