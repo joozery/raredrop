@@ -36,11 +36,11 @@ export function Sidebar() {
       {/* Logo */}
       <div className="h-28 flex items-center px-6 shrink-0 mt-2">
         <Link href="/" className="flex items-center w-full justify-center">
-          <Image 
-            src="/logo/logo.png" 
-            alt="RareDrop Logo" 
-            width={400} 
-            height={100} 
+          <Image
+            src="https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png"
+            alt="RareDrop Logo"
+            width={400}
+            height={100}
             className="w-full max-w-[240px] h-auto object-contain drop-shadow-sm"
             priority
           />
@@ -77,7 +77,7 @@ export function Sidebar() {
         {/* App Promo Banner */}
         <div className="mt-8 relative shrink-0 overflow-hidden rounded-2xl cursor-pointer hover:opacity-95 transition-opacity shadow-sm border border-gray-100">
           <img 
-            src="/banner/bannerrare.jpg"
+            src="https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/banner/bannerrare.jpg"
             alt="Download RareDrop App"
             className="w-full h-auto object-contain block"
           />

@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function HeroBanner() {
   return (
-    <div className="relative w-full h-80 bg-[url('/banner/cover/cover.png')] bg-cover bg-center rounded-xl overflow-hidden border border-red-100 p-10 flex items-center shadow-sm">
+    <div className="relative w-full h-80 bg-[url('https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/banner/cover/cover.png')] bg-cover bg-center rounded-xl overflow-hidden border border-red-100 p-10 flex items-center shadow-sm">
       <div className="relative z-10 max-w-lg">
         <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight">
           เปิดลุ้นของสะสมสุดพิเศษ<br/>

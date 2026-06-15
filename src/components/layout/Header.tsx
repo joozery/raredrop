@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 export function Header() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("/logo/logo.png");
+  const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
   const { data: session } = useSession();
   const pathname = usePathname();
 

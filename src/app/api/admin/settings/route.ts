@@ -7,7 +7,7 @@ import Setting from "@/models/Setting";
 const DEFAULT_SETTINGS = [
   {
     key: "site_logo",
-    value: "/logo/logo.png",
+    value: "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png",
     label: "โลโก้เว็บไซต์",
     description: "URL รูปโลโก้ที่แสดงในแถบด้านบน",
     type: "text",

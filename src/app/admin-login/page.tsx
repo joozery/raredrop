@@ -45,7 +45,7 @@ function AdminLoginForm() {
     <div 
       className="w-full min-h-screen flex items-center justify-center p-4 relative"
       style={{
-        backgroundImage: 'url("/banner/cover/4186834.jpg")',
+        backgroundImage: 'url("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/banner/cover/4186834.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
