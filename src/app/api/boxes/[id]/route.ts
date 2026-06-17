@@ -7,6 +7,7 @@ import Category from "@/models/Category";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import PityCounter from "@/models/PityCounter";
+import BoxCredit from "@/models/BoxCredit";
 
 export async function GET(
   _req: Request,
@@ -28,18 +29,23 @@ export async function GET(
       return NextResponse.json({ error: "ไม่พบกล่องสุ่มนี้" }, { status: 404 });
     }
 
-    // ดึง pity counter ถ้า login อยู่
+    // ดึง pity counter และ box credit ถ้า login อยู่
     let pityCount = 0;
+    let freeCredits = 0;
     try {
       const session = await getServerSession(authOptions);
       const userId = (session?.user as any)?.id;
       if (userId) {
-        const pity = await PityCounter.findOne({ userId, boxId: id });
+        const [pity, credit] = await Promise.all([
+          PityCounter.findOne({ userId, boxId: id }),
+          BoxCredit.findOne({ userId, boxId: id }),
+        ]);
         pityCount = pity?.count || 0;
+        freeCredits = credit?.credits || 0;
       }
     } catch {}
 
-    return NextResponse.json({ ...box.toObject(), pityCount });
+    return NextResponse.json({ ...box.toObject(), pityCount, freeCredits });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

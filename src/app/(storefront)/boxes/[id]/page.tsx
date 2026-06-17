@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, use } from "react";
 import Link from "next/link";
 import {
   ChevronLeft, ChevronRight, Zap, History, Flame, CheckCircle2, Ticket,
-  ShieldCheck, Wallet, HelpCircle, Headphones, Share, Package,
+  ShieldCheck, Wallet, HelpCircle, Headphones, Share, Package, Coins,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ interface ItemData { _id: string; name: string; image: string; price: number; ra
 interface BoxItem { itemId: ItemData; probability: number }
 interface BoxData {
   _id: string; name: string; description?: string; image: string; animation?: string;
-  price: number; items: BoxItem[]; pityCount: number; pityThreshold: number;
+  price: number; items: BoxItem[]; pityCount: number; pityThreshold: number; freeCredits: number;
 }
 interface DrawResult {
   itemId: string; name: string; image: string; price: number; rarity: RarityData;
@@ -40,6 +40,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   const [results, setResults] = useState<DrawResult[]>([]);
   const [showResult, setShowResult] = useState(false);
   const [pityCount, setPityCount] = useState(0);
+  const [freeCredits, setFreeCredits] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +51,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
         if (!data.error) {
           setBox(data);
           setPityCount(data.pityCount || 0);
+          setFreeCredits(data.freeCredits || 0);
         }
       })
       .finally(() => setLoading(false));
@@ -89,6 +91,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
       setResults(data.results);
       setPityCount(data.pityCount);
+      setFreeCredits((prev) => Math.max(0, prev - (data.freeOpensUsed || 0)));
       await updateSession(); // refresh coins in session
 
       if (playAnimation) {
@@ -248,6 +251,22 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
         </div>
+
+        {/* Free Credits Banner */}
+        {box.freeCredits > 0 && (
+          <div className="bg-gradient-to-r from-purple-600 to-purple-500 rounded-2xl p-4 flex items-center gap-4 shadow-md">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+              <Coins size={24} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-black text-base leading-tight">คุณมีสิทธิ์เปิดฟรี!</p>
+              <p className="text-purple-100 text-sm font-medium mt-0.5">จาก GemCoin Exchange — เหลืออีก <span className="font-black text-white">{box.freeCredits} ครั้ง</span></p>
+            </div>
+            <button onClick={() => handleDrawClick(1)} className="bg-white text-purple-700 font-black text-sm px-5 py-2.5 rounded-xl hover:bg-purple-50 transition-colors shadow-sm shrink-0">
+              เปิดเลย!
+            </button>
+          </div>
+        )}
 
         {/* Stats Bar */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-wrap md:flex-nowrap items-center justify-between gap-4">
@@ -414,13 +433,31 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
             <div className="bg-white p-5 border-t border-gray-100 flex flex-col gap-4">
-              <div className="flex items-end gap-2 px-1">
-                <span className="text-sm font-bold text-gray-500">
-                  ทั้งหมด <span className="text-gray-900 text-lg mx-1">{selectedDraw.times}</span> ครั้ง
-                </span>
-                <span className="text-2xl font-black text-red-600 ml-auto flex items-center gap-1">
-                  <span className="font-sans">฿</span> {selectedDraw.price.toLocaleString()}
-                </span>
+              <div className="flex flex-col gap-1.5 px-1">
+                {(() => {
+                  const free = Math.min(freeCredits, selectedDraw.times);
+                  const paid = selectedDraw.times - free;
+                  const actualPrice = box!.price * paid;
+                  return (
+                    <>
+                      {free > 0 && (
+                        <div className="flex items-center gap-2 bg-purple-50 border border-purple-100 rounded-xl px-3 py-2">
+                          <Coins size={15} className="text-purple-500" />
+                          <span className="text-sm font-bold text-purple-700">ใช้สิทธิ์ฟรี {free} ครั้ง</span>
+                          {paid > 0 && <span className="text-xs text-purple-400">+ จ่าย {paid} ครั้ง</span>}
+                        </div>
+                      )}
+                      <div className="flex items-end gap-2">
+                        <span className="text-sm font-bold text-gray-500">
+                          ทั้งหมด <span className="text-gray-900 text-lg mx-1">{selectedDraw.times}</span> ครั้ง
+                        </span>
+                        <span className="text-2xl font-black text-red-600 ml-auto flex items-center gap-1">
+                          {actualPrice === 0 ? <span className="text-purple-600">ฟรี!</span> : <><span className="font-sans">฿</span> {actualPrice.toLocaleString()}</>}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               {balance >= selectedDraw.price ? (
                 <button onClick={handleConfirmOpen} disabled={isOpening} className="w-full bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 font-black py-4 rounded-xl text-sm transition-colors shadow-sm">

@@ -69,6 +69,7 @@ export async function POST(
     }
 
     const totalCost = actualCost;
+    const PITY_THRESHOLD = box.pityThreshold ?? 100;
 
     // ดึง/สร้าง pity counter
     let pityDoc = await PityCounter.findOne({ userId, boxId });
