@@ -157,10 +157,13 @@ export async function POST(
       await Inventory.insertMany(inventoryDocs);
     }
 
-    // หัก stock ทีละ item (เฉพาะ item ปกติ)
+    // หัก stock ทีละ item (เฉพาะ item ปกติที่มี stock > 0) — floor ที่ 0 ไม่ให้ติดลบ
     await Promise.all(
       Object.entries(stockDeductions).map(([itemId, count]) =>
-        Item.findByIdAndUpdate(itemId, { $inc: { stock: -count } })
+        Item.findOneAndUpdate(
+          { _id: itemId, stock: { $gt: 0 } },
+          [{ $set: { stock: { $max: [{ $subtract: ["$stock", count] }, 0] } } }]
+        )
       )
     );
 
