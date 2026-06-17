@@ -7,6 +7,7 @@ import BoxCredit from "@/models/BoxCredit";
 import Inventory from "@/models/Inventory";
 import User from "@/models/User";
 import ShopListing from "@/models/ShopListing";
+import { notify } from "@/lib/notify";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -57,10 +58,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         { upsert: true, new: true }
       );
       rewardDetail = { type: "box", times };
+      const boxDoc = await (await import("@/models/Box")).default.findById(reward.boxId).select("name _id");
+      await notify(
+        userId,
+        `แลก GemCoin สำเร็จ! 🎁`,
+        `ได้สิทธิ์เปิดกล่อง "${boxDoc?.name || reward.name}" จำนวน ${times} ครั้ง`,
+        "success",
+        boxDoc ? `/boxes/${boxDoc._id}` : undefined
+      );
 
     } else if (reward.type === "item") {
       await Inventory.create({ userId, itemId: reward.itemId, status: "kept" });
       rewardDetail = { type: "item" };
+      const itemDoc = await (await import("@/models/Item")).default.findById(reward.itemId).select("name");
+      await notify(
+        userId,
+        `แลก GemCoin สำเร็จ! 📦`,
+        `ได้รับ "${itemDoc?.name || reward.name}" เข้า inventory แล้ว`,
+        "success",
+        "/inventory"
+      );
 
     } else if (reward.type === "shop") {
       // หา account ที่ยังไม่ได้ขาย (atomic findOneAndUpdate เพื่อกัน race condition)
@@ -88,6 +105,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         (a: any) => a.sold && a.soldTo?.toString() === userId.toString() && a.soldAt
       );
       rewardDetail = { type: "shop", accountData: account?.data || "" };
+      await notify(
+        userId,
+        `แลก GemCoin สำเร็จ! 🛍️`,
+        `ได้รับสินค้า "${reward.name}" — ตรวจสอบข้อมูลได้จากหน้าแลก GemCoin`,
+        "success",
+        "/exchange"
+      );
     }
 
     const updatedUser = await User.findById(userId);

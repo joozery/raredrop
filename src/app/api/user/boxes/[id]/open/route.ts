@@ -10,6 +10,7 @@ import Inventory from "@/models/Inventory";
 import Transaction from "@/models/Transaction";
 import PityCounter from "@/models/PityCounter";
 import BoxCredit from "@/models/BoxCredit";
+import { notify } from "@/lib/notify";
 
 const PITY_MIN_RARITY_ORDER = 3; // rarity.order >= 3 ถือว่า "rare"
 
@@ -174,6 +175,30 @@ export async function POST(
     });
 
     await pityDoc.save();
+
+    // สร้าง notification สรุปผลการเปิดกล่อง
+    const itemNames = results
+      .map((r) => r.type === "coin_reward" ? `💎 +${r.coinRewardAmount} GEM` : r.name)
+      .slice(0, 3)
+      .join(", ");
+    const more = results.length > 3 ? ` และอีก ${results.length - 3} รายการ` : "";
+    const freeNote = freeOpens > 0 ? ` (ใช้สิทธิ์ฟรี ${freeOpens} ครั้ง)` : "";
+    await notify(
+      userId,
+      `เปิดกล่อง "${box.name}" ${times} ครั้ง${freeNote}`,
+      `ได้รับ: ${itemNames}${more}`,
+      "success",
+      "/inventory"
+    );
+    if (totalGemCoinsEarned > 0) {
+      await notify(
+        userId,
+        `ได้รับ +${totalGemCoinsEarned} GemCoin!`,
+        `จากการเปิดกล่อง "${box.name}"`,
+        "success",
+        "/exchange"
+      );
+    }
 
     return NextResponse.json({
       success: true,

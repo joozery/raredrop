@@ -4,6 +4,7 @@ import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { notify } from "@/lib/notify";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -38,7 +39,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Log the transaction
     await Transaction.create({
       userId: updatedUser._id,
       type: "admin_adjust",
@@ -46,6 +46,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       balanceAfter: updatedUser.coins,
       description: "แอดมินเติมเงินให้"
     });
+
+    await notify(
+      id,
+      `ได้รับเงิน ฿${amount.toLocaleString()} จากแอดมิน 🎉`,
+      `ยอดเงินในบัญชีของคุณตอนนี้คือ ฿${updatedUser.coins.toLocaleString()}`,
+      "success"
+    );
 
     return NextResponse.json(updatedUser);
   } catch (error: any) {

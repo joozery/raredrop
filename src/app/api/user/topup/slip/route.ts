@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
+import { notify } from "@/lib/notify";
 
 export async function POST(req: Request) {
   try {
@@ -66,6 +67,12 @@ export async function POST(req: Request) {
         balanceAfter: user.coins,
         description: `เติมเงินผ่านสลิปสำเร็จ`
       });
+      await notify(
+        user._id.toString(),
+        `เติมเงินสำเร็จ! 💰`,
+        `ยอดเงิน ฿${amount.toLocaleString()} เข้าบัญชีของคุณแล้ว (ยอดรวม ฿${user.coins.toLocaleString()})`,
+        "success"
+      );
     }
     
     return NextResponse.json({ success: true, amount, user });
