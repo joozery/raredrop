@@ -12,7 +12,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     const { id } = await params;
     const body = await req.json();
-    const { name, description, image, type, boxId, boxOpenTimes, itemId, gemCost, stock, isActive } = body;
+    const { name, description, image, type, boxId, boxOpenTimes, itemId, shopListingId, gemCost, stock, isActive } = body;
 
     await connectToDatabase();
     const updated = await GemReward.findByIdAndUpdate(id, {
@@ -20,12 +20,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       boxId: type === "box" ? boxId : undefined,
       boxOpenTimes: type === "box" ? (Number(boxOpenTimes) || 1) : undefined,
       itemId: type === "item" ? itemId : undefined,
+      shopListingId: type === "shop" ? shopListingId : undefined,
       gemCost: Number(gemCost),
       stock: Number(stock) || 0,
       isActive,
     }, { new: true })
       .populate("boxId", "name image price")
-      .populate("itemId", "name image type coinRewardAmount rarityId");
+      .populate("itemId", "name image type coinRewardAmount rarityId")
+      .populate("shopListingId", "title images price accounts");
 
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(updated);

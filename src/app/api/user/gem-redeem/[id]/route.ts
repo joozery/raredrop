@@ -6,6 +6,7 @@ import GemReward from "@/models/GemReward";
 import BoxCredit from "@/models/BoxCredit";
 import Inventory from "@/models/Inventory";
 import User from "@/models/User";
+import ShopListing from "@/models/ShopListing";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,7 +24,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: "ไม่พบรางวัลนี้" }, { status: 404 });
     }
 
-    // เช็ค stock
+    // เช็คและจอง stock (atomic)
     if (reward.stock > 0) {
       const fresh = await GemReward.findOneAndUpdate(
         { _id: rewardId, stock: { $gt: 0 } },
@@ -39,17 +40,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const user = await User.findById(userId);
     if (!user) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
     if (user.gemCoins < reward.gemCost) {
-      // คืน stock ถ้าหักไปแล้ว
-      if (reward.stock > 0) {
-        await GemReward.findByIdAndUpdate(rewardId, { $inc: { stock: 1 } });
-      }
+      if (reward.stock > 0) await GemReward.findByIdAndUpdate(rewardId, { $inc: { stock: 1 } });
       return NextResponse.json({ error: `GemCoin ไม่เพียงพอ (มี ${user.gemCoins} / ต้องการ ${reward.gemCost})` }, { status: 400 });
     }
 
     // หัก gemCoins
     await User.findByIdAndUpdate(userId, { $inc: { gemCoins: -reward.gemCost } });
 
-    // มอบรางวัล
+    let rewardDetail: any = {};
+
     if (reward.type === "box") {
       const times = reward.boxOpenTimes || 1;
       await BoxCredit.findOneAndUpdate(
@@ -57,8 +56,38 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         { $inc: { credits: times } },
         { upsert: true, new: true }
       );
+      rewardDetail = { type: "box", times };
+
     } else if (reward.type === "item") {
       await Inventory.create({ userId, itemId: reward.itemId, status: "kept" });
+      rewardDetail = { type: "item" };
+
+    } else if (reward.type === "shop") {
+      // หา account ที่ยังไม่ได้ขาย (atomic findOneAndUpdate เพื่อกัน race condition)
+      const listing = await ShopListing.findOneAndUpdate(
+        { _id: reward.shopListingId, "accounts.sold": false },
+        {
+          $set: {
+            "accounts.$.sold": true,
+            "accounts.$.soldTo": userId,
+            "accounts.$.soldAt": new Date(),
+          },
+        },
+        { new: true }
+      );
+
+      if (!listing) {
+        // คืน gemCoins และ stock เพราะไม่มี account เหลือ
+        await User.findByIdAndUpdate(userId, { $inc: { gemCoins: reward.gemCost } });
+        if (reward.stock > 0) await GemReward.findByIdAndUpdate(rewardId, { $inc: { stock: 1 } });
+        return NextResponse.json({ error: "สินค้านี้หมดแล้ว ไม่มี account เหลือ" }, { status: 400 });
+      }
+
+      // หา account ที่เพิ่ง mark sold ให้ user นี้
+      const account = listing.accounts.find(
+        (a: any) => a.sold && a.soldTo?.toString() === userId.toString() && a.soldAt
+      );
+      rewardDetail = { type: "shop", accountData: account?.data || "" };
     }
 
     const updatedUser = await User.findById(userId);
@@ -66,6 +95,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({
       success: true,
       reward: { name: reward.name, type: reward.type },
+      rewardDetail,
       gemCoinsLeft: updatedUser!.gemCoins,
     });
   } catch (error: any) {

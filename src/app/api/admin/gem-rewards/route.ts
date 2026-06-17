@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import GemReward from "@/models/GemReward";
-import Box from "@/models/Box";
-import Item from "@/models/Item";
+import ShopListing from "@/models/ShopListing";
 
 export async function GET() {
   try {
@@ -16,6 +15,7 @@ export async function GET() {
     const rewards = await GemReward.find()
       .populate("boxId", "name image price")
       .populate("itemId", "name image type coinRewardAmount rarityId")
+      .populate("shopListingId", "title images price accounts")
       .sort({ createdAt: -1 });
     return NextResponse.json(rewards);
   } catch (error: any) {
@@ -30,17 +30,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const body = await req.json();
-    const { name, description, image, type, boxId, boxOpenTimes, itemId, gemCost, stock, isActive } = body;
+    const { name, description, image, type, boxId, boxOpenTimes, itemId, shopListingId, gemCost, stock, isActive } = body;
 
     if (!name || !type || !gemCost) {
       return NextResponse.json({ error: "กรุณากรอก ชื่อ, ประเภท และค่า GemCoin" }, { status: 400 });
     }
-    if (type === "box" && !boxId) {
-      return NextResponse.json({ error: "กรุณาเลือกกล่องสุ่ม" }, { status: 400 });
-    }
-    if (type === "item" && !itemId) {
-      return NextResponse.json({ error: "กรุณาเลือกไอเทม" }, { status: 400 });
-    }
+    if (type === "box" && !boxId) return NextResponse.json({ error: "กรุณาเลือกกล่องสุ่ม" }, { status: 400 });
+    if (type === "item" && !itemId) return NextResponse.json({ error: "กรุณาเลือกไอเทม" }, { status: 400 });
+    if (type === "shop" && !shopListingId) return NextResponse.json({ error: "กรุณาเลือกสินค้าจากร้านค้า" }, { status: 400 });
 
     await connectToDatabase();
     const reward = await GemReward.create({
@@ -49,6 +46,7 @@ export async function POST(req: Request) {
       boxId: type === "box" ? boxId : undefined,
       boxOpenTimes: type === "box" ? (Number(boxOpenTimes) || 1) : undefined,
       itemId: type === "item" ? itemId : undefined,
+      shopListingId: type === "shop" ? shopListingId : undefined,
       gemCost: Number(gemCost),
       stock: Number(stock) || 0,
       isActive: isActive !== undefined ? isActive : true,
@@ -56,7 +54,8 @@ export async function POST(req: Request) {
 
     const populated = await GemReward.findById(reward._id)
       .populate("boxId", "name image price")
-      .populate("itemId", "name image type coinRewardAmount rarityId");
+      .populate("itemId", "name image type coinRewardAmount rarityId")
+      .populate("shopListingId", "title images price accounts");
 
     return NextResponse.json(populated, { status: 201 });
   } catch (error: any) {
