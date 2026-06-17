@@ -147,10 +147,11 @@ export async function PATCH(req: Request) {
     }
 
     await connectToDatabase();
+    await seedDefaultSettings(); // ensure document exists before update
 
     const updated = await Setting.findOneAndUpdate(
       { key },
-      { value, updatedBy: (session.user as any)?._id },
+      { $set: { value, updatedBy: (session.user as any)?._id } },
       { new: true }
     );
 

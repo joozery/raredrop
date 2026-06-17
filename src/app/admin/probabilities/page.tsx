@@ -15,6 +15,8 @@ interface ItemData {
   image: string;
   price: number;
   rarityId: RarityData;
+  type?: "item" | "coin_reward";
+  coinRewardAmount?: number;
 }
 
 interface BoxItem {
@@ -214,8 +216,12 @@ export default function ManageProbabilities() {
                     return (
                       <div key={ei.itemId} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-4 shadow-sm hover:border-slate-300 transition-colors">
                         <div className="text-xs font-black text-slate-300 w-5">{index + 1}</div>
-                        <div className="w-10 h-10 bg-slate-50 rounded-lg p-1 border border-slate-100 shrink-0">
-                          <img src={itemData.image} alt={itemData.name} className="w-full h-full object-contain" />
+                        <div className="w-10 h-10 bg-slate-50 rounded-lg p-1 border border-slate-100 shrink-0 flex items-center justify-center">
+                          {itemData.type === "coin_reward" ? (
+                            <span className="text-2xl">💎</span>
+                          ) : (
+                            <img src={itemData.image} alt={itemData.name} className="w-full h-full object-contain" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-slate-800 text-sm truncate">{itemData.name}</div>
@@ -225,7 +231,11 @@ export default function ManageProbabilities() {
                                 {itemData.rarityId.name}
                               </span>
                             )}
-                            <span className="text-[10px] font-bold text-slate-500">฿{itemData.price.toLocaleString()}</span>
+                            {itemData.type === "coin_reward" ? (
+                              <span className="text-[10px] font-black text-purple-600">+{(itemData.coinRewardAmount || 0).toLocaleString()} GEM</span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-500">฿{itemData.price.toLocaleString()}</span>
+                            )}
                           </div>
                         </div>
                         
@@ -277,14 +287,23 @@ export default function ManageProbabilities() {
                     <div className="text-center text-slate-400 font-medium text-xs py-8">ไม่พบไอเทมที่ค้นหา หรือเพิ่มไอเทมทั้งหมดไปแล้ว</div>
                   ) : availableItems.map(item => (
                     <div key={item._id} className="border border-slate-100 rounded-xl p-2 flex items-center gap-3 hover:border-slate-200 transition-colors">
-                      <div className="w-8 h-8 bg-slate-50 rounded-lg p-0.5 shrink-0 border border-slate-100">
-                        <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                      <div className="w-8 h-8 bg-slate-50 rounded-lg p-0.5 shrink-0 border border-slate-100 flex items-center justify-center">
+                        {item.type === "coin_reward" ? (
+                          <span className="text-lg">💎</span>
+                        ) : (
+                          <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-slate-800 text-xs truncate">{item.name}</div>
-                        {item.rarityId && (
-                          <div className="text-[9px] font-bold mt-0.5" style={{ color: item.rarityId.color }}>{item.rarityId.name}</div>
-                        )}
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {item.rarityId && (
+                            <div className="text-[9px] font-bold" style={{ color: item.rarityId.color }}>{item.rarityId.name}</div>
+                          )}
+                          {item.type === "coin_reward" && (
+                            <div className="text-[9px] font-black text-purple-600">+{(item.coinRewardAmount || 0).toLocaleString()} GEM</div>
+                          )}
+                        </div>
                       </div>
                       <button 
                         onClick={() => handleAddItem(item)}

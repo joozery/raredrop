@@ -6,10 +6,12 @@ export interface IItem extends Document {
   image: string;
   rarityId: Types.ObjectId;
   categoryId?: Types.ObjectId;
-  price: number; // Value of the item
+  price: number;
   stock: number;
   isActive: boolean;
   animation?: string;
+  type: "item" | "coin_reward";
+  coinRewardAmount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +26,12 @@ const ItemSchema: Schema = new Schema({
   stock: { type: Number, default: 0, min: 0 },
   isActive: { type: Boolean, default: true },
   animation: { type: String },
+  type: { type: String, enum: ["item", "coin_reward"], default: "item" },
+  coinRewardAmount: { type: Number, default: 0 },
 }, { timestamps: true });
 
-export default mongoose.models.Item || mongoose.model<IItem>("Item", ItemSchema);
+// Clear cached model so schema changes (new fields) are always picked up
+if (mongoose.models.Item) {
+  delete (mongoose as any).models.Item;
+}
+export default mongoose.model<IItem>("Item", ItemSchema);

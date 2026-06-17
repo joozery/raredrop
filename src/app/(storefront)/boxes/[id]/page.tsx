@@ -19,6 +19,7 @@ interface BoxData {
 }
 interface DrawResult {
   itemId: string; name: string; image: string; price: number; rarity: RarityData;
+  type?: "item" | "coin_reward"; coinRewardAmount?: number;
 }
 
 export default function BoxDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -213,18 +214,15 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           {/* Right Cards */}
           <div className="relative z-10 flex flex-col gap-3 flex-1 w-full lg:w-auto">
             <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col gap-3">
-              <h3 className="font-bold text-gray-800 text-sm">โอกาสในการได้รับ</h3>
+              <h3 className="font-bold text-gray-800 text-sm">ระดับความหายาก</h3>
               <div className="flex flex-col gap-2.5">
                 {dropRates.length > 0 ? dropRates.map((d) => (
-                  <div key={d.label} className="flex items-center justify-between bg-gray-50/50 rounded-lg px-2 py-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: d.color }} />
-                      <span className="font-black text-xs tracking-wide" style={{ color: d.color }}>{d.label}</span>
-                    </div>
-                    <span className="font-black text-sm" style={{ color: d.color }}>{d.pct}</span>
+                  <div key={d.label} className="flex items-center gap-2 bg-gray-50/50 rounded-lg px-2 py-1">
+                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: d.color }} />
+                    <span className="font-black text-xs tracking-wide" style={{ color: d.color }}>{d.label}</span>
                   </div>
                 )) : (
-                  <p className="text-xs text-gray-400">ยังไม่มีข้อมูลอัตราดรอป</p>
+                  <p className="text-xs text-gray-400">ยังไม่มีข้อมูล</p>
                 )}
               </div>
             </div>
@@ -267,9 +265,9 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           <div className="flex-1 flex items-center justify-center min-w-[80px]">
             <div className="flex flex-col items-center">
               <span className="font-black text-xl text-gray-900 leading-none">
-                {dropRates[0]?.pct || "-"}
+                {box.pityThreshold}
               </span>
-              <span className="text-gray-500 text-xs font-bold mt-1">สูงสุด</span>
+              <span className="text-gray-500 text-xs font-bold mt-1">การันตี</span>
             </div>
           </div>
           <div className="pr-1 flex justify-end">
@@ -316,8 +314,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                       )}
                     </div>
                     <div className="mt-4 flex flex-col gap-1 text-center">
-                      <p className="font-bold text-gray-800 text-xs line-clamp-2 leading-tight h-8">{item?.name}</p>
-                      <p className="font-black text-sm" style={{ color: rarity?.color || "#64748b" }}>{bi.probability}%</p>
+                      <p className="font-bold text-gray-800 text-xs line-clamp-2 leading-tight">{item?.name}</p>
                     </div>
                   </div>
                 );
@@ -483,18 +480,32 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             <div className={`grid gap-3 mb-6 ${results.length === 1 ? "grid-cols-1 place-items-center" : results.length <= 3 ? "grid-cols-3" : "grid-cols-5"}`}>
               {results.map((r, i) => (
                 <div key={i} className="flex flex-col items-center gap-2">
-                  <div className="w-20 h-20 rounded-xl flex items-center justify-center border-2 overflow-hidden relative" style={{ borderColor: r.rarity?.color ? `${r.rarity.color}60` : "#e2e8f0", backgroundColor: r.rarity?.color ? `${r.rarity.color}10` : "#f8fafc" }}>
-                    {r.image ? (
-                      <img src={r.image} alt={r.name} className="w-full h-full object-contain p-1" />
-                    ) : (
-                      <span className="text-4xl">🎁</span>
-                    )}
-                  </div>
-                  <p className="text-xs font-bold text-gray-700 text-center line-clamp-2">{r.name}</p>
-                  {r.rarity && (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ backgroundColor: `${r.rarity.color}20`, color: r.rarity.color }}>
-                      {r.rarity.name}
-                    </span>
+                  {r.type === "coin_reward" ? (
+                    <>
+                      <div className="w-20 h-20 rounded-xl flex items-center justify-center border-2 border-purple-300 bg-purple-50">
+                        <span className="text-4xl">💎</span>
+                      </div>
+                      <p className="text-xs font-bold text-gray-700 text-center">{r.name}</p>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                        +{r.coinRewardAmount} GEM
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-20 h-20 rounded-xl flex items-center justify-center border-2 overflow-hidden relative" style={{ borderColor: r.rarity?.color ? `${r.rarity.color}60` : "#e2e8f0", backgroundColor: r.rarity?.color ? `${r.rarity.color}10` : "#f8fafc" }}>
+                        {r.image ? (
+                          <img src={r.image} alt={r.name} className="w-full h-full object-contain p-1" />
+                        ) : (
+                          <span className="text-4xl">🎁</span>
+                        )}
+                      </div>
+                      <p className="text-xs font-bold text-gray-700 text-center line-clamp-2">{r.name}</p>
+                      {r.rarity && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ backgroundColor: `${r.rarity.color}20`, color: r.rarity.color }}>
+                          {r.rarity.name}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               ))}

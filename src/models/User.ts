@@ -9,6 +9,7 @@ export interface IUser extends Document {
   avatar?: string;
   role: "user" | "admin" | "super_admin";
   coins: number;
+  gemCoins: number;
   vipLevel: number;
   xp: number;
   createdAt: Date;
@@ -23,6 +24,7 @@ const UserSchema: Schema = new Schema({
   avatar: { type: String },
   role: { type: String, enum: ["user", "admin", "super_admin"], default: "user" },
   coins: { type: Number, default: 0 },
+  gemCoins: { type: Number, default: 0 },
   vipLevel: { type: Number, default: 1 },
   xp: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },

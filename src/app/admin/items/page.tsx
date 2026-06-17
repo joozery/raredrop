@@ -26,6 +26,8 @@ interface ItemData {
   price: number;
   stock: number;
   isActive: boolean;
+  type: "item" | "coin_reward";
+  coinRewardAmount: number;
   createdAt: string;
 }
 
@@ -66,10 +68,12 @@ export default function ManageItems() {
 
   const openAddModal = () => {
     setModalMode("add");
-    setCurrentItem({ 
-      isActive: true, 
-      price: 0, 
+    setCurrentItem({
+      isActive: true,
+      price: 0,
       stock: 0,
+      type: "item",
+      coinRewardAmount: 0,
       rarityId: rarities.length > 0 ? rarities[0]._id : "",
       categoryId: ""
     });
@@ -78,8 +82,12 @@ export default function ManageItems() {
 
   const openEditModal = (item: ItemData) => {
     setModalMode("edit");
-    setCurrentItem({ 
+    const resolvedType = (item as any).type === "coin_reward" ? "coin_reward" : "item";
+    console.log("[openEditModal] item.type from API:", (item as any).type, "→ resolved:", resolvedType);
+    setCurrentItem({
       ...item,
+      type: resolvedType,
+      coinRewardAmount: (item as any).coinRewardAmount ?? 0,
       rarityId: typeof item.rarityId === 'object' ? (item.rarityId as any)._id : item.rarityId,
       categoryId: typeof item.categoryId === 'object' ? (item.categoryId as any)._id : (item.categoryId || "")
     });
@@ -92,8 +100,12 @@ export default function ManageItems() {
   };
 
   const handleSave = async () => {
-    if (!currentItem.name || !currentItem.image || !currentItem.rarityId) {
-      alert("กรุณากรอกชื่อ, รูปภาพ และเลือกระดับความหายากให้ครบถ้วน");
+    const isCoinReward = currentItem.type === "coin_reward";
+    if (!currentItem.name || (!isCoinReward && !currentItem.image) || !currentItem.rarityId) {
+      alert(isCoinReward
+        ? "กรุณากรอกชื่อและเลือกระดับความหายากให้ครบถ้วน"
+        : "กรุณากรอกชื่อ, รูปภาพ และเลือกระดับความหายากให้ครบถ้วน"
+      );
       return;
     }
 
@@ -195,7 +207,9 @@ export default function ManageItems() {
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 p-1">
-                          {item.image ? (
+                          {item.type === "coin_reward" ? (
+                            <span className="text-2xl">💎</span>
+                          ) : item.image ? (
                             <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
                           ) : (
                             <ImageIcon size={18} className="text-slate-400" />
@@ -228,10 +242,16 @@ export default function ManageItems() {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-center">
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg ${item.stock > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-600'}`}>
-                        <Box size={12} />
-                        {item.stock} ชิ้น
-                      </span>
+                      {item.type === "coin_reward" ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700">
+                          💎 {item.coinRewardAmount} GEM
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg ${item.stock > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-600'}`}>
+                          <Box size={12} />
+                          {item.stock} ชิ้น
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-6 text-center">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -288,23 +308,25 @@ export default function ManageItems() {
               </div>
 
               <UploadInput
-                label="รูปภาพไอเทม *"
-                value={currentItem.image || ""}
+                label={currentItem.type === "coin_reward" ? "รูปภาพ (ไม่บังคับ)" : "รูปภาพไอเทม *"}
+                value={currentItem.image === "coin_reward" ? "" : (currentItem.image || "")}
                 onChange={(url) => setCurrentItem({ ...currentItem, image: url })}
                 folder="items"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 placeholder="https://... หรืออัพโหลดรูปภาพ"
               />
 
-              <UploadInput
-                label="Animation ไอเทม (ไม่บังคับ) — แสดงตอนผู้เล่นได้รับ"
-                value={currentItem.animation || ""}
-                onChange={(url) => setCurrentItem({ ...currentItem, animation: url })}
-                folder="animations"
-                accept="video/mp4,video/webm,image/gif"
-                placeholder="/animationbox.mp4 หรืออัพโหลด .mp4/.gif"
-                isVideo
-              />
+              {currentItem.type !== "coin_reward" && (
+                <UploadInput
+                  label="Animation ไอเทม (ไม่บังคับ) — แสดงตอนผู้เล่นได้รับ"
+                  value={currentItem.animation || ""}
+                  onChange={(url) => setCurrentItem({ ...currentItem, animation: url })}
+                  folder="animations"
+                  accept="video/mp4,video/webm,image/gif"
+                  placeholder="/animationbox.mp4 หรืออัพโหลด .mp4/.gif"
+                  isVideo
+                />
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -331,25 +353,57 @@ export default function ManageItems() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">ประเภทไอเทม</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentItem({ ...currentItem, type: "item" })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm font-bold transition-all ${currentItem.type !== "coin_reward" ? "border-red-500 bg-red-50 text-red-700" : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"}`}
+                  >
+                    🎁 ไอเทมปกติ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentItem({ ...currentItem, type: "coin_reward" })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm font-bold transition-all ${currentItem.type === "coin_reward" ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"}`}
+                  >
+                    💎 รางวัล GemCoin
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">มูลค่าไอเทม (บาท) <span className="text-red-500">*</span></label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={currentItem.price ?? 0}
                     onChange={(e) => setCurrentItem({...currentItem, price: parseFloat(e.target.value) || 0})}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-black text-slate-800"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5">สต็อกตั้งต้น (ชิ้น)</label>
-                  <input 
-                    type="number" 
-                    value={currentItem.stock ?? 0}
-                    onChange={(e) => setCurrentItem({...currentItem, stock: parseInt(e.target.value) || 0})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-bold text-slate-800"
-                  />
-                </div>
+                {currentItem.type === "coin_reward" ? (
+                  <div>
+                    <label className="block text-xs font-bold text-purple-600 mb-1.5">💎 จำนวน GemCoin ที่ได้รับ</label>
+                    <input
+                      type="number"
+                      value={currentItem.coinRewardAmount ?? 0}
+                      onChange={(e) => setCurrentItem({...currentItem, coinRewardAmount: parseInt(e.target.value) || 0})}
+                      className="w-full bg-purple-50 border border-purple-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-purple-500 transition-all font-bold text-slate-800"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 mb-1.5">สต็อกตั้งต้น (ชิ้น)</label>
+                    <input
+                      type="number"
+                      value={currentItem.stock ?? 0}
+                      onChange={(e) => setCurrentItem({...currentItem, stock: parseInt(e.target.value) || 0})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-bold text-slate-800"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>

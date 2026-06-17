@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, Coins } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { TopupModal } from "@/components/payment/TopupModal";
 import { NotificationDropdown } from "@/components/layout/NotificationDropdown";
@@ -36,7 +36,22 @@ export function Header() {
           <div className="flex items-center">
             <img src={logoUrl} alt="RareDrop Logo" className="h-7 w-auto object-contain" />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {session && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setIsTopupOpen(true)}
+                  className="flex items-center gap-1 bg-gray-900 px-2.5 py-1.5 rounded-full"
+                >
+                  <span className="text-xs font-black text-white">{((session.user as any)?.coins || 0).toLocaleString()}</span>
+                  <span className="text-[10px] text-gray-400 font-medium">฿</span>
+                </button>
+                <div className="flex items-center gap-1 bg-purple-100 px-2.5 py-1.5 rounded-full">
+                  <Coins size={13} className="text-purple-600" />
+                  <span className="text-xs font-black text-purple-700">{((session.user as any)?.gemCoins || 0).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
             {session && <NotificationDropdown />}
             {session ? (
               <Link href="/profile" className="w-8 h-8 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100">
@@ -100,7 +115,18 @@ export function Header() {
                     <span className="text-[10px] text-gray-500">THB</span>
                   </div>
                 </div>
-                <button 
+                <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center shadow-sm">
+                    <Coins size={13} className="text-purple-600" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-purple-700 text-sm leading-none">
+                      {((session.user as any)?.gemCoins || 0).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-purple-400">GEM</span>
+                  </div>
+                </div>
+                <button
                   onClick={() => setIsTopupOpen(true)}
                   className="bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
                 >

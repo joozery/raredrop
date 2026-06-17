@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   ShoppingBag, Search, RefreshCw, X, AlertCircle,
-  ChevronLeft, ChevronRight, Package, History,
+  ChevronLeft, ChevronRight, Package, History, SlidersHorizontal, ChevronDown,
 } from "lucide-react";
 
 interface ShopItem {
@@ -111,6 +111,20 @@ export default function ShopPage() {
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const [buyModal, setBuyModal] = useState<ShopItem | null>(null);
   const [isBuying, setIsBuying] = useState(false);
@@ -151,9 +165,14 @@ export default function ShopPage() {
     }
   };
 
-  const filtered = search
-    ? items.filter((i) => i.title.toLowerCase().includes(search.toLowerCase()))
-    : items;
+  const filtered = items.filter((i) => {
+    if (search && !i.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (minPrice !== "" && i.price < Number(minPrice)) return false;
+    if (maxPrice !== "" && i.price > Number(maxPrice)) return false;
+    return true;
+  });
+
+  const hasFilter = search || minPrice !== "" || maxPrice !== "";
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-7xl mx-auto">
@@ -180,16 +199,112 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          placeholder="ค้นหาสินค้า..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-white border border-gray-200 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
-        />
+      {/* Search + Filter */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="ค้นหาสินค้า..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white border border-gray-200 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+          />
+        </div>
+
+        {/* Price Filter Dropdown */}
+        <div className="relative shrink-0" ref={filterRef}>
+          <button
+            onClick={() => setFilterOpen((v) => !v)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold transition-colors shadow-sm ${(minPrice !== "" || maxPrice !== "") ? "bg-red-600 border-red-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+          >
+            <SlidersHorizontal size={15} />
+            ราคา
+            {(minPrice !== "" || maxPrice !== "") && (
+              <span className="text-[10px] font-black bg-white/20 px-1.5 py-0.5 rounded-md">
+                {minPrice !== "" ? `฿${Number(minPrice).toLocaleString()}` : "0"} – {maxPrice !== "" ? `฿${Number(maxPrice).toLocaleString()}` : "∞"}
+              </span>
+            )}
+            <ChevronDown size={14} className={`transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {filterOpen && (
+            <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 p-4 flex flex-col gap-4">
+              <p className="text-sm font-black text-gray-700">กรองตามราคา</p>
+
+              {/* Quick presets */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "ต่ำกว่า ฿100",  min: "",    max: "100"  },
+                  { label: "฿100–500",        min: "100", max: "500"  },
+                  { label: "฿500–1,000",      min: "500", max: "1000" },
+                  { label: "มากกว่า ฿1,000", min: "1000",max: ""     },
+                ].map((p) => {
+                  const active = minPrice === p.min && maxPrice === p.max;
+                  return (
+                    <button
+                      key={p.label}
+                      onClick={() => { setMinPrice(p.min); setMaxPrice(p.max); }}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors ${active ? "bg-red-600 text-white border-red-600" : "bg-gray-50 text-gray-600 border-gray-200 hover:border-red-400 hover:text-red-600"}`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom range */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">฿</span>
+                  <input
+                    type="number"
+                    placeholder="ต่ำสุด"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-red-400 text-gray-700 bg-gray-50"
+                  />
+                </div>
+                <span className="text-gray-400 font-bold text-sm">—</span>
+                <div className="flex-1 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">฿</span>
+                  <input
+                    type="number"
+                    placeholder="สูงสุด"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-red-400 text-gray-700 bg-gray-50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1 border-t border-gray-100">
+                <button
+                  onClick={() => { setMinPrice(""); setMaxPrice(""); }}
+                  className="flex-1 text-xs font-bold text-gray-500 hover:text-red-600 py-2 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  ล้าง
+                </button>
+                <button
+                  onClick={() => setFilterOpen(false)}
+                  className="flex-1 text-xs font-bold bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  ตกลง
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {hasFilter && (
+          <button
+            onClick={() => { setSearch(""); setMinPrice(""); setMaxPrice(""); }}
+            className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-red-600 transition-colors"
+            title="ล้างทั้งหมด"
+          >
+            <X size={15} />
+          </button>
+        )}
       </div>
 
       {/* Grid */}

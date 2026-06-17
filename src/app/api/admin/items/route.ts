@@ -40,22 +40,25 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, description, image, rarityId, categoryId, price, stock, isActive } = body;
+    const { name, description, image, rarityId, categoryId, price, stock, isActive, type, coinRewardAmount } = body;
+    const isCoinReward = type === "coin_reward";
 
-    if (!name || !image || !rarityId || price === undefined) {
-      return NextResponse.json({ error: "Name, image, rarity, and price are required" }, { status: 400 });
+    if (!name || (!isCoinReward && !image) || !rarityId || price === undefined) {
+      return NextResponse.json({ error: "Name, image (for item type), rarity, and price are required" }, { status: 400 });
     }
 
     await connectToDatabase();
     const newItem = await Item.create({
       name,
       description,
-      image,
+      image: image || (isCoinReward ? "coin_reward" : ""),
       rarityId,
       categoryId: categoryId || undefined,
       price: Number(price),
-      stock: Number(stock) || 0,
+      stock: isCoinReward ? 0 : (Number(stock) || 0),
       isActive: isActive !== undefined ? isActive : true,
+      type: type || "item",
+      coinRewardAmount: Number(coinRewardAmount) || 0,
     });
 
     const populatedItem = await Item.findById(newItem._id)

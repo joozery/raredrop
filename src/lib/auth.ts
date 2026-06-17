@@ -140,6 +140,7 @@ export const authOptions: NextAuthOptions = {
            if (dbUser) {
              (session.user as any).id = dbUser._id.toString();
              (session.user as any).coins = dbUser.coins;
+             (session.user as any).gemCoins = dbUser.gemCoins;
              (session.user as any).vipLevel = dbUser.vipLevel;
              (session.user as any).role = dbUser.role;
            }
@@ -155,6 +156,7 @@ export const authOptions: NextAuthOptions = {
            if (dbUser) {
              (session.user as any).id = dbUser._id.toString();
              (session.user as any).coins = dbUser.coins;
+             (session.user as any).gemCoins = dbUser.gemCoins;
              (session.user as any).vipLevel = dbUser.vipLevel;
              (session.user as any).role = dbUser.role;
            }

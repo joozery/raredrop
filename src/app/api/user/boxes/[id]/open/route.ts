@@ -76,6 +76,7 @@ export async function POST(
 
     const results: any[] = [];
     const inventoryDocs: any[] = [];
+    let totalGemCoinsEarned = 0;
 
     for (let i = 0; i < times; i++) {
       let chosenItemId: string;
@@ -98,28 +99,48 @@ export async function POST(
 
       const fullItem = box.items.find((bi: any) => bi.itemId._id.toString() === chosenItemId)?.itemId;
 
-      inventoryDocs.push({ userId, itemId: chosenItemId, boxId: box._id, status: "kept" });
-      results.push({
-        itemId: chosenItemId,
-        name: fullItem?.name,
-        image: fullItem?.image,
-        price: fullItem?.price,
-        rarity: fullItem?.rarityId,
-      });
+      if (fullItem?.type === "coin_reward") {
+        const gemAmount = fullItem.coinRewardAmount || 0;
+        totalGemCoinsEarned += gemAmount;
+        results.push({
+          itemId: chosenItemId,
+          name: fullItem?.name,
+          image: fullItem?.image,
+          price: fullItem?.price,
+          rarity: fullItem?.rarityId,
+          type: "coin_reward",
+          coinRewardAmount: gemAmount,
+        });
+      } else {
+        inventoryDocs.push({ userId, itemId: chosenItemId, boxId: box._id, status: "kept" });
+        results.push({
+          itemId: chosenItemId,
+          name: fullItem?.name,
+          image: fullItem?.image,
+          price: fullItem?.price,
+          rarity: fullItem?.rarityId,
+          type: "item",
+        });
+      }
     }
 
-    // นับว่าแต่ละ item ถูกสุ่มได้กี่ครั้ง เพื่อหักสต็อกรวมครั้งเดียว
+    // นับว่าแต่ละ item ถูกสุ่มได้กี่ครั้ง เพื่อหักสต็อกรวมครั้งเดียว (เฉพาะ item ปกติ)
     const stockDeductions: Record<string, number> = {};
     for (const inv of inventoryDocs) {
       const id = inv.itemId.toString();
       stockDeductions[id] = (stockDeductions[id] || 0) + 1;
     }
 
-    // Atomic: หักเหรียญ + บันทึก inventory + transaction + หัก stock
-    await User.findByIdAndUpdate(userId, { $inc: { coins: -totalCost, xp: times } });
-    const inventories = await Inventory.insertMany(inventoryDocs);
+    // Atomic: หักเหรียญ + เพิ่ม gemCoins (ถ้ามี) + บันทึก inventory + transaction + หัก stock
+    await User.findByIdAndUpdate(userId, {
+      $inc: { coins: -totalCost, xp: times, gemCoins: totalGemCoinsEarned },
+    });
 
-    // หัก stock ทีละ item
+    if (inventoryDocs.length > 0) {
+      await Inventory.insertMany(inventoryDocs);
+    }
+
+    // หัก stock ทีละ item (เฉพาะ item ปกติ)
     await Promise.all(
       Object.entries(stockDeductions).map(([itemId, count]) =>
         Item.findByIdAndUpdate(itemId, { $inc: { stock: -count } })
@@ -145,6 +166,8 @@ export async function POST(
       pityThreshold: box.pityThreshold ?? 100,
       coinsSpent: totalCost,
       coinsLeft: updatedUser!.coins,
+      gemCoinsEarned: totalGemCoinsEarned,
+      gemCoinsTotal: updatedUser!.gemCoins,
     });
   } catch (error: any) {
     console.error("Box open error:", error);

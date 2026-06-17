@@ -76,15 +76,19 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: s.key, value: val }),
       });
+      const data = await res.json();
       if (res.ok) {
-        const updated = await res.json();
         setSettings((prev) =>
-          prev.map((item) => (item.key === s.key ? { ...item, value: updated.value } : item))
+          prev.map((item) => (item.key === s.key ? { ...item, value: data.value } : item))
         );
         setPending((p) => { const n = { ...p }; delete n[s.key]; return n; });
         setSaved((p) => ({ ...p, [s.key]: true }));
         setTimeout(() => setSaved((p) => ({ ...p, [s.key]: false })), 2000);
+      } else {
+        alert(`บันทึกไม่สำเร็จ: ${data.error || "เกิดข้อผิดพลาด"}`);
       }
+    } catch {
+      alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
       setSaving((p) => ({ ...p, [s.key]: false }));
     }
