@@ -21,7 +21,7 @@ const menuItems = [
   { name: "หน้าหลัก", icon: Home, href: "/" },
   { name: "กล่องสุ่ม", icon: Package, href: "/boxes" },
   { name: "เปิดกล่อง", icon: PackageCheck, href: "/open" },
-  { name: "ตลาดซื้อขาย", icon: Briefcase, href: "/marketplace" },
+  { name: "ร้านค้า", icon: Briefcase, href: "/shop" },
   { name: "คอลเลกชันของฉัน", icon: LibrarySquare, href: "/inventory" },
   { name: "รางวัล & ภารกิจ", icon: Trophy, href: "/rewards" },
   { name: "อันดับผู้เล่น", icon: Users, href: "/leaderboard" },

@@ -39,9 +39,9 @@ const menuGroups = [
     ]
   },
   {
-    title: "ตลาดซื้อขาย",
+    title: "ร้านค้า",
     items: [
-      { name: "ตลาดซื้อขาย (Marketplace)", icon: Store, href: "/admin/marketplace" },
+      { name: "จัดการร้านค้า", icon: Store, href: "/admin/shop" },
       { name: "ออเดอร์คำสั่งซื้อ", icon: ShoppingCart, href: "/admin/orders" },
     ]
   },

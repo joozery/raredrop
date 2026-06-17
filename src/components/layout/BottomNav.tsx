@@ -11,7 +11,7 @@ import {
 const MAIN_NAV = [
   { href: "/",           icon: Home,    label: "หน้าหลัก" },
   { href: "/boxes",      icon: Package, label: "กล่องสุ่ม" },
-  { href: "/marketplace",icon: Store,   label: "ตลาด" },
+  { href: "/shop",        icon: Store,   label: "ร้านค้า" },
   { href: "/profile",    icon: User,    label: "ฉัน" },
 ];
 

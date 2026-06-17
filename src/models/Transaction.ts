@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface ITransaction extends Document {
   userId: Types.ObjectId;
-  type: "topup" | "withdraw" | "buy_box" | "sell_item" | "market_buy" | "market_sell" | "admin_adjust";
+  type: "topup" | "withdraw" | "buy_box" | "sell_item" | "market_buy" | "market_sell" | "admin_adjust" | "shop_buy";
   amount: number;
   balanceAfter: number;
   description?: string;
@@ -12,10 +12,10 @@ export interface ITransaction extends Document {
 
 const TransactionSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { 
-    type: String, 
-    enum: ["topup", "withdraw", "buy_box", "sell_item", "market_buy", "market_sell", "admin_adjust"], 
-    required: true 
+  type: {
+    type: String,
+    enum: ["topup", "withdraw", "buy_box", "sell_item", "market_buy", "market_sell", "admin_adjust", "shop_buy"],
+    required: true
   },
   amount: { type: Number, required: true },
   balanceAfter: { type: Number, required: true },
