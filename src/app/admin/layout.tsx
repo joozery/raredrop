@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { 
+import {
   LayoutDashboard, Package, FolderTree, Percent,
   Box, Boxes, Diamond, Users, Wallet, UserPlus,
   ArrowRightLeft, Store, ShoppingCart, BarChart3,
-  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut
+  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,11 +36,13 @@ const menuGroups = [
       { name: "จัดการแอดมิน", icon: UserPlus, href: "/admin/manage-admins" },
       { name: "กระเป๋าเงิน (Wallet)", icon: Wallet, href: "/admin/wallet" },
       { name: "ประวัติธุรกรรม", icon: ArrowRightLeft, href: "/admin/transactions" },
+      { name: "ส่งการแจ้งเตือน", icon: Send, href: "/admin/notifications" },
     ]
   },
   {
     title: "ร้านค้า",
     items: [
+      { name: "Flash Sale", icon: Zap, href: "/admin/flash-sale" },
       { name: "จัดการร้านค้า", icon: Store, href: "/admin/shop" },
       { name: "ออเดอร์คำสั่งซื้อ", icon: ShoppingCart, href: "/admin/orders" },
     ]
@@ -54,6 +56,7 @@ const menuGroups = [
   {
     title: "ตั้งค่าระบบ",
     items: [
+      { name: "ศูนย์ช่วยเหลือ (FAQ)", icon: HelpCircle, href: "/admin/help" },
       { name: "ตั้งค่าเว็บไซต์", icon: Settings, href: "/admin/settings" },
       { name: "บันทึกระบบ (Logs)", icon: ScrollText, href: "/admin/logs" },
     ]

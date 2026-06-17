@@ -93,6 +93,22 @@ const DEFAULT_SETTINGS = [
     type: "boolean",
     group: "กล่องสุ่ม",
   },
+  {
+    key: "promptpay_number",
+    value: "",
+    label: "เบอร์/เลขบัตรประชาชนพร้อมเพย์",
+    description: "เบอร์โทรหรือเลขบัตรประชาชนที่ผูกกับพร้อมเพย์ (ใช้สร้าง QR Code)",
+    type: "text",
+    group: "พร้อมเพย์",
+  },
+  {
+    key: "promptpay_name",
+    value: "",
+    label: "ชื่อบัญชีพร้อมเพย์",
+    description: "ชื่อที่แสดงให้ผู้ใช้เห็นในหน้าเติมเงิน",
+    type: "text",
+    group: "พร้อมเพย์",
+  },
 ];
 
 async function seedDefaultSettings() {

@@ -1,42 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HelpCircle, ChevronDown, MessageCircle, Mail, Phone, Search } from "lucide-react";
 
 interface FAQ {
-  q: string;
-  a: string;
+  _id: string;
+  question: string;
+  answer: string;
   category: string;
 }
 
-const FAQS: FAQ[] = [
-  // การเปิดกล่อง
-  { category: "การเปิดกล่อง", q: "วิธีเปิดกล่องสุ่มทำอย่างไร?", a: "เติมเงินเข้าระบบก่อน จากนั้นเลือกกล่องที่ต้องการ กดปุ่ม 'เปิดกล่องเลย!' ระบบจะสุ่มไอเท็มให้ทันที ไอเท็มที่ได้จะถูกเก็บไว้ในคลังของคุณ" },
-  { category: "การเปิดกล่อง", q: "ระบบการสุ่มยุติธรรมไหม?", a: "ระบบของเราใช้ Weighted Random Algorithm มาตรฐานสากล ทุกการสุ่มเป็นอิสระและไม่ขึ้นกับการสุ่มครั้งก่อน ความน่าจะเป็นแสดงชัดเจนบนหน้ากล่องทุกกล่อง" },
-  { category: "การเปิดกล่อง", q: "Pity System คืออะไร?", a: "Pity System การันตีว่าเมื่อเปิดกล่องครบ 100 ครั้ง คุณจะได้รับไอเท็มระดับ Legendary หรือสูงกว่าแน่นอน ตัวนับจะรีเซ็ตเมื่อได้รับไอเท็ม Legendary" },
-  { category: "การเปิดกล่อง", q: "เปิดหลายครั้งพร้อมกันได้ไหม?", a: "ได้ครับ สามารถเปิดได้ครั้งละ 1, 3, 5 หรือ 10 ครั้ง การเปิดหลายครั้งยังช่วยให้คุณประหยัดได้สูงสุดถึง 12%" },
-  // การเงิน
-  { category: "การเงิน", q: "เติมเงินได้อย่างไร?", a: "เติมเงินผ่านการโอนธนาคารแล้วอัพโหลดสลิป ระบบตรวจสอบอัตโนมัติผ่าน Slip2Go โดยปกติเงินจะเข้าภายใน 1-5 นาที" },
-  { category: "การเงิน", q: "ขั้นต่ำในการเติมเงินเท่าไหร่?", a: "เติมเงินขั้นต่ำ 100 บาท ต่อครั้ง ไม่มีขั้นสูงสุด" },
-  { category: "การเงิน", q: "ถอนเงินออกได้ไหม?", a: "ไม่สามารถถอนเงินออกได้โดยตรง แต่คุณสามารถขายไอเท็มในตลาดเพื่อรับเหรียญกลับมา หรือเลือกรับสินค้าจริงแทน" },
-  // ตลาดซื้อขาย
-  { category: "ตลาดซื้อขาย", q: "วิธีลิสต์ขายสินค้าในตลาด?", a: "ไปที่ 'คอลเลกชันของฉัน' เลือกไอเท็มที่ต้องการขาย กดปุ่ม 'ลงขาย' กำหนดราคา แล้วยืนยัน สินค้าจะปรากฏในตลาดทันที" },
-  { category: "ตลาดซื้อขาย", q: "ค่าธรรมเนียมการขายเท่าไหร่?", a: "ค่าธรรมเนียม 5% ของราคาขาย ยกตัวอย่าง ขาย 1,000 บาท จะได้รับ 950 บาท" },
-  // บัญชีผู้ใช้
-  { category: "บัญชีผู้ใช้", q: "ลืมรหัสผ่าน/อีเมลทำอย่างไร?", a: "ระบบ RareDrop ใช้ OTP ผ่านอีเมล ไม่มีรหัสผ่าน กรอกอีเมลที่ลงทะเบียนเพื่อรับ OTP เข้าสู่ระบบ" },
-  { category: "บัญชีผู้ใช้", q: "เปลี่ยนข้อมูลโปรไฟล์ได้ที่ไหน?", a: "ไปที่หน้า 'โปรไฟล์ของฉัน' แล้วกดแก้ไขข้อมูลได้เลย รองรับการเปลี่ยนชื่อและรูปโปรไฟล์" },
-];
-
-const CATEGORIES = ["ทั้งหมด", ...Array.from(new Set(FAQS.map((f) => f.category)))];
-
 export default function HelpPage() {
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState("ทั้งหมด");
 
-  const filtered = FAQS.filter((f) => {
+  useEffect(() => {
+    fetch("/api/faqs")
+      .then((r) => r.json())
+      .then((d) => setFaqs(Array.isArray(d) ? d : []))
+      .catch(() => setFaqs([]));
+  }, []);
+
+  const categories = ["ทั้งหมด", ...Array.from(new Set(faqs.map((f) => f.category)))];
+
+  const filtered = faqs.filter((f) => {
     const matchCat = cat === "ทั้งหมด" || f.category === cat;
-    const matchSearch = f.q.includes(search) || f.a.includes(search);
+    const matchSearch = f.question.includes(search) || f.answer.includes(search);
     return matchCat && matchSearch;
   });
 
@@ -67,7 +58,7 @@ export default function HelpPage() {
 
       {/* Category Tabs */}
       <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-3 mb-5">
-        {CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <button
             key={c}
             onClick={() => setCat(c)}
@@ -85,16 +76,15 @@ export default function HelpPage() {
         {filtered.length === 0 ? (
           <p className="text-center text-gray-400 py-8 font-medium">ไม่พบคำถามที่ตรงกัน</p>
         ) : (
-          filtered.map((f, i) => {
-            const id = `${i}`;
-            const isOpen = openId === id;
+          filtered.map((f) => {
+            const isOpen = openId === f._id;
             return (
-              <div key={id} className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+              <div key={f._id} className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
                 <button
-                  onClick={() => setOpenId(isOpen ? null : id)}
+                  onClick={() => setOpenId(isOpen ? null : f._id)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left"
                 >
-                  <span className="font-bold text-gray-900 text-sm pr-4">{f.q}</span>
+                  <span className="font-bold text-gray-900 text-sm pr-4">{f.question}</span>
                   <ChevronDown
                     size={18}
                     className={`shrink-0 text-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : ""}`}
@@ -102,7 +92,7 @@ export default function HelpPage() {
                 </button>
                 {isOpen && (
                   <div className="px-5 pb-5 border-t border-gray-50">
-                    <p className="text-sm text-gray-600 leading-relaxed pt-3 font-medium">{f.a}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed pt-3 font-medium">{f.answer}</p>
                   </div>
                 )}
               </div>

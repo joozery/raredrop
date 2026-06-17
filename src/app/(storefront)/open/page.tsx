@@ -92,11 +92,11 @@ export default function OpenPage() {
             return (
               <div
                 key={o._id}
-                className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow"
+                className="relative bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow"
                 style={i === 0 ? { borderColor: rarity?.color ? `${rarity.color}40` : undefined } : {}}
               >
                 {i === 0 && (
-                  <span className="absolute ml-[-8px] mt-[-8px] bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">ล่าสุด</span>
+                  <span className="absolute top-2 left-2 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">ล่าสุด</span>
                 )}
                 <div className="w-12 h-12 rounded-full bg-gray-100 shrink-0 border-2 border-white shadow-sm overflow-hidden">
                   <img

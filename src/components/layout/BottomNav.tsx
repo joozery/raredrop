@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home, Package, Store, User, LayoutGrid,
-  PackageCheck, LibrarySquare, Trophy, Users, HelpCircle, X,
+  PackageCheck, LibrarySquare, Trophy, HelpCircle, X,
 } from "lucide-react";
 
 const MAIN_NAV = [
@@ -19,7 +19,6 @@ const MORE_MENU = [
   { href: "/open",       icon: PackageCheck, label: "ไลฟ์เปิดกล่อง",    color: "bg-red-100 text-red-600" },
   { href: "/inventory",  icon: LibrarySquare,label: "คอลเลกชันของฉัน",   color: "bg-blue-100 text-blue-600" },
   { href: "/rewards",    icon: Trophy,       label: "รางวัล & ภารกิจ",   color: "bg-amber-100 text-amber-600" },
-  { href: "/leaderboard",icon: Users,        label: "อันดับผู้เล่น",      color: "bg-purple-100 text-purple-600" },
   { href: "/help",       icon: HelpCircle,   label: "ช่วยเหลือ",          color: "bg-green-100 text-green-600" },
 ];
 

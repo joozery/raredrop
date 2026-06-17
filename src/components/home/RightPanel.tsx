@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ShieldCheck, Truck, Users, Package, Headset, Scale, Gift } from "lucide-react";
+import { ShieldCheck, Truck, Users, Package, Headset, Scale, Gift, ShoppingBag } from "lucide-react";
 import PromoBanner from "./PromoBanner";
 
-interface Opening {
+interface RecentPurchase {
   _id: string;
   userId: { name: string; avatar?: string };
-  itemId: { name: string; image: string; price: number };
+  listingTitle: string;
+  listingImage?: string;
+  pricePaid: number;
+  createdAt: string;
 }
 
 interface Stats {
@@ -18,13 +21,13 @@ interface Stats {
 }
 
 export default function RightPanel() {
-  const [openings, setOpenings] = useState<Opening[]>([]);
+  const [purchases, setPurchases] = useState<RecentPurchase[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    fetch("/api/live-openings")
+    fetch("/api/recent-purchases")
       .then((r) => r.json())
-      .then((d) => setOpenings(Array.isArray(d) ? d.slice(0, 4) : []))
+      .then((d) => setPurchases(Array.isArray(d) ? d.slice(0, 5) : []))
       .catch(() => {});
 
     fetch("/api/stats")
@@ -36,21 +39,18 @@ export default function RightPanel() {
   return (
     <div className="w-[320px] shrink-0 flex flex-col gap-6 hide-scrollbar">
 
-      {/* Live Openings */}
+      {/* Recent Purchases */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold flex items-center gap-2">
-            ไลฟ์เปิดกล่อง
-            <span className="bg-red-100 text-primary text-[9px] font-bold px-1.5 py-0.5 rounded-sm flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" /> LIVE
-            </span>
+            <ShoppingBag size={15} className="text-primary" />
+            การสั่งซื้อล่าสุด
           </h3>
-          <button className="text-[10px] text-gray-400 hover:text-primary">ดูทั้งหมด ›</button>
         </div>
 
         <div className="flex flex-col gap-3">
-          {openings.length === 0
-            ? Array.from({ length: 4 }).map((_, i) => (
+          {purchases.length === 0
+            ? Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3 p-2 rounded-lg animate-pulse">
                   <div className="w-10 h-10 rounded-full bg-gray-100 shrink-0" />
                   <div className="flex-1 space-y-1.5">
@@ -60,28 +60,34 @@ export default function RightPanel() {
                   <div className="w-10 h-10 bg-gray-100 rounded-md shrink-0" />
                 </div>
               ))
-            : openings.map((o) => (
-                <div key={o._id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors border border-transparent hover:border-gray-100">
+            : purchases.map((p) => (
+                <div key={p._id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
                   <div className="w-10 h-10 rounded-full bg-gray-100 shrink-0 border-2 border-white shadow-sm overflow-hidden">
                     <img
-                      src={o.userId?.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${o.userId?.name}`}
-                      alt={o.userId?.name}
+                      src={p.userId?.avatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${p.userId?.name}`}
+                      alt={p.userId?.name}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-gray-900 truncate">{o.userId?.name}</p>
-                    <p className="text-[10px] text-gray-500 truncate">เปิดได้ {o.itemId?.name}</p>
-                    <p className="text-[10px] text-primary font-semibold">ราคา ฿{o.itemId?.price?.toLocaleString()}</p>
+                    <p className="text-xs font-bold text-gray-900 truncate">{p.userId?.name}</p>
+                    <p className="text-[10px] text-gray-500 truncate">ซื้อ {p.listingTitle}</p>
+                    <p className="text-[10px] text-primary font-semibold">฿{p.pricePaid?.toLocaleString()}</p>
                   </div>
-                  <div className="w-10 h-10 bg-gray-100 rounded-md shrink-0 overflow-hidden shadow-sm border border-gray-100">
-                    <img
-                      src={o.itemId?.image}
-                      alt={o.itemId?.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
-                    />
-                  </div>
+                  {p.listingImage ? (
+                    <div className="w-10 h-10 bg-gray-100 rounded-md shrink-0 overflow-hidden shadow-sm border border-gray-100">
+                      <img
+                        src={p.listingImage}
+                        alt={p.listingTitle}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 bg-gray-50 rounded-md shrink-0 border border-gray-100 flex items-center justify-center">
+                      <ShoppingBag size={14} className="text-gray-300" />
+                    </div>
+                  )}
                 </div>
               ))}
         </div>

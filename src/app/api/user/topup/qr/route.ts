@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { connectToDatabase } from "@/lib/mongoose";
+import Setting from "@/models/Setting";
 import generatePayload from "promptpay-qr";
 import QRCode from "qrcode";
 
@@ -16,19 +18,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "กรุณาระบุจำนวนเงินให้ถูกต้อง" }, { status: 400 });
     }
 
-    // สร้าง PromptPay Payload ด้วยเบอร์ของคุณ
-    const mobileNumber = "0838346686"; // <--- เบอร์พร้อมเพย์ของคุณ
-    const payload = generatePayload(mobileNumber, { amount: parseFloat(amount) });
-    
-    // แปลง Payload ให้เป็นรูปภาพ QR Code (Base64)
+    await connectToDatabase();
+
+    const [numberSetting, nameSetting] = await Promise.all([
+      Setting.findOne({ key: "promptpay_number" }).lean(),
+      Setting.findOne({ key: "promptpay_name" }).lean(),
+    ]);
+
+    const promptpayNumber = (numberSetting as any)?.value as string;
+    const accountName = (nameSetting as any)?.value as string || "บัญชีพร้อมเพย์";
+
+    if (!promptpayNumber) {
+      return NextResponse.json({ error: "ยังไม่ได้ตั้งค่าเบอร์พร้อมเพย์ กรุณาติดต่อแอดมิน" }, { status: 503 });
+    }
+
+    const payload = generatePayload(promptpayNumber, { amount: parseFloat(amount) });
+
     const qrImageBase64 = await QRCode.toDataURL(payload, {
-      errorCorrectionLevel: 'M',
+      errorCorrectionLevel: "M",
       margin: 4,
       scale: 8,
-      color: {
-        dark: '#000000',
-        light: '#ffffff'
-      }
+      color: { dark: "#000000", light: "#ffffff" },
     });
 
     return NextResponse.json({
@@ -36,13 +46,11 @@ export async function POST(req: Request) {
       message: "Success",
       data: {
         qrImageLink: qrImageBase64,
-        accountName: "บัญชีของคุณ",
-        amount: amount.toString()
-      }
+        accountName,
+        amount: amount.toString(),
+      },
     });
-
   } catch (error: any) {
-    console.error("Internal Server Error:", error);
     return NextResponse.json({ error: "เกิดข้อผิดพลาด: " + error.message }, { status: 500 });
   }
 }

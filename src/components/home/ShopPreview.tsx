@@ -28,7 +28,7 @@ export default function ShopPreview() {
 
   return (
     <section>
-      <div className="border-[3px] border-[#E04631] rounded-xl p-4 bg-white relative">
+      <div className="rounded-xl p-4 bg-white relative">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

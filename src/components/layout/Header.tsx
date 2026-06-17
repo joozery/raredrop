@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Bell } from "lucide-react";
+import { Search } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { TopupModal } from "@/components/payment/TopupModal";
+import { NotificationDropdown } from "@/components/layout/NotificationDropdown";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -36,10 +37,7 @@ export function Header() {
             <img src={logoUrl} alt="RareDrop Logo" className="h-7 w-auto object-contain" />
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative text-gray-500 hover:text-gray-800 transition-colors">
-              <Bell size={22} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full border-2 border-white"></span>
-            </button>
+            {session && <NotificationDropdown />}
             {session ? (
               <Link href="/profile" className="w-8 h-8 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100">
                 {session.user?.image ? (
@@ -111,11 +109,8 @@ export function Header() {
               </div>
             )}
             
-            <button className="relative text-gray-500 hover:text-gray-800 transition-colors">
-              <Bell size={22} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full border-2 border-white"></span>
-            </button>
-            
+            {session && <NotificationDropdown />}
+
             {session ? (
               <Link href="/profile" className="w-10 h-10 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100 hover:border-gray-300 transition-colors">
                 {session.user?.image ? (

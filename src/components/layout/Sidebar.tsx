@@ -3,14 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { 
-  Home, 
-  Package, 
-  PackageCheck, 
-  Briefcase, 
-  LibrarySquare, 
-  Trophy, 
-  Users, 
+import {
+  Home,
+  Package,
+  PackageCheck,
+  Briefcase,
+  LibrarySquare,
+  Trophy,
   HelpCircle,
   Apple,
   Play
@@ -24,7 +23,6 @@ const menuItems = [
   { name: "ร้านค้า", icon: Briefcase, href: "/shop" },
   { name: "คอลเลกชันของฉัน", icon: LibrarySquare, href: "/inventory" },
   { name: "รางวัล & ภารกิจ", icon: Trophy, href: "/rewards" },
-  { name: "อันดับผู้เล่น", icon: Users, href: "/leaderboard" },
   { name: "ช่วยเหลือ", icon: HelpCircle, href: "/help" },
 ];
 
