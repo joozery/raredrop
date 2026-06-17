@@ -12,7 +12,8 @@ import {
   Trophy,
   HelpCircle,
   Apple,
-  Play
+  Play,
+  Coins
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const menuItems = [
   { name: "เปิดกล่อง", icon: PackageCheck, href: "/open" },
   { name: "ร้านค้า", icon: Briefcase, href: "/shop" },
   { name: "คอลเลกชันของฉัน", icon: LibrarySquare, href: "/inventory" },
+  { name: "แลก GemCoin", icon: Coins, href: "/exchange" },
   { name: "รางวัล & ภารกิจ", icon: Trophy, href: "/rewards" },
   { name: "ช่วยเหลือ", icon: HelpCircle, href: "/help" },
 ];

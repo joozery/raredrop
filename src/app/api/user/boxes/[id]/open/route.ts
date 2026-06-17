@@ -9,6 +9,7 @@ import User from "@/models/User";
 import Inventory from "@/models/Inventory";
 import Transaction from "@/models/Transaction";
 import PityCounter from "@/models/PityCounter";
+import BoxCredit from "@/models/BoxCredit";
 
 const PITY_MIN_RARITY_ORDER = 3; // rarity.order >= 3 ถือว่า "rare"
 
@@ -53,15 +54,21 @@ export async function POST(
     }
 
     const userId = (session.user as any).id;
-    const totalCost = box.price * times;
 
     const user = await User.findById(userId);
     if (!user) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
-    if (user.coins < totalCost) {
+
+    // เช็ค BoxCredit (สิทธิ์เปิดฟรีจากการแลก GemCoin)
+    const boxCredit = await BoxCredit.findOne({ userId, boxId });
+    const freeOpens = boxCredit ? Math.min(boxCredit.credits, times) : 0;
+    const paidOpens = times - freeOpens;
+    const actualCost = box.price * paidOpens;
+
+    if (user.coins < actualCost) {
       return NextResponse.json({ error: "เหรียญไม่เพียงพอ กรุณาเติมเงิน" }, { status: 400 });
     }
 
-    const PITY_THRESHOLD = box.pityThreshold ?? 100;
+    const totalCost = actualCost;
 
     // ดึง/สร้าง pity counter
     let pityDoc = await PityCounter.findOne({ userId, boxId });
@@ -131,10 +138,18 @@ export async function POST(
       stockDeductions[id] = (stockDeductions[id] || 0) + 1;
     }
 
-    // Atomic: หักเหรียญ + เพิ่ม gemCoins (ถ้ามี) + บันทึก inventory + transaction + หัก stock
+    // หักเหรียญ + เพิ่ม gemCoins + XP
     await User.findByIdAndUpdate(userId, {
       $inc: { coins: -totalCost, xp: times, gemCoins: totalGemCoinsEarned },
     });
+
+    // หัก BoxCredit ที่ใช้ไป
+    if (freeOpens > 0) {
+      await BoxCredit.findOneAndUpdate(
+        { userId, boxId },
+        { $inc: { credits: -freeOpens } }
+      );
+    }
 
     if (inventoryDocs.length > 0) {
       await Inventory.insertMany(inventoryDocs);
@@ -153,7 +168,7 @@ export async function POST(
       type: "buy_box",
       amount: -totalCost,
       balanceAfter: updatedUser!.coins,
-      description: `เปิดกล่อง "${box.name}" ${times} ครั้ง`,
+      description: `เปิดกล่อง "${box.name}" ${times} ครั้ง${freeOpens > 0 ? ` (ฟรี ${freeOpens} ครั้ง)` : ""}`,
       referenceId: box._id,
     });
 
@@ -168,6 +183,7 @@ export async function POST(
       coinsLeft: updatedUser!.coins,
       gemCoinsEarned: totalGemCoinsEarned,
       gemCoinsTotal: updatedUser!.gemCoins,
+      freeOpensUsed: freeOpens,
     });
   } catch (error: any) {
     console.error("Box open error:", error);

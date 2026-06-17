@@ -45,6 +45,7 @@ const menuGroups = [
       { name: "Flash Sale", icon: Zap, href: "/admin/flash-sale" },
       { name: "จัดการร้านค้า", icon: Store, href: "/admin/shop" },
       { name: "ออเดอร์คำสั่งซื้อ", icon: ShoppingCart, href: "/admin/orders" },
+      { name: "แลก GemCoin", icon: Diamond, href: "/admin/gem-rewards" },
     ]
   },
   {
