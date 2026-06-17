@@ -253,14 +253,14 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
         </div>
 
         {/* Free Credits Banner */}
-        {box.freeCredits > 0 && (
+        {freeCredits > 0 && (
           <div className="bg-gradient-to-r from-purple-600 to-purple-500 rounded-2xl p-4 flex items-center gap-4 shadow-md">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
               <Coins size={24} className="text-white" />
             </div>
             <div className="flex-1">
               <p className="text-white font-black text-base leading-tight">คุณมีสิทธิ์เปิดฟรี!</p>
-              <p className="text-purple-100 text-sm font-medium mt-0.5">จาก GemCoin Exchange — เหลืออีก <span className="font-black text-white">{box.freeCredits} ครั้ง</span></p>
+              <p className="text-purple-100 text-sm font-medium mt-0.5">จาก GemCoin Exchange — เหลืออีก <span className="font-black text-white">{freeCredits} ครั้ง</span></p>
             </div>
             <button onClick={() => handleDrawClick(1)} className="bg-white text-purple-700 font-black text-sm px-5 py-2.5 rounded-xl hover:bg-purple-50 transition-colors shadow-sm shrink-0">
               เปิดเลย!
