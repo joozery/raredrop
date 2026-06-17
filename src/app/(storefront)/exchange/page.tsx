@@ -114,13 +114,6 @@ export default function ExchangePage() {
             <h1 className="text-xl font-black text-gray-900">แลก GemCoin</h1>
             <p className="text-xs text-gray-500 font-medium">ใช้ GemCoin แลกกล่องสุ่ม ไอเทม และสินค้าพิเศษ</p>
           </div>
-          {session && (
-            <div className="flex items-center gap-2 bg-purple-50 border border-purple-100 px-4 py-2 rounded-xl shadow-sm">
-              <Coins size={16} className="text-purple-600" />
-              <span className="font-black text-purple-700 text-lg">{gemCoins.toLocaleString()}</span>
-              <span className="text-xs font-bold text-purple-400">GEM</span>
-            </div>
-          )}
         </div>
       </div>
 
