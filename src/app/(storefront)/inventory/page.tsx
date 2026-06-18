@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useBalance } from "@/contexts/BalanceContext";
 import Link from "next/link";
 import {
   Package, Tag, Truck, ShoppingBag, X, Coins, Search, Filter,
@@ -20,6 +21,7 @@ type ActionType = "sell" | "deliver" | "market" | "unlist" | null;
 
 export default function InventoryPage() {
   const { data: session } = useSession();
+  const { refreshBalance } = useBalance();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -73,9 +75,21 @@ export default function InventoryPage() {
         unlist: "ถอนออกจากตลาดแล้ว",
       };
       showToast(msgs[actionModal.action!] || "สำเร็จ");
+      const targetId = actionModal.item._id;
+      const targetAction = actionModal.action;
       setActionModal(null);
       setMarketPrice("");
-      fetchInventory();
+
+      if (targetAction === "sell") refreshBalance();
+
+      // optimistic update — ไม่ต้องรอ fetchInventory
+      if (targetAction === "sell" || targetAction === "deliver") {
+        setItems((prev) => prev.filter((i) => i._id !== targetId));
+      } else if (targetAction === "market") {
+        setItems((prev) => prev.map((i) => i._id === targetId ? { ...i, status: "market" } : i));
+      } else if (targetAction === "unlist") {
+        setItems((prev) => prev.map((i) => i._id === targetId ? { ...i, status: "kept" } : i));
+      }
     } finally {
       setIsProcessing(false);
     }

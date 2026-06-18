@@ -8,12 +8,14 @@ import { NotificationDropdown } from "@/components/layout/NotificationDropdown";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useBalance } from "@/contexts/BalanceContext";
 
 export function Header() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
   const { data: session } = useSession();
+  const { coins, gemCoins } = useBalance();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -43,12 +45,12 @@ export function Header() {
                   onClick={() => setIsTopupOpen(true)}
                   className="flex items-center gap-1 bg-gray-900 px-2.5 py-1.5 rounded-full"
                 >
-                  <span className="text-xs font-black text-white">{((session.user as any)?.coins || 0).toLocaleString()}</span>
+                  <span className="text-xs font-black text-white">{coins.toLocaleString()}</span>
                   <span className="text-[10px] text-gray-400 font-medium">฿</span>
                 </button>
                 <div className="flex items-center gap-1 bg-purple-100 px-2.5 py-1.5 rounded-full">
                   <Coins size={13} className="text-purple-600" />
-                  <span className="text-xs font-black text-purple-700">{((session.user as any)?.gemCoins || 0).toLocaleString()}</span>
+                  <span className="text-xs font-black text-purple-700">{gemCoins.toLocaleString()}</span>
                 </div>
               </div>
             )}
@@ -110,7 +112,7 @@ export function Header() {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-bold text-gray-900 text-sm leading-none">
-                      {((session.user as any)?.coins || 0).toLocaleString()}
+                      {coins.toLocaleString()}
                     </span>
                     <span className="text-[10px] text-gray-500">THB</span>
                   </div>
@@ -121,7 +123,7 @@ export function Header() {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-bold text-purple-700 text-sm leading-none">
-                      {((session.user as any)?.gemCoins || 0).toLocaleString()}
+                      {gemCoins.toLocaleString()}
                     </span>
                     <span className="text-[10px] text-purple-400">GEM</span>
                   </div>

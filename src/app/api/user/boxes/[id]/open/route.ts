@@ -162,7 +162,8 @@ export async function POST(
       Object.entries(stockDeductions).map(([itemId, count]) =>
         Item.findOneAndUpdate(
           { _id: itemId, stock: { $gt: 0 } },
-          [{ $set: { stock: { $max: [{ $subtract: ["$stock", count] }, 0] } } }]
+          [{ $set: { stock: { $max: [{ $subtract: ["$stock", count] }, 0] } } }],
+          { updatePipeline: true }
         )
       )
     );

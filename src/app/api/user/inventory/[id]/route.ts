@@ -7,6 +7,7 @@ import Item from "@/models/Item";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import Order from "@/models/Order";
+import { notify } from "@/lib/notify";
 
 // action: "sell" | "deliver" | "market" | "unlist"
 export async function PATCH(
@@ -57,6 +58,13 @@ export async function PATCH(
         description: `ขายคืน "${item.name}"`,
         referenceId: inv._id,
       });
+
+      await notify(
+        userId,
+        `ขายคืนสำเร็จ! 💰`,
+        `ได้รับ ฿${sellPrice.toLocaleString()} จากการขาย "${item.name}"`,
+        "success"
+      );
 
       return NextResponse.json({ success: true, coinsEarned: sellPrice, coinsLeft: user!.coins });
     }

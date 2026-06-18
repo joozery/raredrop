@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { BalanceProvider } from "@/contexts/BalanceContext";
 
 export default function StorefrontLayout({
   children,
@@ -8,7 +9,7 @@ export default function StorefrontLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <>
+    <BalanceProvider>
       <div className="hidden lg:flex">
         <Sidebar />
       </div>
@@ -19,6 +20,6 @@ export default function StorefrontLayout({
         </main>
         <BottomNav />
       </div>
-    </>
+    </BalanceProvider>
   );
 }
