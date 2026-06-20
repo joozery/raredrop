@@ -3,6 +3,8 @@ import User from "@/models/User";
 import LevelConfig from "@/models/LevelConfig";
 import Inventory from "@/models/Inventory";
 import Setting from "@/models/Setting";
+// จำเป็นต้อง import ไว้เพื่อให้ mongoose ลงทะเบียน schema ก่อน populate "rewardItems.itemId" ด้านล่าง
+import "@/models/Item";
 import { notify } from "@/lib/notify";
 
 export async function getExpPerBaht(): Promise<number> {

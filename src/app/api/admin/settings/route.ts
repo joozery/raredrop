@@ -62,6 +62,14 @@ const DEFAULT_SETTINGS = [
     group: "กระเป๋าเงิน",
   },
   {
+    key: "truemoney_number",
+    value: "0945605512",
+    label: "เบอร์ TrueMoney ของร้าน",
+    description: "เบอร์ปลายทางที่ใช้สร้างลิงก์ขอรับเงินผ่าน TrueMoney Wallet",
+    type: "text",
+    group: "กระเป๋าเงิน",
+  },
+  {
     key: "market_fee_percent",
     value: 10,
     label: "ค่าธรรมเนียมตลาด (%)",
