@@ -11,7 +11,7 @@ interface SettingItem {
   value: string | number | boolean;
   label: string;
   description?: string;
-  type: "text" | "boolean" | "number" | "select";
+  type: "text" | "boolean" | "number" | "select" | "textarea";
   group: string;
   options?: string[];
 }
@@ -256,6 +256,13 @@ export default function SettingsPage() {
                           value={currentVal as number}
                           onChange={(e) => handleChange(s.key, Number(e.target.value))}
                           className="w-full sm:w-28 px-3 py-1.5 text-sm font-medium text-slate-800 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
+                        />
+                      ) : s.type === "textarea" ? (
+                        <textarea
+                          value={currentVal as string}
+                          onChange={(e) => handleChange(s.key, e.target.value)}
+                          rows={3}
+                          className="w-full sm:w-72 px-3 py-1.5 text-sm font-medium text-slate-800 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 resize-y"
                         />
                       ) : (
                         <input

@@ -26,15 +26,15 @@ export async function GET(req: Request) {
       .sort({ isFeatured: -1, createdAt: -1 })
       .lean();
 
-    const availableBoxes = boxes.filter((box) => {
+    const mappedBoxes = boxes.map((box) => {
       const isOutOfStock = box.items?.some((bi: any) => {
         const item = bi.itemId as any;
         return item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
       });
-      return !isOutOfStock;
+      return { ...box, isOutOfStock };
     }).slice(0, limit);
 
-    return NextResponse.json(availableBoxes);
+    return NextResponse.json(mappedBoxes);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

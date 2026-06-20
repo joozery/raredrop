@@ -190,6 +190,14 @@ const DEFAULT_SETTINGS = [
     group: "ช่วยเหลือ",
   },
   {
+    key: "red_envelope_help_text",
+    value: "เข้าร่วมซองแดงเพื่อลุ้นรับเงินหรือไอเทมสุ่ม\nกดเข้าร่วมไว้ก่อน รอครบคนหรือหมดเวลาแล้วระบบจะจับรางวัลให้ทุกคนพร้อมกันทีเดียว",
+    label: "เนื้อหา popup วิธีเล่นซองแดง",
+    description: "ข้อความที่แสดงตอนกดปุ่ม ? ในหน้าซองแดง — ขึ้นบรรทัดใหม่ได้",
+    type: "textarea",
+    group: "ซองแดง",
+  },
+  {
     key: "hero_banner_image",
     value: "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/banner/cover/cover.png",
     label: "รูปภาพแบนเนอร์",

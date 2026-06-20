@@ -12,7 +12,7 @@ interface UserData {
 interface TransactionData {
   _id: string;
   userId: UserData;
-  type: "topup" | "withdraw" | "buy_box" | "sell_item" | "market_buy" | "market_sell" | "admin_adjust" | "red_envelope";
+  type: "topup" | "buy_box" | "sell_item" | "shop_buy" | "admin_adjust" | "red_envelope" | "coin_reward";
   amount: number;
   balanceAfter: number;
   description?: string;
@@ -53,13 +53,12 @@ export default function ManageTransactions() {
   const getTypeDetails = (type: string) => {
     switch (type) {
       case 'topup': return { label: 'เติมเงิน', icon: <ArrowDownRight size={14} />, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100', sign: '+' };
-      case 'withdraw': return { label: 'ถอนเงิน', icon: <ArrowUpRight size={14} />, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100', sign: '-' };
       case 'buy_box': return { label: 'ซื้อกล่องสุ่ม', icon: <ArrowUpRight size={14} />, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', sign: '-' };
       case 'sell_item': return { label: 'ขายคืนระบบ', icon: <ArrowDownRight size={14} />, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', sign: '+' };
-      case 'market_buy': return { label: 'ซื้อจากตลาด', icon: <ArrowUpRight size={14} />, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', sign: '-' };
-      case 'market_sell': return { label: 'ขายในตลาด', icon: <ArrowDownRight size={14} />, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', sign: '+' };
+      case 'shop_buy': return { label: 'ซื้อจากร้านค้า', icon: <ArrowUpRight size={14} />, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', sign: '-' };
       case 'admin_adjust': return { label: 'แอดมินปรับสมดุล', icon: <ArrowRightLeft size={14} />, color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200', sign: '' };
       case 'red_envelope': return { label: 'เปิดซองแดง', icon: <Gift size={14} />, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', sign: '+' };
+      case 'coin_reward': return { label: 'เหรียญรางวัล', icon: <ArrowDownRight size={14} />, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', sign: '+' };
       default: return { label: type, icon: <ArrowRightLeft size={14} />, color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200', sign: '' };
     }
   };
@@ -92,13 +91,12 @@ export default function ManageTransactions() {
             >
               <option value="">ทุกประเภทธุรกรรม</option>
               <option value="topup">เติมเงิน (Topup)</option>
-              <option value="withdraw">ถอนเงิน (Withdraw)</option>
               <option value="buy_box">ซื้อกล่องสุ่ม (Buy Box)</option>
               <option value="sell_item">ขายคืนระบบ (Sell Item)</option>
-              <option value="market_buy">ซื้อจากตลาด (Market Buy)</option>
-              <option value="market_sell">ขายในตลาด (Market Sell)</option>
+              <option value="shop_buy">ซื้อจากร้านค้า (Shop Buy)</option>
+              <option value="coin_reward">ได้รางวัลเหรียญ (Coin Reward)</option>
+              <option value="red_envelope">ซองแดง (Red Envelope)</option>
               <option value="admin_adjust">แอดมินปรับสมดุล (Admin Adjust)</option>
-              <option value="red_envelope">เปิดซองแดง (Red Envelope)</option>
             </select>
           </div>
 

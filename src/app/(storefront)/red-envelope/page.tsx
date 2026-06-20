@@ -31,6 +31,7 @@ interface RecentEntry {
   tagImage?: string;
   time: string;
   rewardType: "cash" | "item";
+  pending?: boolean;
   rewardAmount?: number;
   isWinner?: boolean;
   itemName?: string;
@@ -66,6 +67,38 @@ export default function RedEnvelopePage() {
   const [participants, setParticipants] = useState<RecentEntry[]>([]);
   const [participantsTotal, setParticipantsTotal] = useState(0);
   const [participantsLoading, setParticipantsLoading] = useState(false);
+
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpText, setHelpText] = useState("");
+  const [toast, setToast] = useState("");
+
+  useEffect(() => {
+    fetch("/api/public-settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setHelpText(d.red_envelope_help_text || ""))
+      .catch(() => {});
+  }, []);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 2500);
+  };
+
+  const handleShare = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: "ชิงรางวัลฟรี - ซองแดง", url });
+      } catch {}
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("คัดลอกลิงก์แล้ว");
+    } catch {
+      showToast("ไม่สามารถคัดลอกลิงก์ได้");
+    }
+  };
 
   const fetchRounds = useCallback(async () => {
     setLoading(true);
@@ -152,10 +185,10 @@ export default function RedEnvelopePage() {
             ชิงรางวัลฟรี
           </h1>
           <div className="flex items-center gap-1">
-            <button className="w-10 h-10 flex items-center justify-center">
+            <button onClick={() => setShowHelp(true)} className="w-10 h-10 flex items-center justify-center">
               <HelpCircle size={24} className="text-white" />
             </button>
-            <button className="w-10 h-10 flex items-center justify-center -mr-2">
+            <button onClick={handleShare} className="w-10 h-10 flex items-center justify-center -mr-2">
               <Share size={24} className="text-white" />
             </button>
           </div>
@@ -178,7 +211,7 @@ export default function RedEnvelopePage() {
                     {timeFmt(r.scheduledAt)}
                   </div>
                   <div className={`text-[12px] font-medium mt-0.5 ${active ? "text-black font-bold" : "text-white/80"}`}>
-                    {r.status === "resolved" ? "สิ้นสุดแล้ว" : r.status === "scheduled" ? "ยังไม่เริ่ม" : "เปิดอยู่"}
+                    {r.status === "scheduled" ? "ยังไม่เริ่ม" : "เปิดอยู่"}
                   </div>
                 </button>
               );
@@ -353,7 +386,7 @@ export default function RedEnvelopePage() {
                           </div>
                           <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full bg-gradient-to-r ${r.status === "resolved" ? "from-gray-400 to-gray-500" : "from-red-500 to-red-600"}`}
+                              className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-600"
                               style={{ width: `${rProgress}%` }}
                             />
                           </div>
@@ -371,20 +404,6 @@ export default function RedEnvelopePage() {
                         <Link href="/profile" className="w-full py-3.5 rounded-xl font-bold text-white text-base bg-gradient-to-b from-red-500 to-red-600 shadow-[0_3px_0_#b91c1c] text-center block">
                           เข้าสู่ระบบ
                         </Link>
-                      ) : r.joined && r.myResult && r.rewardType === "item" && r.myResult.isWinner ? (
-                        <button
-                          onClick={() => handleClaim(r._id)}
-                          disabled={claiming}
-                          className="w-full py-3.5 rounded-xl font-bold text-white text-base bg-gradient-to-b from-emerald-500 to-emerald-600 shadow-[0_3px_0_#047857] disabled:opacity-60 transition-colors"
-                        >
-                          {claiming ? "กำลังเปิดแชท..." : "🎉 ผู้โชคดี! แชทรับไอเทม"}
-                        </button>
-                      ) : r.joined && r.myResult ? (
-                        <div className="w-full py-3.5 rounded-xl font-bold text-white text-base bg-gradient-to-b from-emerald-500 to-emerald-600 text-center">
-                          {r.rewardType === "cash"
-                            ? `ได้รับ ฿${(r.myResult.rewardAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
-                            : "ไม่ได้รางวัล"}
-                        </div>
                       ) : r.joined ? (
                         <div className="w-full py-3.5 rounded-xl font-bold text-gray-500 text-sm bg-gray-100 text-center">
                           เข้าร่วมแล้ว · รอครบคน/หมดเวลาเพื่อจับรางวัล
@@ -392,10 +411,6 @@ export default function RedEnvelopePage() {
                       ) : r.status === "scheduled" ? (
                         <button disabled className="w-full py-3.5 rounded-xl font-bold text-white text-base bg-gradient-to-b from-gray-400 to-gray-500 shadow-[0_3px_0_#9ca3af] cursor-not-allowed">
                           {timeFmt(r.scheduledAt)} เริ่ม
-                        </button>
-                      ) : r.status === "resolved" ? (
-                        <button disabled className="w-full py-3.5 rounded-xl font-bold text-white text-base bg-gradient-to-b from-gray-400 to-gray-500 shadow-[0_3px_0_#9ca3af] cursor-not-allowed">
-                          สิ้นสุดแล้ว
                         </button>
                       ) : r.currentPeople >= r.maxPeople ? (
                         <button disabled className="w-full py-3.5 rounded-xl font-bold text-white text-base bg-gradient-to-b from-gray-400 to-gray-500 shadow-[0_3px_0_#9ca3af] cursor-not-allowed">
@@ -478,11 +493,11 @@ export default function RedEnvelopePage() {
                       <div className="text-[11px] text-gray-400 mt-0.5">{timeFmt(p.time)}</div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-base">{p.rewardType === "item" ? (p.isWinner ? "🎁" : "🙁") : "🧧"}</span>
+                      <span className="text-base">{p.pending ? "⏳" : p.rewardType === "item" ? (p.isWinner ? "🎁" : "🙁") : "🧧"}</span>
                       <span className={`font-black text-sm min-w-[70px] text-right ${
-                        p.rewardType === "item" ? (p.isWinner ? "text-purple-600" : "text-gray-400") : "text-red-600"
+                        p.pending ? "text-gray-400" : p.rewardType === "item" ? (p.isWinner ? "text-purple-600" : "text-gray-400") : "text-red-600"
                       }`}>
-                        {p.rewardType === "cash" ? `฿${(p.rewardAmount || 0).toFixed(2)}` : p.isWinner ? p.itemName : "ไม่ได้รางวัล"}
+                        {p.pending ? "รอผล" : p.rewardType === "cash" ? `฿${(p.rewardAmount || 0).toFixed(2)}` : p.isWinner ? p.itemName : "ไม่ได้รางวัล"}
                       </span>
                     </div>
                   </div>
@@ -492,6 +507,7 @@ export default function RedEnvelopePage() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Reveal Modal */}
       {joinResult && (
@@ -551,7 +567,33 @@ export default function RedEnvelopePage() {
           </div>
         </div>
       )}
-      </div>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowHelp(false)}>
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 flex flex-col gap-4 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowHelp(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+              <X size={20} />
+            </button>
+            <h3 className="font-black text-gray-900 text-lg flex items-center gap-2">
+              <HelpCircle size={20} className="text-red-500" /> วิธีเล่นซองแดง
+            </h3>
+            <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
+              {helpText || "เข้าร่วมซองแดงเพื่อลุ้นรับเงินหรือไอเทมสุ่ม"}
+            </p>
+            <button onClick={() => setShowHelp(false)} className="w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors text-sm">
+              เข้าใจแล้ว
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white bg-gray-800 whitespace-nowrap">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

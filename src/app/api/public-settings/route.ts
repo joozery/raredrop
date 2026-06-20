@@ -7,7 +7,8 @@ const PUBLIC_KEYS = [
   "help_line_url", "help_email", "help_phone", "help_facebook_url",
   "help_tiktok_url", "help_youtube_url",
   "hero_banner_image", "hero_banner_title1", "hero_banner_title2", "hero_banner_subtitle",
-  "hero_banner_icon", "hero_banner_button1", "hero_banner_button2"
+  "hero_banner_icon", "hero_banner_button1", "hero_banner_button2",
+  "red_envelope_help_text"
 ];
 
 export async function GET() {

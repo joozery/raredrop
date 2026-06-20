@@ -11,6 +11,7 @@ interface Box {
   image: string;
   isFeatured: boolean;
   categoryId?: { _id: string; name: string };
+  isOutOfStock?: boolean;
 }
 
 interface CategoryOption {
@@ -118,12 +119,16 @@ export default function TrendingBoxes() {
                 key={box._id}
                 className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm hover:shadow-md transition-shadow group relative cursor-pointer flex flex-col"
               >
-                {tag && (
+                {box.isOutOfStock ? (
+                  <span className="absolute top-2 left-2 z-10 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                    หมดแล้ว
+                  </span>
+                ) : tag ? (
                   <span className="absolute top-2 left-2 z-10 bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                     {tag}
                   </span>
-                )}
-                <div className="w-full aspect-square rounded-lg flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-105 overflow-hidden bg-gray-50">
+                ) : null}
+                <div className={`w-full aspect-square rounded-lg flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-105 overflow-hidden bg-gray-50 ${box.isOutOfStock ? "grayscale opacity-60" : ""}`}>
                   <img
                     src={box.image}
                     alt={box.name}
@@ -135,8 +140,8 @@ export default function TrendingBoxes() {
                 <p className="text-gray-500 text-[11px] mb-3 text-center">
                   เริ่มต้น <span className="text-primary font-bold text-sm">฿{box.price.toLocaleString()}</span>
                 </p>
-                <button className="mt-auto w-full bg-primary text-white font-bold py-2 rounded-lg text-xs transition-transform active:scale-95 shadow-sm">
-                  เปิดกล่อง
+                <button className={`mt-auto w-full font-bold py-2 rounded-lg text-xs transition-transform shadow-sm ${box.isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-primary text-white active:scale-95"}`} disabled={box.isOutOfStock}>
+                  {box.isOutOfStock ? "สินค้าหมด" : "เปิดกล่อง"}
                 </button>
               </Link>
             );

@@ -19,6 +19,7 @@ export interface IRedEnvelopeRound extends Document {
   maxPeople: number;
   scheduledAt: Date; // เริ่มเข้าร่วมได้
   endsAt: Date; // เส้นตาย — ปิดรับไม่ว่าจะครบคนหรือไม่
+  isActive: boolean; // สวิตช์เปิด/ปิดใช้งานโดยแอดมิน — ปิดแล้วจะไม่แสดงในหน้าเว็บไม่ว่าจะอยู่ในช่วงเวลาหรือไม่
   status: "scheduled" | "open" | "resolved" | "cancelled";
   participants: IParticipant[];
   resolvedAt?: Date;
@@ -48,6 +49,7 @@ const RedEnvelopeRoundSchema: Schema = new Schema({
   maxPeople: { type: Number, required: true, min: 1 },
   scheduledAt: { type: Date, required: true },
   endsAt: { type: Date, required: true },
+  isActive: { type: Boolean, default: true },
   status: { type: String, enum: ["scheduled", "open", "resolved", "cancelled"], default: "scheduled" },
   participants: [ParticipantSchema],
   resolvedAt: { type: Date },

@@ -31,6 +31,7 @@ interface Round {
   maxPeople: number;
   scheduledAt: string;
   endsAt: string;
+  isActive: boolean;
   status: "scheduled" | "open" | "resolved" | "cancelled";
   participants: Participant[];
   resolvedAt?: string;
@@ -72,6 +73,7 @@ export default function AdminRedEnvelopePage() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [needsResetConfirm, setNeedsResetConfirm] = useState(false);
 
   // Item catalog management (แยกจากไอเทมร้านค้า/กล่องสุ่มโดยสิ้นเชิง)
   const [itemModal, setItemModal] = useState<"create" | "edit" | null>(null);
@@ -146,11 +148,13 @@ export default function AdminRedEnvelopePage() {
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setNeedsResetConfirm(false);
     setModal("create");
   };
 
   const openEdit = (r: Round) => {
     setEditing(r);
+    setNeedsResetConfirm(false);
     setForm({
       label: r.label,
       image: r.image || "",
@@ -166,15 +170,15 @@ export default function AdminRedEnvelopePage() {
     setModal("edit");
   };
 
-  const closeModal = () => { setModal(null); setEditing(null); };
+  const closeModal = () => { setModal(null); setEditing(null); setNeedsResetConfirm(false); };
 
-  const handleSave = async () => {
+  const handleSave = async (resetConfirm = false) => {
     if (!form.label.trim() || !form.scheduledAt || !form.endsAt) {
       showToast("กรุณากรอกชื่อรอบและช่วงเวลาให้ครบ", false); return;
     }
     setSaving(true);
     try {
-      const body = {
+      const body: any = {
         label: form.label.trim(),
         image: form.image || undefined,
         rewardType: form.rewardType,
@@ -186,12 +190,17 @@ export default function AdminRedEnvelopePage() {
         scheduledAt: new Date(form.scheduledAt + "+07:00").toISOString(),
         endsAt: new Date(form.endsAt + "+07:00").toISOString(),
       };
+      if (resetConfirm) body.resetConfirm = true;
       const url = modal === "edit" && editing ? `/api/admin/red-envelope/rounds/${editing._id}` : "/api/admin/red-envelope/rounds";
       const method = modal === "edit" ? "PUT" : "POST";
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (!res.ok) { showToast(data.error || "เกิดข้อผิดพลาด", false); return; }
-      showToast(modal === "edit" ? "อัปเดตรอบสำเร็จ" : "เพิ่มรอบสำเร็จ");
+      if (!res.ok) {
+        if (data.needsResetConfirm) { setNeedsResetConfirm(true); return; }
+        showToast(data.error || "เกิดข้อผิดพลาด", false);
+        return;
+      }
+      showToast(modal === "edit" ? (resetConfirm ? "รีเซ็ตรอบและบันทึกสำเร็จ" : "อัปเดตรอบสำเร็จ") : "เพิ่มรอบสำเร็จ");
       closeModal();
       fetchRounds();
     } finally {
@@ -204,6 +213,21 @@ export default function AdminRedEnvelopePage() {
     const data = await res.json();
     if (res.ok) { showToast("ลบรอบสำเร็จ"); setDeleteConfirm(null); fetchRounds(); }
     else showToast(data.error || "ลบไม่สำเร็จ", false);
+  };
+
+  const handleToggleActive = async (r: Round) => {
+    const res = await fetch(`/api/admin/red-envelope/rounds/${r._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !r.isActive }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(!r.isActive ? "เปิดใช้งานรอบนี้แล้ว" : "ปิดใช้งานรอบนี้แล้ว");
+      fetchRounds();
+    } else {
+      showToast(data.error || "เกิดข้อผิดพลาด", false);
+    }
   };
 
   const rewardLabel = (r: Round) => r.rewardType === "cash" ? `฿${(r.totalAmount || 0).toLocaleString()}` : (r.itemId?.name || "ไอเทม");
@@ -286,11 +310,18 @@ export default function AdminRedEnvelopePage() {
           {rounds.map((r) => {
             const status = STATUS_CONFIG[r.status];
             const isExpanded = expandedId === r._id;
-            const canEdit = r.participants.length === 0;
+            const hasParticipants = r.participants.length > 0;
             return (
-              <div key={r._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div key={r._id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${r.isActive ? "border-slate-100" : "border-slate-100 opacity-60"}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <button
+                      onClick={() => handleToggleActive(r)}
+                      title={r.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${r.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${r.isActive ? "translate-x-6" : "translate-x-1"}`} />
+                    </button>
                     <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 overflow-hidden">
                       {r.image ? (
                         <img src={r.image} alt="" className="w-full h-full object-cover" />
@@ -306,6 +337,7 @@ export default function AdminRedEnvelopePage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-bold text-slate-800 truncate">{r.label}</p>
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${status.cls}`}>{status.label}</span>
+                        {!r.isActive && <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-500">ปิดใช้งาน</span>}
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">
                         รางวัล <strong className="text-rose-600">{rewardLabel(r)}</strong>
@@ -324,20 +356,24 @@ export default function AdminRedEnvelopePage() {
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                     {deleteConfirm === r._id ? (
                       <>
-                        <button onClick={() => handleDelete(r._id)} className="text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">ยืนยัน</button>
+                        <button onClick={() => handleDelete(r._id)} className="text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">
+                          {hasParticipants ? "ยืนยันลบ (มีคนเข้าร่วมแล้ว)" : "ยืนยัน"}
+                        </button>
                         <button onClick={() => setDeleteConfirm(null)} className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-200">ยกเลิก</button>
                       </>
                     ) : (
                       <>
                         <button
-                          onClick={() => canEdit ? openEdit(r) : showToast("แก้ไขไม่ได้ มีคนเข้าร่วมแล้ว", false)}
-                          className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${canEdit ? "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100" : "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"}`}
+                          onClick={() => openEdit(r)}
+                          title={hasParticipants ? "แก้ไข (จะรีเซ็ตผู้เข้าร่วมเดิม)" : "แก้ไข"}
+                          className="w-8 h-8 rounded-lg border bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 flex items-center justify-center transition-colors"
                         >
                           <Pencil size={15} />
                         </button>
                         <button
-                          onClick={() => canEdit ? setDeleteConfirm(r._id) : showToast("ลบไม่ได้ มีคนเข้าร่วมแล้ว", false)}
-                          className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${canEdit ? "bg-red-50 border-red-100 text-red-400 hover:bg-red-100" : "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"}`}
+                          onClick={() => setDeleteConfirm(r._id)}
+                          title={hasParticipants ? "ลบ (มีคนเข้าร่วมแล้ว)" : "ลบ"}
+                          className="w-8 h-8 rounded-lg border bg-red-50 border-red-100 text-red-400 hover:bg-red-100 flex items-center justify-center transition-colors"
                         >
                           <Trash2 size={15} />
                         </button>
@@ -519,13 +555,33 @@ export default function AdminRedEnvelopePage() {
                 </div>
               </div>
               <p className="text-[11px] text-slate-400 -mt-2">ถ้าครบจำนวนคนก่อน จะจับรางวัลทันที ถ้าไม่ครบจะจับรางวัลจากคนที่เข้าร่วมไว้ตอนถึงเส้นตาย</p>
+
+              {needsResetConfirm && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+                  <p className="text-xs font-bold text-amber-700">
+                    รอบนี้มีคนเข้าร่วมแล้ว — การบันทึกจะล้างผู้เข้าร่วมเดิมทั้งหมดและสุ่มผลใหม่ทั้งรอบ ยืนยันที่จะรีเซ็ตหรือไม่?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSave(true)}
+                      disabled={saving}
+                      className="text-xs font-bold bg-amber-600 text-white px-3 py-1.5 rounded-lg hover:bg-amber-700 disabled:opacity-60"
+                    >
+                      ยืนยันรีเซ็ตและบันทึก
+                    </button>
+                    <button onClick={() => setNeedsResetConfirm(false)} className="text-xs font-bold bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50">
+                      ยกเลิก
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="p-6 border-t border-slate-100 flex gap-3 shrink-0">
               <button onClick={closeModal} className="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors text-sm">
                 ยกเลิก
               </button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-slate-400 transition-colors text-sm flex items-center justify-center gap-2">
+              <button onClick={() => handleSave(false)} disabled={saving} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-slate-400 transition-colors text-sm flex items-center justify-center gap-2">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 {saving ? "กำลังบันทึก..." : "บันทึก"}
               </button>

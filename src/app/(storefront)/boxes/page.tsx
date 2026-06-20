@@ -12,6 +12,7 @@ interface Box {
   price: number;
   isFeatured: boolean;
   categoryId?: { _id: string; name: string };
+  isOutOfStock?: boolean;
 }
 
 interface CategoryOption {
@@ -125,12 +126,16 @@ export default function BoxesPage() {
               href={`/boxes/${box._id}`}
               className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group relative flex flex-col"
             >
-              {box.isFeatured && (
-                <span className="absolute top-3 left-3 z-10 bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+              {box.isOutOfStock ? (
+                <span className="absolute top-3 left-3 z-10 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                  หมดแล้ว
+                </span>
+              ) : box.isFeatured ? (
+                <span className="absolute top-3 left-3 z-10 bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
                   <Flame size={9} className="fill-white" /> ฮิต
                 </span>
-              )}
-              <div className="aspect-square rounded-xl bg-gray-50 overflow-hidden mb-3">
+              ) : null}
+              <div className={`aspect-square rounded-xl bg-gray-50 overflow-hidden mb-3 ${box.isOutOfStock ? "grayscale opacity-60" : ""}`}>
                 <img
                   src={box.image}
                   alt={box.name}
@@ -142,11 +147,11 @@ export default function BoxesPage() {
                 <span className="text-[10px] font-bold text-gray-400 mb-1">{box.categoryId.name}</span>
               )}
               <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{box.name}</h3>
-              <p className="text-gray-500 text-xs mb-3">
+              <p className="text-gray-500 text-xs mb-3 text-center">
                 เริ่มต้น <span className="text-primary font-black text-sm">฿{box.price.toLocaleString()}</span>
               </p>
-              <button className="mt-auto w-full bg-primary text-white font-bold py-2.5 rounded-xl text-xs hover:bg-red-700 transition-colors active:scale-95 shadow-sm">
-                เปิดกล่อง
+              <button className={`mt-auto w-full font-bold py-2.5 rounded-xl text-xs transition-colors shadow-sm ${box.isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-primary text-white hover:bg-red-700 active:scale-95"}`} disabled={box.isOutOfStock}>
+                {box.isOutOfStock ? "สินค้าหมด" : "เปิดกล่อง"}
               </button>
             </Link>
           ))}

@@ -19,19 +19,44 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { label, image, rewardType, totalAmount, itemId, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt } = body;
+    const {
+      label, image, rewardType, totalAmount, itemId, conditionAmount, conditionLevel,
+      maxPeople, scheduledAt, endsAt, isActive, resetConfirm,
+    } = body;
 
     await connectToDatabase();
     const existing = await RedEnvelopeRound.findById(id);
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (existing.participants.length > 0) {
-      return NextResponse.json({ error: "แก้ไขไม่ได้ มีคนเข้าร่วมรอบนี้แล้ว" }, { status: 400 });
+
+    const hasParticipants = existing.participants.length > 0;
+
+    // เปิด/ปิดใช้งานอย่างเดียว (ไม่แตะฟิลด์อื่นเลย) — ทำได้เสมอแม้มีคนเข้าร่วมแล้ว ไม่ต้อง reset
+    const onlyTogglingActive =
+      isActive !== undefined &&
+      [label, image, rewardType, totalAmount, itemId, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt]
+        .every((v) => v === undefined);
+
+    if (onlyTogglingActive) {
+      const round = await RedEnvelopeRound.findByIdAndUpdate(id, { isActive: !!isActive }, { new: true });
+      const safeRound = round!.toObject();
+      delete safeRound.allocations;
+      delete safeRound.winnerSlot;
+      return NextResponse.json(safeRound);
+    }
+
+    // แก้ไขฟิลด์อื่นในรอบที่มีคนเข้าร่วมแล้ว = รีเซ็ตรอบใหม่ทั้งหมด (ล้างผู้เข้าร่วม/สุ่มใหม่) ต้องยืนยันก่อนเสมอ
+    if (hasParticipants && !resetConfirm) {
+      return NextResponse.json(
+        { error: "รอบนี้มีคนเข้าร่วมแล้ว การแก้ไขจะล้างผู้เข้าร่วมเดิมทั้งหมดและสุ่มผลใหม่ กรุณายืนยันเพื่อรีเซ็ตรอบนี้", needsResetConfirm: true },
+        { status: 409 }
+      );
     }
 
     const people = Math.max(1, Number(maxPeople) || existing.maxPeople);
     const update: any = {};
     if (label !== undefined) update.label = label;
     if (image !== undefined) update.image = image || null;
+    if (isActive !== undefined) update.isActive = !!isActive;
     if (rewardType !== undefined) update.rewardType = rewardType;
     const effectiveType = rewardType !== undefined ? rewardType : existing.rewardType;
     if (effectiveType === "cash") {
@@ -59,10 +84,17 @@ export async function PUT(
       return NextResponse.json({ error: "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม" }, { status: 400 });
     }
 
-    // ไม่มีคนเข้าร่วมเลย (เช็คไว้ด้านบนแล้ว) — สุ่มผลลัพธ์ใหม่ทั้งหมดให้ตรงกับ totalAmount/maxPeople/ประเภทล่าสุดเสมอ
+    // สุ่มผลลัพธ์ใหม่ทั้งหมดให้ตรงกับ totalAmount/maxPeople/ประเภทล่าสุดเสมอ
     const { allocations, winnerSlot } = generateAllocations(effectiveType, update.totalAmount ?? undefined, people);
     update.allocations = allocations ?? null;
     update.winnerSlot = winnerSlot ?? null;
+
+    // รีเซ็ตรอบ — ล้างผู้เข้าร่วมเดิมทั้งหมด กลับไปเป็นรอบใหม่ตามเวลาที่ตั้งล่าสุด
+    if (hasParticipants && resetConfirm) {
+      update.participants = [];
+      update.resolvedAt = null;
+      update.status = "scheduled";
+    }
 
     const round = await RedEnvelopeRound.findByIdAndUpdate(id, update, { new: true, runValidators: true });
     const safeRound = round!.toObject();
@@ -86,9 +118,6 @@ export async function DELETE(
     await connectToDatabase();
     const existing = await RedEnvelopeRound.findById(id);
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (existing.participants.length > 0) {
-      return NextResponse.json({ error: "ลบไม่ได้ มีคนเข้าร่วมรอบนี้แล้ว" }, { status: 400 });
-    }
     await RedEnvelopeRound.findByIdAndDelete(id);
     return NextResponse.json({ success: true });
   } catch (error: any) {

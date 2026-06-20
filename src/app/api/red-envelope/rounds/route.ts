@@ -22,11 +22,14 @@ export async function GET() {
       scheduledAt: { $lt: todayEnd },
       endsAt: { $gte: todayStart },
       status: { $ne: "cancelled" },
+      isActive: true,
     })
       .populate("itemId", "name image")
       .sort({ scheduledAt: 1 });
 
     rounds = await Promise.all(rounds.map((r) => ensureRoundStatus(r)));
+    // รอบที่จับรางวัลไปแล้ว (resolved) ให้หายจากหน้าเลย ไม่ต้องเงื่อนไข — รอรอบใหม่เปิดแทน
+    rounds = rounds.filter((r) => r.status !== "resolved");
 
     const todaySpend = userId ? await getTodaySpend(userId) : 0;
     const myLevel = userId ? ((await User.findById(userId).select("vipLevel").lean<any>())?.vipLevel || 1) : 0;
