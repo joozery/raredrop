@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IUser extends Document {
   lineId?: string;
@@ -12,6 +12,9 @@ export interface IUser extends Document {
   gemCoins: number;
   vipLevel: number;
   xp: number;
+  discordJoinClaimed?: boolean;
+  referralCode?: string;
+  referredBy?: Types.ObjectId;
   createdAt: Date;
 }
 
@@ -27,6 +30,9 @@ const UserSchema: Schema = new Schema({
   gemCoins: { type: Number, default: 0 },
   vipLevel: { type: Number, default: 1 },
   xp: { type: Number, default: 0 },
+  discordJoinClaimed: { type: Boolean, default: false },
+  referralCode: { type: String, unique: true, sparse: true },
+  referredBy: { type: Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
 });
 

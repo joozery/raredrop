@@ -109,6 +109,30 @@ const DEFAULT_SETTINGS = [
     type: "text",
     group: "พร้อมเพย์",
   },
+  {
+    key: "discord_invite_url",
+    value: "",
+    label: "ลิงก์เชิญเข้า Discord",
+    description: "ใช้กับปุ่ม Discord ใน sidebar — เว้นว่าง = ปุ่มจะไม่ลิงก์ไปไหน",
+    type: "text",
+    group: "Discord",
+  },
+  {
+    key: "discord_join_reward_gemcoin",
+    value: 0,
+    label: "รางวัล GemCoin (กดลิงก์ Discord ครั้งแรก)",
+    description: "จำนวน GemCoin ที่ให้ผู้เล่นตอนกดปุ่ม Discord ครั้งแรก (ครั้งเดียวต่อคน) — 0 = ปิดระบบแจกรางวัล",
+    type: "number",
+    group: "Discord",
+  },
+  {
+    key: "referral_reward_gemcoin",
+    value: 0,
+    label: "รางวัล GemCoin (เชิญเพื่อนสมัครสำเร็จ)",
+    description: "จำนวน GemCoin ที่ผู้เชิญได้รับ ทันทีที่เพื่อนสมัครสมาชิกสำเร็จผ่านลิงก์เชิญ (ต่อคน) — 0 = ปิดระบบแจกรางวัล",
+    type: "number",
+    group: "เชิญเพื่อน",
+  },
 ];
 
 async function seedDefaultSettings() {

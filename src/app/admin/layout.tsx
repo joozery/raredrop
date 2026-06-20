@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, FolderTree, Percent,
   Box, Boxes, Diamond, Users, Wallet, UserPlus,
   ArrowRightLeft, Store, ShoppingCart, BarChart3,
-  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send
+  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +35,7 @@ const menuGroups = [
       { name: "จัดการผู้เล่น", icon: Users, href: "/admin/users" },
       { name: "จัดการแอดมิน", icon: UserPlus, href: "/admin/manage-admins" },
       { name: "กระเป๋าเงิน (Wallet)", icon: Wallet, href: "/admin/wallet" },
+      { name: "ระบบเลเวล & EXP", icon: TrendingUp, href: "/admin/levels" },
       { name: "ประวัติธุรกรรม", icon: ArrowRightLeft, href: "/admin/transactions" },
       { name: "ส่งการแจ้งเตือน", icon: Send, href: "/admin/notifications" },
     ]
@@ -46,6 +47,8 @@ const menuGroups = [
       { name: "จัดการร้านค้า", icon: Store, href: "/admin/shop" },
       { name: "ออเดอร์คำสั่งซื้อ", icon: ShoppingCart, href: "/admin/orders" },
       { name: "แลก GemCoin", icon: Diamond, href: "/admin/gem-rewards" },
+      { name: "โค้ดแลกของ", icon: Ticket, href: "/admin/promo-codes" },
+      { name: "Live Chat", icon: MessageCircle, href: "/admin/chat" },
     ]
   },
   {

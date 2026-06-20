@@ -1,15 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Home,
   Package,
   PackageCheck,
   Briefcase,
   LibrarySquare,
-  Trophy,
   HelpCircle,
   Apple,
   Play,
@@ -20,16 +21,27 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   { name: "หน้าหลัก", icon: Home, href: "/" },
   { name: "กล่องสุ่ม", icon: Package, href: "/boxes" },
-  { name: "เปิดกล่อง", icon: PackageCheck, href: "/open" },
   { name: "ร้านค้า", icon: Briefcase, href: "/shop" },
   { name: "คอลเลกชันของฉัน", icon: LibrarySquare, href: "/inventory" },
   { name: "แลก GemCoin", icon: Coins, href: "/exchange" },
-  { name: "รางวัล & ภารกิจ", icon: Trophy, href: "/rewards" },
   { name: "ช่วยเหลือ", icon: HelpCircle, href: "/help" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const [discordUrl, setDiscordUrl] = useState("");
+
+  useEffect(() => {
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => setDiscordUrl(d.discord_invite_url || ""))
+      .catch(() => {});
+  }, []);
+
+  const handleDiscordClick = () => {
+    if (session) fetch("/api/user/discord-join-reward", { method: "POST" }).catch(() => {});
+  };
 
   return (
     <aside className="w-72 bg-white border-r border-gray-100 flex flex-col h-full shrink-0">
@@ -72,16 +84,19 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+          <a
+            href={discordUrl || "#"}
+            target={discordUrl ? "_blank" : undefined}
+            rel={discordUrl ? "noopener noreferrer" : undefined}
+            onClick={handleDiscordClick}
+            className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <img src="/banner/cover/discord.svg" alt="Discord" className="w-[22px] h-[22px]" />
+            <span className="text-[15px] font-medium">ร่วม Discord รับ GemCoin</span>
+          </a>
         </div>
-        
-        {/* App Promo Banner */}
-        <div className="mt-8 relative shrink-0 overflow-hidden rounded-2xl cursor-pointer hover:opacity-95 transition-opacity shadow-sm border border-gray-100">
-          <img 
-            src="https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/banner/bannerrare.jpg"
-            alt="Download RareDrop App"
-            className="w-full h-auto object-contain block"
-          />
-        </div>
+
       </div>
 
       {/* Footer / Socials */}
@@ -93,7 +108,13 @@ export function Sidebar() {
           <a href="#" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
              <img src="/banner/cover/line.svg" alt="Line" className="w-5 h-5" />
           </a>
-          <a href="#" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+          <a
+            href={discordUrl || "#"}
+            target={discordUrl ? "_blank" : undefined}
+            rel={discordUrl ? "noopener noreferrer" : undefined}
+            onClick={handleDiscordClick}
+            className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform"
+          >
              <img src="/banner/cover/discord.svg" alt="Discord" className="w-5 h-5" />
           </a>
           <a href="#" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-black hover:scale-110 transition-transform font-bold text-sm">

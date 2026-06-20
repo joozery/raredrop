@@ -1,7 +1,10 @@
+import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { BalanceProvider } from "@/contexts/BalanceContext";
+import { LiveChatWidget } from "@/components/chat/LiveChatWidget";
+import { ReferralCapture } from "@/components/referral/ReferralCapture";
 
 export default function StorefrontLayout({
   children,
@@ -10,6 +13,9 @@ export default function StorefrontLayout({
 }>) {
   return (
     <BalanceProvider>
+      <Suspense fallback={null}>
+        <ReferralCapture />
+      </Suspense>
       <div className="hidden lg:flex">
         <Sidebar />
       </div>
@@ -20,6 +26,7 @@ export default function StorefrontLayout({
         </main>
         <BottomNav />
       </div>
+      <LiveChatWidget />
     </BalanceProvider>
   );
 }

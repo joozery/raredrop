@@ -5,12 +5,15 @@ import { useSession } from "next-auth/react";
 import { useBalance } from "@/contexts/BalanceContext";
 import Link from "next/link";
 import {
-  Package, Tag, Truck, ShoppingBag, X, Coins, Search, Filter,
-  RefreshCw, AlertCircle,
+  Package, Truck, ShoppingBag, X, Coins, Search, Filter,
+  RefreshCw, AlertCircle, MessageCircle, ExternalLink,
 } from "lucide-react";
 
+const DISCORD_TICKET_URL = process.env.NEXT_PUBLIC_DISCORD_TICKET_URL || "";
+const LIVECHAT_URL = process.env.NEXT_PUBLIC_LIVECHAT_URL || "";
+
 interface RarityData { name: string; color: string; order: number }
-interface ItemData { _id: string; name: string; image: string; price: number; rarityId: RarityData }
+interface ItemData { _id: string; name: string; image: string; price: number; sellPrice?: number; rarityId: RarityData; contactChannels?: { discord: boolean; livechat: boolean } }
 interface BoxData { _id: string; name: string; image: string }
 interface InventoryItem {
   _id: string; itemId: ItemData; boxId?: BoxData;
@@ -29,6 +32,9 @@ export default function InventoryPage() {
 
   const [actionModal, setActionModal] = useState<{ item: InventoryItem; action: ActionType } | null>(null);
   const [marketPrice, setMarketPrice] = useState<number | "">("");
+  const [deliverUid, setDeliverUid] = useState("");
+  const [deliverIgn, setDeliverIgn] = useState("");
+  const [deliverChannel, setDeliverChannel] = useState<"discord" | "livechat">("livechat");
   const [isProcessing, setIsProcessing] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -38,7 +44,7 @@ export default function InventoryPage() {
     if (!session) { setLoading(false); return; }
     setLoading(true);
     try {
-      const res = await fetch("/api/user/inventory");
+      const res = await fetch("/api/user/inventory", { cache: "no-store" });
       if (res.ok) setItems(await res.json());
     } finally {
       setLoading(false);
@@ -50,7 +56,7 @@ export default function InventoryPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleAction = async () => {
+  const handleAction = async (channel?: "discord" | "livechat") => {
     if (!actionModal || isProcessing) return;
     setIsProcessing(true);
     try {
@@ -58,6 +64,13 @@ export default function InventoryPage() {
       if (actionModal.action === "market") {
         if (!marketPrice || Number(marketPrice) <= 0) { showToast("กรุณาระบุราคาขาย", false); return; }
         body.price = Number(marketPrice);
+      }
+      if (actionModal.action === "deliver") {
+        if (!deliverUid.trim()) { showToast("กรุณากรอก UID", false); return; }
+        if (!deliverIgn.trim()) { showToast("กรุณากรอกชื่อในเกม", false); return; }
+        body.uid = deliverUid.trim();
+        body.ign = deliverIgn.trim();
+        body.channel = channel || "livechat";
       }
 
       const res = await fetch(`/api/user/inventory/${actionModal.item._id}`, {
@@ -70,17 +83,30 @@ export default function InventoryPage() {
 
       const msgs: Record<string, string> = {
         sell: `ขายคืนสำเร็จ! ได้รับ ฿${data.coinsEarned?.toLocaleString()}`,
-        deliver: "ส่งคำขอรับของจริงแล้ว ทีมงานจะติดต่อกลับ",
         market: "นำขายในตลาดแล้ว",
         unlist: "ถอนออกจากตลาดแล้ว",
+        deliver: "ส่งคำขอรับ item แล้ว ทีมงานจะติดต่อกลับ",
       };
-      showToast(msgs[actionModal.action!] || "สำเร็จ");
       const targetId = actionModal.item._id;
       const targetAction = actionModal.action;
       setActionModal(null);
       setMarketPrice("");
+      setDeliverUid("");
+      setDeliverIgn("");
+
+      showToast(msgs[targetAction!] || "สำเร็จ");
 
       if (targetAction === "sell") refreshBalance();
+
+      if (targetAction === "deliver") {
+        if (channel === "discord" && DISCORD_TICKET_URL) {
+          window.open(DISCORD_TICKET_URL, "_blank");
+        } else if (data.ticket?.conversationId) {
+          window.dispatchEvent(
+            new CustomEvent("open-livechat", { detail: { conversationId: data.ticket.conversationId } })
+          );
+        }
+      }
 
       // optimistic update — ไม่ต้องรอ fetchInventory
       if (targetAction === "sell" || targetAction === "deliver") {
@@ -229,25 +255,22 @@ export default function InventoryPage() {
                     </button>
                   ) : (
                     <>
-                      <div className="grid grid-cols-2 gap-1">
-                        <button
-                          onClick={() => setActionModal({ item: inv, action: "sell" })}
-                          className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
-                        >
-                          <Coins size={10} /> ขายคืน
-                        </button>
-                        <button
-                          onClick={() => { setMarketPrice(item?.price || ""); setActionModal({ item: inv, action: "market" }); }}
-                          className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
-                        >
-                          <Tag size={10} /> ขายต่อ
-                        </button>
-                      </div>
                       <button
-                        onClick={() => setActionModal({ item: inv, action: "deliver" })}
+                        onClick={() => setActionModal({ item: inv, action: "sell" })}
+                        className="w-full text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Coins size={10} /> ขายคืน
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeliverUid("");
+                          setDeliverIgn("");
+                          setDeliverChannel(item?.contactChannels?.livechat === false ? "discord" : "livechat");
+                          setActionModal({ item: inv, action: "deliver" });
+                        }}
                         className="w-full text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1"
                       >
-                        <Truck size={10} /> ขอรับของจริง
+                        <Truck size={10} /> รับ item
                       </button>
                     </>
                   )}
@@ -266,7 +289,7 @@ export default function InventoryPage() {
               <h3 className="font-bold text-gray-900 text-base">
                 {actionModal.action === "sell" && "ขายคืนระบบ"}
                 {actionModal.action === "market" && "นำขายในตลาด"}
-                {actionModal.action === "deliver" && "ขอรับของจริง"}
+                {actionModal.action === "deliver" && "รับ item"}
                 {actionModal.action === "unlist" && "ถอนออกจากตลาด"}
               </h3>
               <button onClick={() => setActionModal(null)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
@@ -300,7 +323,7 @@ export default function InventoryPage() {
                   <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-bold text-red-700 text-sm">ยืนยันการขายคืน?</p>
-                    <p className="text-xs text-red-600 mt-1">คุณจะได้รับ <strong>฿{actionModal.item.itemId?.price?.toLocaleString()}</strong> เหรียญ และไอเทมจะถูกลบออกจากคอลเลกชัน</p>
+                    <p className="text-xs text-red-600 mt-1">คุณจะได้รับ <strong>฿{(actionModal.item.itemId?.sellPrice ?? actionModal.item.itemId?.price)?.toLocaleString()}</strong> เหรียญ และไอเทมจะถูกลบออกจากคอลเลกชัน</p>
                   </div>
                 </div>
               )}
@@ -319,13 +342,57 @@ export default function InventoryPage() {
               )}
 
               {actionModal.action === "deliver" && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-start gap-3">
-                  <Truck size={18} className="text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-emerald-700 text-sm">ขอรับสินค้าจริง</p>
-                    <p className="text-xs text-emerald-600 mt-1">ทีมงานจะติดต่อคุณภายใน 3-5 วันทำการเพื่อยืนยันที่อยู่จัดส่ง</p>
+                <>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-start gap-3">
+                    <Truck size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-emerald-700 text-sm">รับ item</p>
+                      <p className="text-xs text-emerald-600 mt-1">กรอก UID ของคุณ แล้วทีมงานจะติดต่อกลับเพื่อยืนยันการจัดส่ง</p>
+                    </div>
                   </div>
-                </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-bold text-gray-700">UID <span className="text-red-500">*</span></label>
+                    <input
+                      type="text" value={deliverUid}
+                      onChange={(e) => setDeliverUid(e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10"
+                      placeholder="กรอก UID ของคุณ..."
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-bold text-gray-700">ชื่อในเกม (IGN) <span className="text-red-500">*</span></label>
+                    <input
+                      type="text" value={deliverIgn}
+                      onChange={(e) => setDeliverIgn(e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10"
+                      placeholder="กรอกชื่อตัวละครในเกม..."
+                    />
+                    <p className="text-[11px] text-gray-500">UID และชื่อในเกมจะถูกส่งไปให้ทีมงานพร้อมคำขอรับสินค้า</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-bold text-gray-700">ช่องทางติดต่อทีมงาน <span className="text-red-500">*</span></label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {actionModal.item.itemId?.contactChannels?.livechat !== false && (
+                        <button
+                          type="button"
+                          onClick={() => setDeliverChannel("livechat")}
+                          className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-bold transition-all ${deliverChannel === "livechat" ? "bg-emerald-600 text-white border-emerald-600" : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"}`}
+                        >
+                          <MessageCircle size={16} /> แชทในเว็บ
+                        </button>
+                      )}
+                      {actionModal.item.itemId?.contactChannels?.discord !== false && (
+                        <button
+                          type="button"
+                          onClick={() => setDeliverChannel("discord")}
+                          className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-bold transition-all ${deliverChannel === "discord" ? "bg-emerald-600 text-white border-emerald-600" : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"}`}
+                        >
+                          <ExternalLink size={16} /> Discord
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </>
               )}
 
               {actionModal.action === "unlist" && (
@@ -343,13 +410,14 @@ export default function InventoryPage() {
               <button onClick={() => setActionModal(null)} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm">
                 ยกเลิก
               </button>
-              <button onClick={handleAction} disabled={isProcessing} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-gray-400 transition-colors text-sm">
+              <button onClick={() => handleAction(actionModal.action === "deliver" ? deliverChannel : undefined)} disabled={isProcessing} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-gray-400 transition-colors text-sm">
                 {isProcessing ? "กำลังดำเนินการ..." : "ยืนยัน"}
               </button>
             </div>
           </div>
         </div>
       )}
+
 
       {/* Toast */}
       {toast && (
