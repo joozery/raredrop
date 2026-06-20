@@ -58,7 +58,7 @@ export async function sendDiscordNewProductBroadcast(fields: NewProductFields): 
   const validImage = fields.image && /^https?:\/\//i.test(fields.image) ? fields.image : undefined;
 
   const payload = {
-    username: "Raredrop Broadcast",
+    username: "LUXUSX",
     embeds: [
       {
         title: `🆕 สินค้าใหม่: ${fields.name}`,
@@ -99,7 +99,7 @@ export async function sendDiscordStockUpdateBroadcast(fields: StockUpdateFields)
   const validImage = fields.image && /^https?:\/\//i.test(fields.image) ? fields.image : undefined;
 
   const payload = {
-    username: "Raredrop Broadcast",
+    username: "LUXUSX",
     embeds: [
       {
         title: `📦 อัปเดตสต็อก: ${fields.name}`,

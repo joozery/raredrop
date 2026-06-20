@@ -22,11 +22,47 @@ interface LevelInfo {
 }
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const [isInviteOpen, setIsInviteOpen] = React.useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = React.useState(false);
   const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
   const [discordUrl, setDiscordUrl] = useState("");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('กรุณาเลือกไฟล์รูปภาพ');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 5MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/user/profile/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "อัพโหลดไม่สำเร็จ");
+      
+      await updateSession({ image: data.url });
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     fetch("/api/public-settings")
@@ -53,7 +89,27 @@ export default function ProfilePage() {
       <div className="bg-gradient-to-b from-orange-50 to-white pt-8 px-4 pb-4">
         {/* User Info */}
         <div className="flex items-center gap-4 relative">
-          <div className="w-20 h-20 rounded-full bg-gray-200 shrink-0 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleAvatarChange} 
+            accept="image/jpeg,image/png,image/webp,image/gif" 
+            className="hidden" 
+          />
+          <div 
+            onClick={() => !uploadingAvatar && fileInputRef.current?.click()}
+            className="w-20 h-20 rounded-full bg-gray-200 shrink-0 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center relative cursor-pointer group"
+          >
+            {uploadingAvatar ? (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <span className="text-[10px] font-bold text-white">เปลี่ยนรูป</span>
+              </div>
+            )}
+
             {session?.user?.image ? (
               <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" />
             ) : (

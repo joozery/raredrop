@@ -100,22 +100,36 @@ export default function RedEnvelopePage() {
     }
   };
 
+  // รอบที่ "ยังไม่เริ่ม" (scheduled) ให้ขึ้นเป็น card แรกก่อนเสมอ ถ้าไม่มีค่อย fallback ไปรอบแรกของลิสต์
+  const pickDefaultIdx = (list: RoundData[]) => {
+    const scheduledIdx = list.findIndex((r) => r.status === "scheduled");
+    return scheduledIdx >= 0 ? scheduledIdx : 0;
+  };
+
   const fetchRounds = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/red-envelope/rounds");
       if (res.ok) {
         const data = await res.json();
-        setRounds(data.rounds || []);
+        const newRounds: RoundData[] = data.rounds || [];
+        setActiveIdx((prevIdx) => {
+          const prevRoundId = rounds[prevIdx]?._id;
+          // ถ้ารอบที่เลือกไว้เดิมยังอยู่ในลิสต์ใหม่ (ยังไม่จบ) ให้คงที่เดิมไว้ ไม่กระโดดหนีจากที่ผู้ใช้เลือกเอง
+          // ถ้าหายไปแล้ว (จับรางวัลจบไปแล้ว) ให้ไปที่รอบ "ยังไม่เริ่ม" ก่อนเป็นอันดับแรก
+          const stillThere = prevRoundId ? newRounds.findIndex((r) => r._id === prevRoundId) : -1;
+          return stillThere >= 0 ? stillThere : pickDefaultIdx(newRounds);
+        });
+        setRounds(newRounds);
         setTodaySpend(data.todaySpend || 0);
         setMyLevel(data.myLevel || 0);
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [rounds]);
 
-  useEffect(() => { fetchRounds(); }, [fetchRounds]);
+  useEffect(() => { fetchRounds(); }, []);
 
   const activeRoundId = rounds[activeIdx]?._id;
 

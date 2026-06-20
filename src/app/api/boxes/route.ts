@@ -32,9 +32,14 @@ export async function GET(req: Request) {
         return item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
       });
       return { ...box, isOutOfStock };
-    }).slice(0, limit);
+    });
 
-    return NextResponse.json(mappedBoxes);
+    mappedBoxes.sort((a, b) => {
+      if (a.isOutOfStock === b.isOutOfStock) return 0;
+      return a.isOutOfStock ? 1 : -1;
+    });
+
+    return NextResponse.json(mappedBoxes.slice(0, limit));
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

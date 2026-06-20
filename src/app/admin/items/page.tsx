@@ -41,6 +41,7 @@ export default function ManageItems() {
   
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [searchCategory, setSearchCategory] = useState("");
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
@@ -153,9 +154,12 @@ export default function ManageItems() {
     }
   };
 
-  const filteredItems = items.filter(item => 
-    item.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredItems = items.filter(item => {
+    const matchName = item.name?.toLowerCase().includes(search.toLowerCase());
+    const catId = typeof item.categoryId === 'object' ? (item.categoryId as any)._id : item.categoryId;
+    const matchCat = searchCategory ? catId === searchCategory : true;
+    return matchName && matchCat;
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -172,15 +176,25 @@ export default function ManageItems() {
 
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex flex-col overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/50">
-          <div className="relative w-full sm:w-80">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="ค้นหาชื่อไอเทม..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white border border-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all font-medium text-slate-700 placeholder:text-slate-400"
-            />
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-80">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="ค้นหาชื่อไอเทม..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-white border border-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all font-medium text-slate-700 placeholder:text-slate-400"
+              />
+            </div>
+            <select
+              value={searchCategory}
+              onChange={(e) => setSearchCategory(e.target.value)}
+              className="w-full sm:w-48 bg-white border border-slate-200 text-sm rounded-xl px-4 py-2.5 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all font-medium text-slate-700"
+            >
+              <option value="">ทุกหมวดหมู่</option>
+              {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+            </select>
           </div>
           <div className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm shrink-0">
             ไอเทมทั้งหมด: <span className="text-red-600 font-black ml-1">{items.length}</span>
