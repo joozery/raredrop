@@ -140,7 +140,7 @@ function ModalCarousel({ images }: { images: string[] }) {
         className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer group" 
         onClick={() => setIsFullscreen(true)}
       >
-        <img src={images[idx]} alt="" className="w-full h-full object-cover" />
+        <img src={images[idx]} alt="" className="w-full h-full object-contain" />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
            <Search size={32} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
         </div>
