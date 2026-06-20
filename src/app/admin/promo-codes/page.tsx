@@ -141,18 +141,18 @@ export default function PromoCodesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">โค้ดแลกของ</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">โค้ดแลกของ</h1>
           <p className="text-sm text-slate-500 mt-1">จัดการโค้ดสำหรับแลกรางวัล (เหรียญ/GemCoin/ไอเทม/กล่องสุ่ม)</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm">
+        <button onClick={openAdd} className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm shrink-0">
           <Plus size={16} />
           เพิ่มโค้ด
         </button>
       </div>
 
-      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/50">
@@ -263,7 +263,7 @@ export default function PromoCodesPage() {
               {/* Type selector — 4 ประเภท */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-2">ประเภทรางวัล <span className="text-red-500">*</span></label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
                     { value: "coins", icon: Coins, label: "เหรียญ", color: "amber" },
                     { value: "gemCoins", icon: Gem, label: "GemCoin", color: "purple" },
@@ -303,7 +303,7 @@ export default function PromoCodesPage() {
 
               {/* Box selector */}
               {form.rewardType === "box" && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-600 mb-1.5">กล่องสุ่ม <span className="text-red-500">*</span></label>
                     <select value={form.boxId} onChange={(e) => setForm({ ...form, boxId: e.target.value })}
@@ -322,7 +322,7 @@ export default function PromoCodesPage() {
               )}
 
               {/* Max uses + expiry + status */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">จำนวนครั้งที่ใช้ได้ทั้งหมด (0=ไม่จำกัด)</label>
                   <input type="number" min="0" value={form.maxUses}

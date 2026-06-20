@@ -76,7 +76,7 @@ export default function AdminNotificationsPage() {
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
           <Bell size={22} className="text-primary" /> ส่งการแจ้งเตือน
         </h1>
         <p className="text-sm text-slate-500 mt-0.5">ส่ง notification ให้ผู้เล่นแบบเฉพาะเจาะจงหรือทุกคน</p>
@@ -201,7 +201,7 @@ export default function AdminNotificationsPage() {
       </div>
 
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center gap-2 ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
+        <div className={`fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center justify-center gap-2 ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
           {toast.ok ? "✓" : "✕"} {toast.msg}
         </div>
       )}

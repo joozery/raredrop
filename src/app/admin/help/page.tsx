@@ -98,16 +98,16 @@ export default function AdminHelpPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
             <HelpCircle size={22} className="text-blue-500" /> ศูนย์ช่วยเหลือ (FAQ)
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">จัดการคำถามที่พบบ่อยบนหน้า Help</p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-red-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2 bg-red-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-sm shrink-0"
         >
           <Plus size={16} /> เพิ่มคำถาม
         </button>
@@ -139,7 +139,7 @@ export default function AdminHelpPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
@@ -204,7 +204,7 @@ export default function AdminHelpPage() {
             </div>
 
             <div className="p-6 flex flex-col gap-4 overflow-y-auto">
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-600">หมวดหมู่ *</label>
                   <input
@@ -221,7 +221,7 @@ export default function AdminHelpPage() {
                     ))}
                   </datalist>
                 </div>
-                <div className="w-24 flex flex-col gap-1.5">
+                <div className="w-full sm:w-24 flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-600">ลำดับ</label>
                   <input
                     type="number"
@@ -270,7 +270,7 @@ export default function AdminHelpPage() {
       )}
 
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center gap-2 ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
+        <div className={`fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center justify-center gap-2 ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
           {toast.ok ? "✓" : "✕"} {toast.msg}
         </div>
       )}

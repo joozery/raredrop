@@ -72,14 +72,14 @@ export default function LogsPage() {
     <div className="flex flex-col gap-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">บันทึกระบบ (System Logs)</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">บันทึกระบบ (System Logs)</h1>
           <p className="text-sm text-slate-500 mt-1">ธุรกรรมและกิจกรรมทางการเงินทั้งหมดในระบบ</p>
         </div>
         <button
           onClick={fetchLogs}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-colors shrink-0"
         >
           <RefreshCw size={14} />
           รีเฟรช
@@ -87,8 +87,8 @@ export default function LogsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative w-full sm:flex-1 sm:max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -101,14 +101,14 @@ export default function LogsPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-slate-700 font-medium"
+          className="w-full sm:w-auto px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-slate-700 font-medium"
         >
           <option value="">ทุกประเภท</option>
           {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
             <option key={key} value={key}>{cfg.label}</option>
           ))}
         </select>
-        <span className="text-sm text-slate-500 font-medium">
+        <span className="text-sm text-slate-500 font-medium shrink-0">
           {filtered.length.toLocaleString()} รายการ
         </span>
       </div>

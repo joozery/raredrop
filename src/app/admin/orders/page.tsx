@@ -52,13 +52,13 @@ export default function ManageOrders() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">ออเดอร์คำสั่งซื้อ (Shop Orders)</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">ออเดอร์คำสั่งซื้อ (Shop Orders)</h1>
         <p className="text-sm text-slate-500 mt-1">ประวัติการซื้อสินค้าจากร้านค้าทั้งหมด</p>
       </div>
 
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex flex-col overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="relative w-80">
+        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/50">
+          <div className="relative w-full sm:w-80">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -69,7 +69,7 @@ export default function ManageOrders() {
             />
           </div>
 
-          <div className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm">
+          <div className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm shrink-0">
             รายการทั้งหมด: <span className="text-red-600 font-black ml-1">{purchases.length}</span>
           </div>
         </div>

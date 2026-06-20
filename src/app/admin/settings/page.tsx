@@ -110,14 +110,14 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">ตั้งค่าระบบ</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">ตั้งค่าระบบ</h1>
           <p className="text-sm text-slate-500 mt-1">ปรับแต่งพฤติกรรมของแพลตฟอร์ม — การเปลี่ยนแปลงมีผลทันที</p>
         </div>
         <button
           onClick={fetchSettings}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-colors shrink-0"
         >
           <RefreshCw size={14} />
           รีเฟรช
@@ -171,7 +171,7 @@ export default function SettingsPage() {
                 const currentVal = getValue(s);
                 const isDirty = pending[s.key] !== undefined;
                 return (
-                  <div key={s.key} className="px-6 py-4 flex items-center gap-4">
+                  <div key={s.key} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-slate-800">{s.label}</p>
                       {s.description && (
@@ -184,7 +184,7 @@ export default function SettingsPage() {
                         <button
                           onClick={() => handleChange(s.key, !currentVal)}
                           className={cn(
-                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
+                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0",
                             currentVal ? "bg-indigo-500" : "bg-slate-200"
                           )}
                         >
@@ -198,14 +198,14 @@ export default function SettingsPage() {
                           type="number"
                           value={currentVal as number}
                           onChange={(e) => handleChange(s.key, Number(e.target.value))}
-                          className="w-28 px-3 py-1.5 text-sm font-medium text-slate-800 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
+                          className="w-full sm:w-28 px-3 py-1.5 text-sm font-medium text-slate-800 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
                         />
                       ) : (
                         <input
                           type="text"
                           value={currentVal as string}
                           onChange={(e) => handleChange(s.key, e.target.value)}
-                          className="w-52 px-3 py-1.5 text-sm font-medium text-slate-800 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
+                          className="w-full sm:w-52 px-3 py-1.5 text-sm font-medium text-slate-800 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
                         />
                       )}
 

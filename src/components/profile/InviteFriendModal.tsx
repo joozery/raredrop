@@ -20,7 +20,7 @@ export function InviteFriendModal({ isOpen, onClose }: InviteFriendModalProps) {
     fetch("/api/user/referral")
       .then((r) => r.json())
       .then((d) => {
-        setInviteUrl(d.inviteUrl || "");
+        setInviteUrl(d.code ? `${window.location.origin}/?ref=${d.code}` : "");
         setTotalInvited(d.totalInvited || 0);
       })
       .catch(() => {})

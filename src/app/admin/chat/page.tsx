@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MessageCircle, Send, Search, CheckCheck, X } from "lucide-react";
+import { MessageCircle, Send, Search, CheckCheck, X, ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface UserData { _id: string; name: string; avatar?: string; email?: string }
 interface Conversation {
@@ -138,13 +139,13 @@ export default function AdminChatPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Live Chat (แชทกับลูกค้า)</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">Live Chat (แชทกับลูกค้า)</h1>
         <p className="text-sm text-slate-500 mt-1">ตอบกลับข้อความจากลูกค้าที่ติดต่อผ่านแชทในเว็บ</p>
       </div>
 
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex overflow-hidden h-[calc(100vh-220px)] min-h-[480px]">
         {/* Conversation list */}
-        <div className="w-80 border-r border-slate-100 flex flex-col shrink-0">
+        <div className={cn("w-full lg:w-80 border-r border-slate-100 flex-col shrink-0", activeId ? "hidden lg:flex" : "flex")}>
           <div className="p-3 border-b border-slate-100">
             <div className="relative">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -195,7 +196,7 @@ export default function AdminChatPage() {
         </div>
 
         {/* Thread */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={cn("flex-1 flex-col min-w-0", activeId ? "flex" : "hidden lg:flex")}>
           {!activeId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-300 gap-3">
               <MessageCircle size={48} className="opacity-40" />
@@ -203,14 +204,17 @@ export default function AdminChatPage() {
             </div>
           ) : (
             <>
-              <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden">
+              <div className="px-3 sm:px-5 py-3 border-b border-slate-100 flex items-center justify-between shrink-0 gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <button onClick={() => setActiveId(null)} className="lg:hidden shrink-0 text-slate-400 hover:text-slate-600 p-1 -ml-1">
+                    <ArrowLeft size={18} />
+                  </button>
+                  <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden shrink-0">
                     <img src={activeUser?.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${activeUser?.name || "U"}`} alt="" className="w-full h-full object-cover" />
                   </div>
-                  <div>
-                    <p className="font-bold text-sm text-slate-800">{activeUser?.name || "ผู้ใช้"}</p>
-                    <p className="text-[11px] text-slate-400">
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm text-slate-800 truncate">{activeUser?.name || "ผู้ใช้"}</p>
+                    <p className="text-[11px] text-slate-400 truncate">
                       {activeSubject}
                       {activeStatus === "closed" && <span className="ml-1.5 font-bold text-slate-500">· ปิดแล้ว</span>}
                     </p>
@@ -224,10 +228,10 @@ export default function AdminChatPage() {
                 </button>
               </div>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 flex flex-col gap-2.5 bg-slate-50">
+              <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-5 flex flex-col gap-2.5 bg-slate-50">
                 {messages.map((m) => (
                   <div key={m._id} className={`flex ${m.senderRole === "admin" ? "justify-end" : "justify-start"}`}>
-                    <div className="max-w-[70%] flex flex-col gap-0.5">
+                    <div className="max-w-[85%] sm:max-w-[70%] flex flex-col gap-0.5">
                       <div className={`px-3.5 py-2 rounded-2xl text-sm font-medium break-words ${m.senderRole === "admin" ? "bg-red-600 text-white rounded-br-sm" : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm shadow-sm"}`}>
                         {m.text}
                       </div>

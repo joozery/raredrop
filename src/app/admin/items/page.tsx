@@ -159,30 +159,30 @@ export default function ManageItems() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">คลังไอเทม (Items Inventory)</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">คลังไอเทม (Items Inventory)</h1>
           <p className="text-sm text-slate-500 mt-1">จัดการข้อมูลไอเทมทั้งหมดที่จะนำไปใส่ในกล่องสุ่ม</p>
         </div>
-        <button onClick={openAddModal} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm shadow-red-500/20">
+        <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm shadow-red-500/20 shrink-0">
           <Plus size={16} />
           เพิ่มไอเทมใหม่
         </button>
       </div>
 
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex flex-col overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="relative w-80">
+        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/50">
+          <div className="relative w-full sm:w-80">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="ค้นหาชื่อไอเทม..." 
+            <input
+              type="text"
+              placeholder="ค้นหาชื่อไอเทม..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-white border border-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all font-medium text-slate-700 placeholder:text-slate-400"
             />
           </div>
-          <div className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm">
+          <div className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm shrink-0">
             ไอเทมทั้งหมด: <span className="text-red-600 font-black ml-1">{items.length}</span>
           </div>
         </div>
@@ -348,7 +348,7 @@ export default function ManageItems() {
                 />
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">ระดับความหายาก <span className="text-red-500">*</span></label>
                   <select 
@@ -393,7 +393,7 @@ export default function ManageItems() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">มูลค่าไอเทม (บาท) <span className="text-red-500">*</span></label>
                   <input

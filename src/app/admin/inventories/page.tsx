@@ -96,28 +96,28 @@ export default function ManageInventories() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">คลังไอเทมผู้เล่น (Player Inventories)</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">คลังไอเทมผู้เล่น (Player Inventories)</h1>
         <p className="text-sm text-slate-500 mt-1">ดูและจัดการไอเทมที่ผู้เล่นเปิดได้จากกล่องสุ่ม</p>
       </div>
 
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex flex-col overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-4">
-            <div className="relative w-80">
+        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/50">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="relative w-full sm:w-80">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="ค้นหาชื่อผู้เล่น หรือชื่อไอเทม..." 
+              <input
+                type="text"
+                placeholder="ค้นหาชื่อผู้เล่น หรือชื่อไอเทม..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-white border border-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-red-500 transition-all font-medium text-slate-700"
               />
             </div>
-            
-            <select 
+
+            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-white border border-slate-200 text-sm rounded-xl px-4 py-2.5 outline-none focus:border-red-500 font-medium text-slate-700"
+              className="w-full sm:w-auto bg-white border border-slate-200 text-sm rounded-xl px-4 py-2.5 outline-none focus:border-red-500 font-medium text-slate-700"
             >
               <option value="">ทุกสถานะ</option>
               <option value="kept">เก็บในคลัง (Kept)</option>
@@ -126,8 +126,8 @@ export default function ManageInventories() {
               <option value="market">วางขายในตลาด (Market)</option>
             </select>
           </div>
-          
-          <div className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm">
+
+          <div className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm shrink-0">
             รายการทั้งหมด: <span className="text-red-600 font-black ml-1">{inventories.length}</span>
           </div>
         </div>

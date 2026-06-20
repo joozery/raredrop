@@ -58,35 +58,37 @@ function ShopListingCard({
   return (
     <Reorder.Item value={l} dragListener={false} dragControls={dragControls} as="div" className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       {/* Listing header */}
-      <div className="flex items-center gap-4 p-4">
-        <div
-          onPointerDown={(e) => dragControls.start(e)}
-          className="shrink-0 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing touch-none"
-          title="ลากเพื่อจัดเรียง"
-        >
-          <GripVertical size={18} />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+          <div
+            onPointerDown={(e) => dragControls.start(e)}
+            className="shrink-0 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing touch-none"
+            title="ลากเพื่อจัดเรียง"
+          >
+            <GripVertical size={18} />
+          </div>
+          {l.images[0] ? (
+            <img src={l.images[0]} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shrink-0 border border-slate-100" />
+          ) : (
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <Package size={24} className="text-slate-300" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-bold text-slate-800 truncate">{l.title}</p>
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${l.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                {l.status === "active" ? "เปิดขาย" : "ซ่อน"}
+              </span>
+            </div>
+            {l.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{l.description}</p>}
+            <div className="flex items-center gap-4 mt-1">
+              <span className="font-black text-red-600 text-sm">฿{l.price.toLocaleString()}</span>
+              <span className="text-xs text-slate-400">สต็อก: <strong className={stock === 0 ? "text-red-500" : "text-slate-700"}>{stock}</strong> / {l.accounts.length} รายการ</span>
+            </div>
+          </div>
         </div>
-        {l.images[0] ? (
-          <img src={l.images[0]} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-100" />
-        ) : (
-          <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-            <Package size={24} className="text-slate-300" />
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-bold text-slate-800 truncate">{l.title}</p>
-            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${l.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-              {l.status === "active" ? "เปิดขาย" : "ซ่อน"}
-            </span>
-          </div>
-          {l.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{l.description}</p>}
-          <div className="flex items-center gap-4 mt-1">
-            <span className="font-black text-red-600 text-sm">฿{l.price.toLocaleString()}</span>
-            <span className="text-xs text-slate-400">สต็อก: <strong className={stock === 0 ? "text-red-500" : "text-slate-700"}>{stock}</strong> / {l.accounts.length} รายการ</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
           <button onClick={() => toggleStatus(l)} title={l.status === "active" ? "ซ่อน" : "เปิดขาย"} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
             {l.status === "active" ? <Eye size={15} /> : <EyeOff size={15} />}
           </button>
@@ -361,16 +363,16 @@ export default function AdminShopPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
             <ShoppingBag size={22} className="text-red-500" /> ร้านค้า
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">จัดการสินค้าและ Account ID สำหรับขาย</p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-red-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2 bg-red-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-sm shrink-0"
         >
           <Plus size={16} /> เพิ่มสินค้าใหม่
         </button>
@@ -463,7 +465,7 @@ export default function AdminShopPage() {
 
               {/* Images */}
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <label className="text-xs font-bold text-slate-600">รูปสินค้า (หลายรูปได้)</label>
                   <div className="flex items-center gap-3">
                     <button
@@ -567,7 +569,7 @@ export default function AdminShopPage() {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center gap-2 ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
+        <div className={`fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center justify-center gap-2 ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
           {toast.ok ? "✓" : "✕"} {toast.msg}
         </div>
       )}

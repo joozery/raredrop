@@ -144,16 +144,16 @@ export default function LevelsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
             <TrendingUp size={22} className="text-indigo-500" /> ระบบเลเวล & EXP
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">ตั้งค่าเลเวล, EXP ที่ต้องการ และของรางวัล</p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-indigo-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm shrink-0"
         >
           <Plus size={16} /> เพิ่มเลเวล
         </button>
@@ -204,7 +204,7 @@ export default function LevelsPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
@@ -279,7 +279,7 @@ export default function LevelsPage() {
             </div>
 
             <div className="p-6 flex flex-col gap-5 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-slate-600">เลเวล *</label>
                   <input
@@ -384,7 +384,7 @@ export default function LevelsPage() {
       )}
 
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center gap-2 ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
+        <div className={`fixed bottom-6 left-6 right-6 sm:left-auto sm:right-6 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center justify-center gap-2 ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
           {toast.ok ? "✓" : "✕"} {toast.msg}
         </div>
       )}

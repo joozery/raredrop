@@ -54,7 +54,7 @@ export default function WalletOverview() {
   if (loading) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse" />
           ))}
@@ -70,14 +70,14 @@ export default function WalletOverview() {
     <div className="flex flex-col gap-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">กระเป๋าเงิน (Wallet Overview)</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">กระเป๋าเงิน (Wallet Overview)</h1>
           <p className="text-sm text-slate-500 mt-1">สรุปข้อมูลการเงินและเหรียญในระบบแบบ real-time</p>
         </div>
         <button
           onClick={fetchData}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-colors shrink-0"
         >
           <RefreshCw size={14} />
           รีเฟรช
@@ -85,7 +85,7 @@ export default function WalletOverview() {
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         {/* Total coins */}
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl p-6 shadow-lg shadow-indigo-500/20 text-white relative overflow-hidden group">
@@ -163,10 +163,10 @@ export default function WalletOverview() {
       </div>
 
       {/* Revenue Breakdown + Coin Distribution */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Revenue Cards */}
-        <div className="col-span-5 flex flex-col gap-4">
+        <div className="lg:col-span-5 flex flex-col gap-4">
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
             <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center shrink-0">
               <Box size={22} className="text-orange-600" />
@@ -242,7 +242,7 @@ export default function WalletOverview() {
         </div>
 
         {/* Coin Distribution */}
-        <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <h3 className="text-sm font-bold text-slate-700 mb-4">การกระจายเหรียญผู้เล่น</h3>
           {data?.coinDistribution.length ? (
             <div className="flex flex-col gap-3">
@@ -268,7 +268,7 @@ export default function WalletOverview() {
         </div>
 
         {/* Top topup users */}
-        <div className="col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
             <Crown size={16} className="text-amber-500" />
             ผู้เล่นที่เติมเงินสูงสุด

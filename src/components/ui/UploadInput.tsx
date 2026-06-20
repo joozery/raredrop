@@ -77,7 +77,7 @@ export function UploadInput({
         </label>
       )}
 
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 w-full min-w-0">
         {/* Preview Box */}
         <div
           className="w-16 h-16 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer hover:border-red-400 transition-colors relative group"
@@ -103,13 +103,13 @@ export function UploadInput({
         </div>
 
         {/* URL Input + Upload Button */}
-        <div className="flex-1 flex flex-col gap-1.5">
-          <div className="flex gap-2">
+        <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
             <input
               type="text"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-500 transition-all font-medium text-slate-800"
+              className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-500 transition-all font-medium text-slate-800"
               placeholder={placeholder}
             />
             <button

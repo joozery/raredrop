@@ -83,7 +83,7 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-28 bg-white rounded-xl border border-slate-200 animate-pulse" />
           ))}
@@ -97,14 +97,14 @@ export default function ReportsPage() {
     <div className="flex flex-col gap-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">รายงานและสถิติ</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">รายงานและสถิติ</h1>
           <p className="text-sm text-slate-500 mt-1">ข้อมูลรายได้ ผู้เล่น และกิจกรรมในระบบ (30 วันล่าสุด)</p>
         </div>
         <button
           onClick={fetchData}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm transition-colors shrink-0"
         >
           <RefreshCw size={14} />
           รีเฟรช
@@ -112,7 +112,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           {
             label: "รายได้จากกล่อง (เดือนนี้)",
@@ -175,10 +175,10 @@ export default function ReportsPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* User Growth */}
-        <div className="col-span-5 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <h2 className="text-sm font-bold text-slate-700 mb-6 flex items-center gap-2">
             <Users size={16} className="text-slate-400" />
             ผู้เล่นใหม่รายวัน (30 วัน)
@@ -199,7 +199,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Revenue by type */}
-        <div className="col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <h2 className="text-sm font-bold text-slate-700 mb-4">สัดส่วนรายได้ตามประเภท (เดือนนี้)</h2>
           {data?.revenueByType.length ? (
             <div className="flex flex-col gap-3">
@@ -228,7 +228,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Counts */}
-        <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
+        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
           <h2 className="text-sm font-bold text-slate-700">สรุปตัวเลขรวม</h2>
           {[
             { label: "ผู้เล่นทั้งหมด", value: data?.summary.totalUsers || 0, icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
@@ -248,7 +248,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Top Boxes */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">

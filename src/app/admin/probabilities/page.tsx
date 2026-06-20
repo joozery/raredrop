@@ -176,23 +176,23 @@ export default function ManageProbabilities() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-slate-50 rounded-lg p-1 border border-slate-100">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 bg-slate-50 rounded-lg p-1 border border-slate-100 shrink-0">
                   <img src={selectedBox.image} alt="box" className="w-full h-full object-contain" />
                 </div>
-                <div>
-                  <h2 className="text-lg font-black text-slate-800">{selectedBox.name}</h2>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-black text-slate-800 truncate">{selectedBox.name}</h2>
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">จัดการไอเทมและโอกาสออก</p>
                 </div>
               </div>
-              <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors">
+              <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors shrink-0">
                 <X size={20} />
               </button>
             </div>
             
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 flex-col lg:flex-row overflow-hidden">
               {/* Left Side: Items in Box */}
-              <div className="w-3/5 border-r border-slate-100 flex flex-col bg-slate-50/50">
+              <div className="w-full lg:w-3/5 border-b lg:border-b-0 lg:border-r border-slate-100 flex flex-col bg-slate-50/50 max-h-[45vh] lg:max-h-none">
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                   <h3 className="font-bold text-sm text-slate-700 flex items-center gap-2">
                     <Package size={16} className="text-slate-400" />
@@ -268,7 +268,7 @@ export default function ManageProbabilities() {
               </div>
 
               {/* Right Side: Available Items */}
-              <div className="w-2/5 flex flex-col bg-white">
+              <div className="w-full lg:w-2/5 flex flex-col bg-white max-h-[45vh] lg:max-h-none">
                 <div className="p-4 border-b border-slate-100 shrink-0">
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

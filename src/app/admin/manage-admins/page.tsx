@@ -108,12 +108,12 @@ export default function ManageAdmins() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">จัดการแอดมิน</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">จัดการแอดมิน</h1>
           <p className="text-sm text-slate-500 mt-1">เพิ่ม ลบ แก้ไข ข้อมูลผู้ดูแลระบบ (Admin) ทั้งหมด</p>
         </div>
-        <button onClick={openAddModal} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm shadow-red-500/20">
+        <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm shadow-red-500/20 shrink-0">
           <Plus size={16} />
           เพิ่มแอดมินใหม่
         </button>
@@ -122,7 +122,7 @@ export default function ManageAdmins() {
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 

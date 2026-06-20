@@ -69,7 +69,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm h-28 animate-pulse bg-gradient-to-br from-slate-50 to-white" />
           ))}
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
     <div className="flex flex-col gap-6">
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpiCards.map((kpi, i) => (
           <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col relative overflow-hidden group">
             <div className="flex items-start justify-between mb-2">
@@ -97,10 +97,10 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Revenue Chart */}
-        <div className="col-span-6 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col">
+        <div className="lg:col-span-6 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-bold text-slate-800">รายได้จากการเปิดกล่อง (7 วันล่าสุด)</h2>
           </div>
@@ -131,7 +131,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Top Boxes */}
-        <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-bold text-slate-800">กล่องยอดนิยม</h2>
           </div>
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-bold text-slate-800">กิจกรรมล่าสุด</h2>
           </div>
@@ -206,10 +206,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Section */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Recent Marketplace Orders */}
-        <div className="col-span-9 bg-white border border-slate-200 rounded-xl p-5 shadow-sm overflow-hidden flex flex-col">
+        <div className="lg:col-span-9 bg-white border border-slate-200 rounded-xl p-5 shadow-sm overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-base font-bold text-slate-800">ออเดอร์ตลาดล่าสุด</h2>
           </div>
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Overview Stats */}
-        <div className="col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col">
+        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col">
           <h2 className="text-base font-bold text-slate-800 mb-6">สรุปภาพรวมระบบ</h2>
           <div className="flex flex-col gap-6">
             {data && [
