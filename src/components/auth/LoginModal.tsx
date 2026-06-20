@@ -18,6 +18,18 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   // OTP State
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // Logo State
+  const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
+
+  useEffect(() => {
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.site_logo) setLogoUrl(d.site_logo);
+      })
+      .catch(() => {});
+  }, []);
+
   const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
@@ -119,17 +131,11 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         {step === "email" && (
           <>
             {/* Header */}
-            <div className="flex items-center justify-between p-6 pb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center text-white font-black shadow-sm">
-                  <span className="text-lg">R</span>
-                </div>
+            <div className="flex items-center justify-center p-6 pb-5 border-b border-gray-100">
+              <div className="flex flex-col items-center gap-3">
+                <img src={logoUrl} alt="Logo" className="h-10 object-contain drop-shadow-sm" />
                 <h2 className="text-xl font-bold text-gray-900">เข้าสู่ระบบ หรือ ลงทะเบียน</h2>
               </div>
-              
-              <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                ภาษาไทย <ChevronDown size={14} />
-              </button>
             </div>
 
             {/* Body */}
@@ -205,22 +211,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </button>
 
             </div>
-
-            {/* Contact Support Floating Button */}
-            <div className="px-6 flex justify-end mt-4 mb-1">
-              <button className="bg-white shadow-sm border border-gray-100 rounded-full py-2 px-4 flex items-center gap-2 hover:bg-gray-50 transition-colors">
-                <Headset size={16} className="text-gray-700" />
-                <span className="text-[13px] font-bold text-gray-800">ติดต่อเจ้าหน้าที่</span>
-              </button>
-            </div>
-
-            {/* Footer */}
-            <div className="px-8 pb-8 pt-4 text-center mt-2">
-              <p className="text-[11px] text-gray-500 leading-relaxed">
-                การเข้าสู่ระบบหรือลงทะเบียน ถือเป็นการยอมรับ <br/>
-                <a href="#" className="font-semibold text-gray-600 hover:underline hover:text-gray-900">ข้อตกลงผู้ใช้งาน</a> และ <a href="#" className="font-semibold text-gray-600 hover:underline hover:text-gray-900">นโยบายความเป็นส่วนตัว</a>
-              </p>
-            </div>
+            
+            <div className="pb-8"></div>
           </>
         )}
         
@@ -288,13 +280,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </button>
             </div>
 
-            {/* Contact Support Floating Button */}
-            <div className="absolute right-6 bottom-6">
-              <button className="bg-white shadow-sm border border-gray-100 rounded-full py-2 px-4 flex items-center gap-2 hover:bg-gray-50 transition-colors">
-                <Headset size={16} className="text-gray-700" />
-                <span className="text-[13px] font-bold text-gray-800">ติดต่อเจ้าหน้าที่</span>
-              </button>
-            </div>
+            <div className="pb-8"></div>
           </div>
         )}
 
@@ -354,13 +340,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </div>
             </div>
 
-            {/* Contact Support Floating Button */}
-            <div className="absolute right-6 bottom-6">
-              <button className="bg-white shadow-sm border border-gray-100 rounded-full py-2 px-4 flex items-center gap-2 hover:bg-gray-50 transition-colors">
-                <Headset size={16} className="text-gray-700" />
-                <span className="text-[13px] font-bold text-gray-800">ติดต่อเจ้าหน้าที่</span>
-              </button>
-            </div>
+            <div className="pb-8"></div>
           </div>
         )}
 
