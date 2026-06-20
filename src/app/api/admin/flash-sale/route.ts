@@ -29,12 +29,18 @@ export async function POST(req: Request) {
   const err = await requireAdmin(req);
   if (err) return err;
 
-  const { boxId, salePrice, endsAt, isActive } = await req.json();
+  const { boxId, salePrice, startsAt, endsAt, isActive } = await req.json();
   if (!boxId || salePrice == null || !endsAt) {
     return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบ" }, { status: 400 });
   }
 
   await connectToDatabase();
-  const sale = await FlashSale.create({ boxId, salePrice, endsAt: new Date(endsAt), isActive: isActive ?? true });
+  const sale = await FlashSale.create({
+    boxId,
+    salePrice,
+    startsAt: startsAt ? new Date(startsAt) : null,
+    endsAt: new Date(endsAt),
+    isActive: isActive ?? true,
+  });
   return NextResponse.json(sale, { status: 201 });
 }

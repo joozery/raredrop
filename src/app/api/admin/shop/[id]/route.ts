@@ -18,12 +18,17 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { title, description, images, price, status } = body;
+    const { title, description, images, price, status, liveChatEnabled, youtubeUrl } = body;
+
+    const update: any = { title, description, images, price: Number(price), status };
+    // อัปเดตเฉพาะเมื่อส่งมา (toggleStatus ไม่ได้ส่ง → คงค่าเดิม)
+    if (liveChatEnabled !== undefined) update.liveChatEnabled = !!liveChatEnabled;
+    if (youtubeUrl !== undefined) update.youtubeUrl = youtubeUrl || "";
 
     await connectToDatabase();
     const listing = await ShopListing.findByIdAndUpdate(
       id,
-      { title, description, images, price: Number(price), status },
+      update,
       { new: true, runValidators: true }
     );
 

@@ -14,6 +14,9 @@ export interface IShopListing extends Document {
   price: number;
   accounts: IAccount[];
   status: "active" | "hidden";
+  liveChatEnabled: boolean;
+  youtubeUrl?: string;
+  order: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +35,16 @@ const ShopListingSchema: Schema = new Schema({
   price: { type: Number, required: true, min: 0 },
   accounts: [AccountSchema],
   status: { type: String, enum: ["active", "hidden"], default: "active" },
+  // เปิดให้ลูกค้าสอบถามผ่าน live chat ในเว็บ (ไม่มี Discord)
+  liveChatEnabled: { type: Boolean, default: false },
+  // ลิงก์ YouTube สอนวิธีใช้งาน — แสดงปุ่ม "ดูวิธี"
+  youtubeUrl: { type: String },
+  // ลำดับการแสดงผล — เรียงจากน้อยไปมาก, ค่าเริ่มต้น 0 ทุกตัว (จะ tiebreak ด้วย createdAt จนกว่าแอดมินจะลากจัดเรียงจริง)
+  order: { type: Number, default: 0 },
 }, { timestamps: true });
 
-export default mongoose.models.ShopListing || mongoose.model<IShopListing>("ShopListing", ShopListingSchema);
+// ลบ model ที่ cache ไว้ เพื่อให้ schema ใหม่ (ฟิลด์ใหม่) ถูกใช้เสมอ
+if (mongoose.models.ShopListing) {
+  delete (mongoose as any).models.ShopListing;
+}
+export default mongoose.model<IShopListing>("ShopListing", ShopListingSchema);

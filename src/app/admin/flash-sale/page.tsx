@@ -14,12 +14,13 @@ interface FlashSaleItem {
   _id: string;
   boxId: { _id: string; name: string; image: string; price: number };
   salePrice: number;
+  startsAt: string | null;
   endsAt: string;
   isActive: boolean;
   createdAt: string;
 }
 
-const EMPTY_FORM = { boxId: "", salePrice: "", endsAt: "" };
+const EMPTY_FORM = { boxId: "", salePrice: "", startsAt: "", endsAt: "" };
 
 function formatLocalDatetime(iso: string) {
   const d = new Date(iso);
@@ -78,6 +79,7 @@ export default function FlashSalePage() {
     setForm({
       boxId: s.boxId._id,
       salePrice: String(s.salePrice),
+      startsAt: s.startsAt ? formatLocalDatetime(s.startsAt) : "",
       endsAt: formatLocalDatetime(s.endsAt),
     });
     setModal("edit");
@@ -92,7 +94,12 @@ export default function FlashSalePage() {
     }
     setSaving(true);
     try {
-      const body = { boxId: form.boxId, salePrice: Number(form.salePrice), endsAt: form.endsAt };
+      const body = {
+        boxId: form.boxId,
+        salePrice: Number(form.salePrice),
+        startsAt: form.startsAt || null,
+        endsAt: form.endsAt,
+      };
       const url = editing ? `/api/admin/flash-sale/${editing._id}` : "/api/admin/flash-sale";
       const method = editing ? "PUT" : "POST";
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -165,6 +172,7 @@ export default function FlashSalePage() {
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">ราคาปกติ</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">ราคา Sale</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">ลด</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">เริ่ม</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">เหลือเวลา</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">สถานะ</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">จัดการ</th>
@@ -194,6 +202,17 @@ export default function FlashSalePage() {
                       <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-full">
                         -{disc}%
                       </span>
+                    </td>
+                    <td className="py-4 px-6 text-xs font-medium">
+                      {s.startsAt ? (
+                        <span className={new Date(s.startsAt) > new Date() ? "text-blue-600 font-bold" : "text-slate-400"}>
+                          {new Date(s.startsAt) > new Date()
+                            ? `${new Date(s.startsAt).toLocaleDateString("th-TH", { day: "2-digit", month: "short" })} ${new Date(s.startsAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}`
+                            : "เริ่มแล้ว"}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[10px]">-</span>
+                      )}
                     </td>
                     <td className="py-4 px-6 text-xs font-medium">
                       <span className={expired ? "text-slate-400" : "text-emerald-600 font-bold"}>
@@ -284,6 +303,17 @@ export default function FlashSalePage() {
                 {discount !== null && discount > 0 && (
                   <p className="text-xs text-red-600 font-bold">ลด {discount}% จากราคาปกติ</p>
                 )}
+              </div>
+
+              {/* Start date */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">เริ่มต้น <span className="font-normal text-slate-400">(ไม่กำหนด = เริ่มทันที)</span></label>
+                <input
+                  type="datetime-local"
+                  value={form.startsAt}
+                  onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value }))}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                />
               </div>
 
               {/* End date */}

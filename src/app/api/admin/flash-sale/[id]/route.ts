@@ -22,7 +22,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   await connectToDatabase();
   const sale = await FlashSale.findByIdAndUpdate(
     id,
-    { ...body, ...(body.endsAt ? { endsAt: new Date(body.endsAt) } : {}) },
+    {
+      ...body,
+      ...(body.endsAt ? { endsAt: new Date(body.endsAt) } : {}),
+      ...(body.startsAt !== undefined ? { startsAt: body.startsAt ? new Date(body.startsAt) : null } : {}),
+    },
     { new: true }
   );
   if (!sale) return NextResponse.json({ error: "Not found" }, { status: 404 });

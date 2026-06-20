@@ -5,7 +5,7 @@ import ShopListing from "@/models/ShopListing";
 export async function GET() {
   try {
     await connectToDatabase();
-    const listings = await ShopListing.find({ status: "active" }).sort({ createdAt: -1 });
+    const listings = await ShopListing.find({ status: "active" }).sort({ order: 1, createdAt: -1 });
 
     // strip account data — only expose stock count
     const safe = listings.map((l: any) => ({
@@ -15,6 +15,9 @@ export async function GET() {
       images: l.images,
       price: l.price,
       stock: l.accounts.filter((a: any) => !a.sold).length,
+      totalStock: l.accounts.length,
+      liveChatEnabled: l.liveChatEnabled,
+      youtubeUrl: l.youtubeUrl,
       createdAt: l.createdAt,
     }));
 

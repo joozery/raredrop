@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Reorder, useDragControls } from "framer-motion";
 import {
   ShoppingBag, Plus, Pencil, Trash2, X, Save, Loader2,
   Eye, EyeOff, Package, ChevronDown, ChevronUp, PlusCircle,
-  AlertCircle,
+  AlertCircle, Upload, GripVertical,
 } from "lucide-react";
 import { UploadInput } from "@/components/ui/UploadInput";
 
@@ -23,17 +24,168 @@ interface ShopListing {
   price: number;
   accounts: Account[];
   status: "active" | "hidden";
+  liveChatEnabled?: boolean;
+  youtubeUrl?: string;
   createdAt: string;
 }
 
-const EMPTY_FORM: { title: string; description: string; images: string[]; price: string; status: "active" | "hidden" } = { title: "", description: "", images: [""], price: "", status: "active" };
+type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string };
+const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "" };
+
+interface ShopListingCardProps {
+  l: ShopListing;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  toggleStatus: (l: ShopListing) => void;
+  openEdit: (l: ShopListing) => void;
+  handleDelete: (id: string, title: string) => void;
+  addingTo: string | null;
+  setAddingTo: (id: string | null) => void;
+  newAccountData: string;
+  setNewAccountData: (v: string) => void;
+  handleAddAccount: (id: string) => void;
+  addingAccount: boolean;
+  handleRemoveAccount: (listingId: string, accountId: string, sold: boolean) => void;
+}
+
+function ShopListingCard({
+  l, isExpanded, onToggleExpand, toggleStatus, openEdit, handleDelete,
+  addingTo, setAddingTo, newAccountData, setNewAccountData, handleAddAccount, addingAccount, handleRemoveAccount,
+}: ShopListingCardProps) {
+  const dragControls = useDragControls();
+  const stock = l.accounts.filter((a) => !a.sold).length;
+
+  return (
+    <Reorder.Item value={l} dragListener={false} dragControls={dragControls} as="div" className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      {/* Listing header */}
+      <div className="flex items-center gap-4 p-4">
+        <div
+          onPointerDown={(e) => dragControls.start(e)}
+          className="shrink-0 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing touch-none"
+          title="ลากเพื่อจัดเรียง"
+        >
+          <GripVertical size={18} />
+        </div>
+        {l.images[0] ? (
+          <img src={l.images[0]} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-100" />
+        ) : (
+          <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+            <Package size={24} className="text-slate-300" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-bold text-slate-800 truncate">{l.title}</p>
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${l.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+              {l.status === "active" ? "เปิดขาย" : "ซ่อน"}
+            </span>
+          </div>
+          {l.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{l.description}</p>}
+          <div className="flex items-center gap-4 mt-1">
+            <span className="font-black text-red-600 text-sm">฿{l.price.toLocaleString()}</span>
+            <span className="text-xs text-slate-400">สต็อก: <strong className={stock === 0 ? "text-red-500" : "text-slate-700"}>{stock}</strong> / {l.accounts.length} รายการ</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => toggleStatus(l)} title={l.status === "active" ? "ซ่อน" : "เปิดขาย"} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
+            {l.status === "active" ? <Eye size={15} /> : <EyeOff size={15} />}
+          </button>
+          <button onClick={() => openEdit(l)} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
+            <Pencil size={15} />
+          </button>
+          <button onClick={() => handleDelete(l._id, l.title)} className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-400 hover:bg-red-100 transition-colors">
+            <Trash2 size={15} />
+          </button>
+          <button onClick={onToggleExpand} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
+            {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Account list */}
+      {isExpanded && (
+        <div className="border-t border-slate-100 p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Account ({l.accounts.length} รายการ)</p>
+            <button
+              onClick={() => { setAddingTo(l._id); setNewAccountData(""); }}
+              className="flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+            >
+              <PlusCircle size={14} /> เพิ่ม Account
+            </button>
+          </div>
+
+          {/* Add account form */}
+          {addingTo === l._id && (
+            <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-600">ข้อมูล Account (วางข้อความทั้งก้อน)</label>
+              <textarea
+                value={newAccountData}
+                onChange={(e) => setNewAccountData(e.target.value)}
+                rows={8}
+                placeholder={"คลิปYTสอนเข้า\n\nID : หมายเลขไอดี\n\n📧 อีเมลเข้าเกม\nอีเมล: example@gmail.com\nรหัสผ่าน: ..."}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-700 outline-none focus:border-red-400 resize-none"
+              />
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setAddingTo(null)} className="text-xs font-bold text-slate-500 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={() => handleAddAccount(l._id)}
+                  disabled={addingAccount || !newAccountData.trim()}
+                  className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 disabled:bg-slate-400 transition-colors"
+                >
+                  {addingAccount ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                  เพิ่ม
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Account items */}
+          {l.accounts.length === 0 ? (
+            <div className="flex items-center gap-2 text-slate-400 text-xs py-2">
+              <AlertCircle size={14} /> ยังไม่มี Account — กดเพิ่มเพื่อใส่ข้อมูล
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 max-h-80 overflow-y-auto">
+              {l.accounts.map((acc, idx) => (
+                <div key={acc._id} className={`rounded-xl border p-3 text-xs flex gap-3 ${acc.sold ? "bg-slate-50 border-slate-100 opacity-60" : "bg-white border-slate-200"}`}>
+                  <div className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black mt-0.5" style={{ background: acc.sold ? "#f1f5f9" : "#fef2f2", color: acc.sold ? "#94a3b8" : "#ef4444" }}>
+                    {idx + 1}
+                  </div>
+                  <pre className="flex-1 font-mono whitespace-pre-wrap text-slate-600 leading-relaxed min-w-0 overflow-hidden">{acc.data}</pre>
+                  <div className="shrink-0 flex flex-col items-end gap-1">
+                    {acc.sold ? (
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">ขายแล้ว</span>
+                    ) : (
+                      <>
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">พร้อมขาย</span>
+                        <button
+                          onClick={() => handleRemoveAccount(l._id, acc._id, acc.sold)}
+                          className="text-red-400 hover:text-red-600 transition-colors mt-1"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Reorder.Item>
+  );
+}
 
 export default function AdminShopPage() {
   const [listings, setListings] = useState<ShopListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<ShopListing | null>(null);
-  const [form, setForm] = useState<{ title: string; description: string; images: string[]; price: string; status: "active" | "hidden" }>(EMPTY_FORM);
+  const [form, setForm] = useState<ShopForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -42,6 +194,10 @@ export default function AdminShopPage() {
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newAccountData, setNewAccountData] = useState("");
   const [addingAccount, setAddingAccount] = useState(false);
+
+  // Bulk image upload
+  const bulkUploadRef = useRef<HTMLInputElement>(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
 
   const fetchListings = useCallback(async () => {
     setLoading(true);
@@ -74,6 +230,8 @@ export default function AdminShopPage() {
       images: l.images.length > 0 ? l.images : [""],
       price: String(l.price),
       status: l.status,
+      liveChatEnabled: !!l.liveChatEnabled,
+      youtubeUrl: l.youtubeUrl || "",
     });
     setModal("edit");
   };
@@ -92,6 +250,27 @@ export default function AdminShopPage() {
   const removeImageSlot = (idx: number) =>
     setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== idx) }));
 
+  const handleBulkUpload = async (files: FileList) => {
+    setBulkUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const body = new FormData();
+        body.append("file", file);
+        body.append("folder", "shop");
+        const res = await fetch("/api/upload", { method: "POST", body });
+        const data = await res.json();
+        if (res.ok) urls.push(data.url);
+      }
+      if (urls.length > 0) {
+        setForm((f) => ({ ...f, images: [...f.images.filter(Boolean), ...urls] }));
+      }
+      if (urls.length < files.length) showToast("อัพโหลดบางไฟล์ไม่สำเร็จ", false);
+    } finally {
+      setBulkUploading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!form.title.trim() || !form.price) { showToast("กรุณากรอกชื่อและราคา", false); return; }
     setSaving(true);
@@ -102,6 +281,8 @@ export default function AdminShopPage() {
         images: form.images.filter(Boolean),
         price: Number(form.price),
         status: form.status,
+        liveChatEnabled: form.liveChatEnabled,
+        youtubeUrl: form.youtubeUrl.trim(),
       };
       const url = modal === "edit" && editing ? `/api/admin/shop/${editing._id}` : "/api/admin/shop";
       const method = modal === "edit" ? "PUT" : "POST";
@@ -168,6 +349,15 @@ export default function AdminShopPage() {
     if (res.ok) fetchListings();
   };
 
+  const handleReorder = (newOrder: ShopListing[]) => {
+    setListings(newOrder);
+    fetch("/api/admin/shop/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: newOrder.map((l) => l._id) }),
+    }).catch(() => {});
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -200,128 +390,26 @@ export default function AdminShopPage() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {listings.map((l) => {
-            const stock = l.accounts.filter((a) => !a.sold).length;
-            const isExpanded = expandedId === l._id;
-            return (
-              <div key={l._id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                {/* Listing header */}
-                <div className="flex items-center gap-4 p-4">
-                  {l.images[0] ? (
-                    <img src={l.images[0]} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-100" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                      <Package size={24} className="text-slate-300" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold text-slate-800 truncate">{l.title}</p>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${l.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                        {l.status === "active" ? "เปิดขาย" : "ซ่อน"}
-                      </span>
-                    </div>
-                    {l.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{l.description}</p>}
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="font-black text-red-600 text-sm">฿{l.price.toLocaleString()}</span>
-                      <span className="text-xs text-slate-400">สต็อก: <strong className={stock === 0 ? "text-red-500" : "text-slate-700"}>{stock}</strong> / {l.accounts.length} รายการ</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => toggleStatus(l)} title={l.status === "active" ? "ซ่อน" : "เปิดขาย"} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
-                      {l.status === "active" ? <Eye size={15} /> : <EyeOff size={15} />}
-                    </button>
-                    <button onClick={() => openEdit(l)} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
-                      <Pencil size={15} />
-                    </button>
-                    <button onClick={() => handleDelete(l._id, l.title)} className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-400 hover:bg-red-100 transition-colors">
-                      <Trash2 size={15} />
-                    </button>
-                    <button onClick={() => setExpandedId(isExpanded ? null : l._id)} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
-                      {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Account list */}
-                {isExpanded && (
-                  <div className="border-t border-slate-100 p-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Account ({l.accounts.length} รายการ)</p>
-                      <button
-                        onClick={() => { setAddingTo(l._id); setNewAccountData(""); }}
-                        className="flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
-                      >
-                        <PlusCircle size={14} /> เพิ่ม Account
-                      </button>
-                    </div>
-
-                    {/* Add account form */}
-                    {addingTo === l._id && (
-                      <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-600">ข้อมูล Account (วางข้อความทั้งก้อน)</label>
-                        <textarea
-                          value={newAccountData}
-                          onChange={(e) => setNewAccountData(e.target.value)}
-                          rows={8}
-                          placeholder={"คลิปYTสอนเข้า\n\nID : หมายเลขไอดี\n\n📧 อีเมลเข้าเกม\nอีเมล: example@gmail.com\nรหัสผ่าน: ..."}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-700 outline-none focus:border-red-400 resize-none"
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <button onClick={() => setAddingTo(null)} className="text-xs font-bold text-slate-500 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">
-                            ยกเลิก
-                          </button>
-                          <button
-                            onClick={() => handleAddAccount(l._id)}
-                            disabled={addingAccount || !newAccountData.trim()}
-                            className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 disabled:bg-slate-400 transition-colors"
-                          >
-                            {addingAccount ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                            เพิ่ม
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Account items */}
-                    {l.accounts.length === 0 ? (
-                      <div className="flex items-center gap-2 text-slate-400 text-xs py-2">
-                        <AlertCircle size={14} /> ยังไม่มี Account — กดเพิ่มเพื่อใส่ข้อมูล
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2 max-h-80 overflow-y-auto">
-                        {l.accounts.map((acc, idx) => (
-                          <div key={acc._id} className={`rounded-xl border p-3 text-xs flex gap-3 ${acc.sold ? "bg-slate-50 border-slate-100 opacity-60" : "bg-white border-slate-200"}`}>
-                            <div className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black mt-0.5" style={{ background: acc.sold ? "#f1f5f9" : "#fef2f2", color: acc.sold ? "#94a3b8" : "#ef4444" }}>
-                              {idx + 1}
-                            </div>
-                            <pre className="flex-1 font-mono whitespace-pre-wrap text-slate-600 leading-relaxed min-w-0 overflow-hidden">{acc.data}</pre>
-                            <div className="shrink-0 flex flex-col items-end gap-1">
-                              {acc.sold ? (
-                                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">ขายแล้ว</span>
-                              ) : (
-                                <>
-                                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">พร้อมขาย</span>
-                                  <button
-                                    onClick={() => handleRemoveAccount(l._id, acc._id, acc.sold)}
-                                    className="text-red-400 hover:text-red-600 transition-colors mt-1"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <Reorder.Group as="div" axis="y" values={listings} onReorder={handleReorder} className="flex flex-col gap-4">
+          {listings.map((l) => (
+            <ShopListingCard
+              key={l._id}
+              l={l}
+              isExpanded={expandedId === l._id}
+              onToggleExpand={() => setExpandedId(expandedId === l._id ? null : l._id)}
+              toggleStatus={toggleStatus}
+              openEdit={openEdit}
+              handleDelete={handleDelete}
+              addingTo={addingTo}
+              setAddingTo={setAddingTo}
+              newAccountData={newAccountData}
+              setNewAccountData={setNewAccountData}
+              handleAddAccount={handleAddAccount}
+              addingAccount={addingAccount}
+              handleRemoveAccount={handleRemoveAccount}
+            />
+          ))}
+        </Reorder.Group>
       )}
 
       {/* Create/Edit Modal */}
@@ -377,10 +465,32 @@ export default function AdminShopPage() {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-600">รูปสินค้า (หลายรูปได้)</label>
-                  <button type="button" onClick={addImageSlot} className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1">
-                    <Plus size={13} /> เพิ่มรูป
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => bulkUploadRef.current?.click()}
+                      disabled={bulkUploading}
+                      className="text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 disabled:bg-slate-400 px-2.5 py-1.5 rounded-lg flex items-center gap-1"
+                    >
+                      {bulkUploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                      อัพหลายรูปพร้อมกัน
+                    </button>
+                    <button type="button" onClick={addImageSlot} className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1">
+                      <Plus size={13} /> เพิ่มรูป
+                    </button>
+                  </div>
                 </div>
+                <input
+                  ref={bulkUploadRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) handleBulkUpload(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
                 {form.images.map((img, idx) => (
                   <div key={idx} className="flex items-start gap-2">
                     <div className="flex-1">
@@ -399,6 +509,30 @@ export default function AdminShopPage() {
                   </div>
                 ))}
               </div>
+
+              {/* YouTube how-to link */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">ลิงก์ YouTube สอนวิธีใช้งาน (ไม่บังคับ)</label>
+                <input
+                  type="url"
+                  value={form.youtubeUrl}
+                  onChange={(e) => setForm((f) => ({ ...f, youtubeUrl: e.target.value }))}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+                <p className="text-[11px] text-slate-400">ลูกค้าจะเห็นปุ่ม “ดูวิธี” เมื่อใส่ลิงก์นี้</p>
+              </div>
+
+              {/* Live chat toggle */}
+              <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.liveChatEnabled}
+                  onChange={(e) => setForm((f) => ({ ...f, liveChatEnabled: e.target.checked }))}
+                  className="accent-emerald-600 w-4 h-4"
+                />
+                <span className="text-sm font-bold text-slate-700">💬 เปิดให้สอบถามผ่าน Live Chat ในเว็บ</span>
+              </label>
 
               {/* Status */}
               <div className="flex flex-col gap-1.5">

@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ShoppingBag, Search, RefreshCw, X, AlertCircle,
   ChevronLeft, ChevronRight, Package, History, SlidersHorizontal, ChevronDown,
+  Play, MessageCircle,
 } from "lucide-react";
 
 interface ShopItem {
@@ -15,6 +16,9 @@ interface ShopItem {
   images: string[];
   price: number;
   stock: number;
+  totalStock: number;
+  liveChatEnabled?: boolean;
+  youtubeUrl?: string;
   createdAt: string;
 }
 
@@ -156,23 +160,50 @@ export default function ShopPage() {
       const res = await fetch(`/api/shop/${buyModal._id}`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) { showToast(data.error || "เกิดข้อผิดพลาด", false); setBuyModal(null); return; }
+      
+      const purchasedItem = buyModal;
       setBuyModal(null);
-      setSuccessData({ purchaseId: data.purchaseId });
       await updateSession();
       fetchItems();
+      
+      // Auto open live chat for the purchased item
+      try {
+        const chatRes = await fetch("/api/user/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subject: `รับสินค้า: ${purchasedItem.title}`,
+            text: `สั่งซื้อสินค้า "${purchasedItem.title}" สำเร็จแล้วครับ (Ref: ${data.purchaseId}) รบกวนส่งข้อมูลให้ด้วยครับ`,
+          }),
+        });
+        const chatData = await chatRes.json();
+        if (chatRes.ok && chatData.conversationId) {
+          showToast("เปิดเคสสำหรับรับสินค้าแล้ว ทีมงานจะตอบกลับเร็ว ๆ นี้");
+          window.dispatchEvent(new CustomEvent("open-livechat", { detail: { conversationId: chatData.conversationId } }));
+        } else {
+          setSuccessData({ purchaseId: data.purchaseId });
+        }
+      } catch (err) {
+        setSuccessData({ purchaseId: data.purchaseId });
+      }
+
     } finally {
       setIsBuying(false);
     }
   };
 
-  const filtered = items.filter((i) => {
-    if (search && !i.title.toLowerCase().includes(search.toLowerCase())) return false;
-    if (minPrice !== "" && i.price < Number(minPrice)) return false;
-    if (maxPrice !== "" && i.price > Number(maxPrice)) return false;
-    return true;
-  });
+  const filtered = items
+    .filter((i) => {
+      if (search && !i.title.toLowerCase().includes(search.toLowerCase())) return false;
+      if (minPrice !== "" && i.price < Number(minPrice)) return false;
+      if (maxPrice !== "" && i.price > Number(maxPrice)) return false;
+      return true;
+    })
+    .sort((a, b) => (a.stock === 0 ? 1 : 0) - (b.stock === 0 ? 1 : 0));
 
   const hasFilter = search || minPrice !== "" || maxPrice !== "";
+  const totalStockRemaining = items.reduce((sum, i) => sum + i.stock, 0);
+  const totalStockAll = items.reduce((sum, i) => sum + i.totalStock, 0);
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-7xl mx-auto">
@@ -305,6 +336,11 @@ export default function ShopPage() {
             <X size={15} />
           </button>
         )}
+
+        <div className="ml-auto shrink-0 flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 font-bold text-xs px-3 py-2 rounded-xl shadow-sm">
+          <Package size={14} className="text-red-500" />
+          สต็อกรวม {totalStockRemaining.toLocaleString()}/{totalStockAll.toLocaleString()}
+        </div>
       </div>
 
       {/* Grid */}
@@ -332,11 +368,6 @@ export default function ShopPage() {
                     <span className="text-white font-black text-sm">หมดแล้ว</span>
                   </div>
                 )}
-                {item.stock > 0 && item.stock <= 3 && (
-                  <div className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                    เหลือ {item.stock}
-                  </div>
-                )}
               </div>
 
               {/* Info */}
@@ -357,6 +388,18 @@ export default function ShopPage() {
                   <ShoppingBag size={13} />
                   {item.stock === 0 ? "หมดแล้ว" : "ซื้อเลย"}
                 </button>
+                {item.youtubeUrl && (
+                  <div className="flex gap-1.5">
+                    <a
+                      href={item.youtubeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Play size={11} /> ดูวิธี
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -379,6 +422,20 @@ export default function ShopPage() {
                 <p className="font-bold text-gray-900 text-base">{buyModal.title}</p>
                 {buyModal.description && <p className="text-sm text-gray-500 mt-1">{buyModal.description}</p>}
               </div>
+
+              {buyModal.youtubeUrl && (
+                <div className="flex gap-2">
+                  <a
+                    href={buyModal.youtubeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-red-600 bg-red-50 border border-red-100 py-2.5 rounded-xl hover:bg-red-100 transition-colors"
+                  >
+                    <Play size={15} /> ดูวิธีใช้งาน
+                  </a>
+                </div>
+              )}
+
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col gap-2.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 font-medium">ราคา</span>

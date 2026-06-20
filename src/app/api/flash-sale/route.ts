@@ -10,7 +10,7 @@ export async function GET() {
     const now = new Date();
     const sales = await FlashSale.find({ isActive: true, endsAt: { $gt: now } })
       .populate({ path: "boxId", model: Box, select: "name image price isActive" })
-      .sort({ createdAt: -1 })
+      .sort({ startsAt: 1, createdAt: -1 })
       .limit(8);
 
     const result = sales
@@ -22,6 +22,7 @@ export async function GET() {
         image: s.boxId.image,
         originalPrice: s.boxId.price,
         salePrice: s.salePrice,
+        startsAt: s.startsAt ?? null,
         endsAt: s.endsAt,
         discount: `-${Math.round((1 - s.salePrice / s.boxId.price) * 100)}%`,
       }));
