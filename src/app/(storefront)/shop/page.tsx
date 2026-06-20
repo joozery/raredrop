@@ -202,8 +202,8 @@ export default function ShopPage() {
     .sort((a, b) => (a.stock === 0 ? 1 : 0) - (b.stock === 0 ? 1 : 0));
 
   const hasFilter = search || minPrice !== "" || maxPrice !== "";
-  const totalStockRemaining = items.reduce((sum, i) => sum + i.stock, 0);
-  const totalStockAll = items.reduce((sum, i) => sum + i.totalStock, 0);
+  const totalStockRemaining = items.filter((i) => i.stock > 0).length;
+  const totalStockAll = items.length;
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-7xl mx-auto">
@@ -339,7 +339,7 @@ export default function ShopPage() {
 
         <div className="ml-auto shrink-0 flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 font-bold text-xs px-3 py-2 rounded-xl shadow-sm">
           <Package size={14} className="text-red-500" />
-          สต็อกรวม {totalStockRemaining.toLocaleString()}/{totalStockAll.toLocaleString()}
+          สินค้าพร้อมขาย {totalStockRemaining.toLocaleString()}/{totalStockAll.toLocaleString()}
         </div>
       </div>
 
@@ -408,15 +408,15 @@ export default function ShopPage() {
 
       {/* Buy Confirm Modal */}
       {buyModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setBuyModal(null)}>
-          <div className="bg-white w-full max-w-md sm:rounded-2xl rounded-t-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setBuyModal(null)}>
+          <div className="bg-white w-full max-w-md sm:rounded-2xl rounded-t-2xl overflow-hidden shadow-2xl max-h-[85vh] sm:max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
               <h3 className="font-bold text-gray-900 text-base">ยืนยันการซื้อ</h3>
               <button onClick={() => setBuyModal(null)} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
                 <X size={18} />
               </button>
             </div>
-            <div className="p-5 flex flex-col gap-4">
+            <div className="p-5 flex flex-col gap-4 overflow-y-auto flex-1">
               <ModalCarousel images={buyModal.images} />
               <div>
                 <p className="font-bold text-gray-900 text-base">{buyModal.title}</p>
@@ -468,7 +468,7 @@ export default function ShopPage() {
                 </div>
               )}
             </div>
-            <div className="p-5 border-t border-gray-100 flex gap-3">
+            <div className="p-5 border-t border-gray-100 flex gap-3 shrink-0">
               <button onClick={() => setBuyModal(null)} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm">
                 ยกเลิก
               </button>
@@ -492,7 +492,7 @@ export default function ShopPage() {
 
       {/* Purchase Success Modal */}
       {successData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 flex flex-col items-center gap-4 text-center">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
               <span className="text-3xl">🎉</span>
