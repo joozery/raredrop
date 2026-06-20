@@ -15,6 +15,8 @@ export interface IUser extends Document {
   discordJoinClaimed?: boolean;
   referralCode?: string;
   referredBy?: Types.ObjectId;
+  referralFlagged?: boolean;
+  signupIp?: string;
   createdAt: Date;
 }
 
@@ -33,6 +35,9 @@ const UserSchema: Schema = new Schema({
   discordJoinClaimed: { type: Boolean, default: false },
   referralCode: { type: String, unique: true, sparse: true },
   referredBy: { type: Schema.Types.ObjectId, ref: "User" },
+  // true = ตรวจพบ IP สมัครซ้ำกับผู้เชิญหรือคนอื่นที่ผู้เชิญคนนี้เชิญมาแล้ว — ไม่ได้รับรางวัล GemCoin
+  referralFlagged: { type: Boolean, default: false },
+  signupIp: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -34,12 +34,19 @@ export async function GET(req: Request) {
       }
     }
 
-    const totalInvited = await User.countDocuments({ referredBy: userId });
+    const [totalInvited, invited] = await Promise.all([
+      User.countDocuments({ referredBy: userId }),
+      User.find({ referredBy: userId })
+        .select("name avatar createdAt referralFlagged")
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean(),
+    ]);
 
     const origin = req.headers.get("origin") || new URL(req.url).origin;
     const inviteUrl = `${origin}/?ref=${user.referralCode}`;
 
-    return NextResponse.json({ code: user.referralCode, inviteUrl, totalInvited });
+    return NextResponse.json({ code: user.referralCode, inviteUrl, totalInvited, invited });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

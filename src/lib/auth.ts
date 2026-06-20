@@ -2,10 +2,23 @@ import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import LineProvider from "next-auth/providers/line";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { headers } from "next/headers";
 import { connectToDatabase } from "./mongoose";
 import User from "@/models/User";
 import Otp from "@/models/Otp";
 import bcrypt from "bcryptjs";
+
+// ใช้ตรวจจับการสมัครหลายบัญชีจาก IP เดียวกัน (ป้องกันปั๊มรางวัลเชิญเพื่อน) — best-effort เท่านั้น
+async function getClientIp(): Promise<string | undefined> {
+  try {
+    const h = await headers();
+    const forwarded = h.get("x-forwarded-for");
+    if (forwarded) return forwarded.split(",")[0].trim();
+    return h.get("x-real-ip") || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -44,7 +57,8 @@ export const authOptions: NextAuthOptions = {
               user = await User.create({
                  name: credentials.email.split("@")[0],
                  email: credentials.email,
-                 password: hashedPassword
+                 password: hashedPassword,
+                 signupIp: await getClientIp(),
               });
            } else if (credentials.password) {
               // Update password if they logged in via OTP and provided a new password
@@ -95,6 +109,7 @@ export const authOptions: NextAuthOptions = {
                 avatar: user.image,
                 googleId: account.provider === "google" ? user.id : undefined,
                 lineId: account.provider === "line" ? user.id : undefined,
+                signupIp: await getClientIp(),
               });
             } else {
               if (account.provider === "google") existingUser.googleId = user.id;

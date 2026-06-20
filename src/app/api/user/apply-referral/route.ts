@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
-    const me = await User.findById(userId).select("referralCode referredBy createdAt");
+    const me = await User.findById(userId).select("referralCode referredBy createdAt signupIp");
     if (!me) return NextResponse.json({ applied: false });
     if (me.referredBy) return NextResponse.json({ applied: false });
     if (me.referralCode === refCode) return NextResponse.json({ applied: false });
@@ -28,19 +28,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ applied: false });
     }
 
-    const inviter = await User.findOne({ referralCode: refCode }).select("_id gemCoins");
+    const inviter = await User.findOne({ referralCode: refCode }).select("_id gemCoins signupIp");
     if (!inviter) return NextResponse.json({ applied: false });
+
+    // ตรวจ IP ซ้ำกับผู้เชิญ หรือกับคนอื่นที่ผู้เชิญคนนี้เชิญมาแล้ว — สัญญาณว่าอาจเป็นบัญชีปลอมปั๊มรางวัล
+    let suspicious = false;
+    if (me.signupIp) {
+      if (inviter.signupIp && inviter.signupIp === me.signupIp) {
+        suspicious = true;
+      } else {
+        const siblingSameIp = await User.exists({
+          referredBy: inviter._id,
+          signupIp: me.signupIp,
+          _id: { $ne: me._id },
+        });
+        if (siblingSameIp) suspicious = true;
+      }
+    }
 
     const updated = await User.findOneAndUpdate(
       { _id: userId, referredBy: { $exists: false } },
-      { $set: { referredBy: inviter._id } }
+      { $set: { referredBy: inviter._id, referralFlagged: suspicious } }
     );
     if (!updated) return NextResponse.json({ applied: false });
 
     const setting = await Setting.findOne({ key: "referral_reward_gemcoin" }).lean();
     const reward = typeof setting?.value === "number" ? setting.value : 0;
 
-    if (reward > 0) {
+    if (reward > 0 && !suspicious) {
       await User.findByIdAndUpdate(inviter._id, { $inc: { gemCoins: reward } });
       await notify(
         String(inviter._id),
@@ -51,7 +66,7 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ applied: true });
+    return NextResponse.json({ applied: true, flagged: suspicious });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
