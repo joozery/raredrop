@@ -546,7 +546,7 @@ export default function ShopPage() {
             </div>
             <div>
               <p className="font-black text-gray-900 text-lg">ซื้อสำเร็จ!</p>
-              <p className="text-sm text-gray-500 mt-1">ข้อมูล ID เกมถูกส่งให้คุณแล้ว</p>
+              <p className="text-sm text-gray-500 mt-1">ข้อมูลรายละเอียดสินค้าถูกส่งให้คุณแล้ว</p>
             </div>
             <div className="flex gap-3 w-full">
               <button onClick={() => setSuccessData(null)} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm">

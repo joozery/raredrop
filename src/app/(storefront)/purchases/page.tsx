@@ -59,7 +59,7 @@ export default function PurchasesPage() {
           <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
             <History size={24} className="text-red-500" /> ประวัติการซื้อ
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">รายการ ID เกมที่ซื้อไว้ทั้งหมด</p>
+          <p className="text-sm text-gray-500 mt-0.5">รายละเอียดสินค้าที่ซื้อไว้ทั้งหมด</p>
         </div>
         <Link href="/shop" className="flex items-center gap-2 bg-red-600 text-white font-bold text-sm px-4 py-2 rounded-xl hover:bg-red-700 transition-colors shadow-sm">
           <ShoppingBag size={14} /> ไปร้านค้า
@@ -110,7 +110,7 @@ export default function PurchasesPage() {
                 {isOpen && (
                   <div className="border-t border-gray-100 p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-bold text-gray-500">ข้อมูล ID เกม</p>
+                      <p className="text-xs font-bold text-gray-500">รายละเอียดสินค้า</p>
                       <button
                         onClick={() => copyData(p._id, p.deliveredData)}
                         className="flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
