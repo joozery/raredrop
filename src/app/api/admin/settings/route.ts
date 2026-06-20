@@ -214,6 +214,14 @@ const DEFAULT_SETTINGS = [
     group: "หน้าแรก (Hero Banner)",
   },
   {
+    key: "hero_banner_link",
+    value: "",
+    label: "ลิงก์เมื่อคลิกแบนเนอร์ (ไม่บังคับ)",
+    description: "เว้นว่างไว้ถ้าไม่ต้องการให้คลิกที่แบนเนอร์ได้ (เช่น /boxes หรือ https://...)",
+    type: "text",
+    group: "หน้าแรก (Hero Banner)",
+  },
+  {
     key: "hero_banner_title1",
     value: "เปิดลุ้นของสะสมสุดพิเศษ",
     label: "ข้อความหลัก 1",

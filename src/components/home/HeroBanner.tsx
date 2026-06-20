@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function HeroBanner() {
+  const router = useRouter();
   const [settings, setSettings] = useState({
     image: "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/banner/cover/cover.png",
+    link: "",
     title1: "เปิดลุ้นของสะสมสุดพิเศษ",
     title2: "จากทั่วโลก",
     subtitle: "กล่องสุ่มหลากหลาย สินค้าพรีเมียม\\nลุ้นได้จริง ส่งถึงมือคุณ",
@@ -18,6 +21,7 @@ export default function HeroBanner() {
       .then(data => {
         setSettings(prev => ({
           image: data.hero_banner_image || prev.image,
+          link: data.hero_banner_link || prev.link,
           title1: data.hero_banner_title1 || prev.title1,
           title2: data.hero_banner_title2 || prev.title2,
           subtitle: data.hero_banner_subtitle || prev.subtitle,
@@ -31,8 +35,17 @@ export default function HeroBanner() {
 
   return (
     <div 
-      className="relative w-full h-48 md:h-80 bg-cover bg-center rounded-xl overflow-hidden border border-red-100 p-6 md:p-10 flex items-center shadow-sm"
+      className={`relative w-full h-48 md:h-80 bg-cover bg-center rounded-xl overflow-hidden border border-red-100 p-6 md:p-10 flex items-center shadow-sm ${settings.link ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
       style={{ backgroundImage: `url('${settings.image}')` }}
+      onClick={(e) => {
+        if (settings.link && (e.target as HTMLElement).tagName !== 'A' && !(e.target as HTMLElement).closest('a')) {
+          if (settings.link.startsWith('http')) {
+            window.open(settings.link, '_blank');
+          } else {
+            router.push(settings.link);
+          }
+        }
+      }}
     >
       <div className="relative z-10 max-w-lg">
         <h1 className="text-base sm:text-xl md:text-4xl font-extrabold text-gray-900 leading-tight">

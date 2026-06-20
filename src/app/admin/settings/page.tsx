@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const [logoSaving, setLogoSaving] = useState(false);
   const [logoSaved, setLogoSaved] = useState(false);
   const [bannerUrl, setBannerUrl] = useState("");
+  const [bannerLink, setBannerLink] = useState("");
   const [bannerSaving, setBannerSaving] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
   const [gemcoinIcon, setGemcoinIcon] = useState("");
@@ -44,6 +45,9 @@ export default function SettingsPage() {
           
           const bannerSetting = d.find((s: SettingItem) => s.key === "hero_banner_image");
           if (bannerSetting) setBannerUrl(String(bannerSetting.value));
+
+          const bannerLinkSetting = d.find((s: SettingItem) => s.key === "hero_banner_link");
+          if (bannerLinkSetting) setBannerLink(String(bannerLinkSetting.value));
 
           const gemcoinIconSetting = d.find((s: SettingItem) => s.key === "gemcoin_icon");
           if (gemcoinIconSetting) setGemcoinIcon(String(gemcoinIconSetting.value));
@@ -74,15 +78,18 @@ export default function SettingsPage() {
   const saveBanner = async () => {
     setBannerSaving(true);
     try {
-      const res = await fetch("/api/admin/settings", {
+      await fetch("/api/admin/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: "hero_banner_image", value: bannerUrl }),
       });
-      if (res.ok) {
-        setBannerSaved(true);
-        setTimeout(() => setBannerSaved(false), 2000);
-      }
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "hero_banner_link", value: bannerLink }),
+      });
+      setBannerSaved(true);
+      setTimeout(() => setBannerSaved(false), 2000);
     } finally {
       setBannerSaving(false);
     }
@@ -140,7 +147,7 @@ export default function SettingsPage() {
     }
   };
 
-  const displaySettings = settings.filter((s) => s.key !== "site_logo" && s.key !== "hero_banner_image" && s.key !== "gemcoin_icon");
+  const displaySettings = settings.filter((s) => s.key !== "site_logo" && s.key !== "hero_banner_image" && s.key !== "hero_banner_link" && s.key !== "gemcoin_icon");
   const groups = [...new Set(displaySettings.map((s) => s.group))];
 
   if (loading) {
@@ -219,6 +226,16 @@ export default function SettingsPage() {
             accept="image/png,image/jpeg,image/webp"
             placeholder="อัพโหลดรูปภาพหน้าหลัก"
           />
+          <div className="flex flex-col gap-1.5 -mt-1">
+            <label className="text-xs font-bold text-slate-600">ลิงก์เมื่อคลิกรูปแบนเนอร์ (ไม่บังคับ)</label>
+            <input
+              type="text"
+              value={bannerLink}
+              onChange={(e) => setBannerLink(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+              placeholder="เช่น /boxes หรือ https://..."
+            />
+          </div>
           <div className="flex items-center gap-3">
             <button
               onClick={saveBanner}
