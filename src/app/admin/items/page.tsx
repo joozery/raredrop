@@ -24,7 +24,10 @@ interface ItemData {
   rarityId: RarityData | string;
   categoryId?: CategoryData | string;
   price: number;
+  sellPrice?: number;
   stock: number;
+  unlimitedStock?: boolean;
+  contactChannels?: { discord: boolean; livechat: boolean };
   isActive: boolean;
   type: "item" | "coin_reward";
   coinRewardAmount: number;
@@ -72,6 +75,8 @@ export default function ManageItems() {
       isActive: true,
       price: 0,
       stock: 0,
+      unlimitedStock: false,
+      contactChannels: { discord: true, livechat: true },
       type: "item",
       coinRewardAmount: 0,
       rarityId: rarities.length > 0 ? rarities[0]._id : "",
@@ -88,6 +93,11 @@ export default function ManageItems() {
       ...item,
       type: resolvedType,
       coinRewardAmount: (item as any).coinRewardAmount ?? 0,
+      unlimitedStock: !!item.unlimitedStock,
+      contactChannels: {
+        discord: item.contactChannels?.discord !== false,
+        livechat: item.contactChannels?.livechat !== false,
+      },
       rarityId: typeof item.rarityId === 'object' ? (item.rarityId as any)._id : item.rarityId,
       categoryId: typeof item.categoryId === 'object' ? (item.categoryId as any)._id : (item.categoryId || "")
     });
@@ -240,11 +250,21 @@ export default function ManageItems() {
                         <Coins size={14} className="text-yellow-500" />
                         {item.price.toLocaleString()}
                       </div>
+                      {item.type !== "coin_reward" && (
+                        <div className="text-[10px] font-bold text-slate-400 mt-0.5">
+                          ขายคืน: <span className="text-slate-600">฿{(item.sellPrice ?? item.price).toLocaleString()}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-6 text-center">
                       {item.type === "coin_reward" ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700">
                           💎 {item.coinRewardAmount} GEM
+                        </span>
+                      ) : item.unlimitedStock ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700">
+                          <Box size={12} />
+                          ♾️ ไม่จำกัด
                         </span>
                       ) : (
                         <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg ${item.stock > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-600'}`}>
@@ -398,13 +418,72 @@ export default function ManageItems() {
                     <label className="block text-xs font-bold text-slate-600 mb-1.5">สต็อกตั้งต้น (ชิ้น)</label>
                     <input
                       type="number"
-                      value={currentItem.stock ?? 0}
+                      value={currentItem.unlimitedStock ? "" : (currentItem.stock ?? 0)}
                       onChange={(e) => setCurrentItem({...currentItem, stock: parseInt(e.target.value) || 0})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-bold text-slate-800"
+                      disabled={currentItem.unlimitedStock}
+                      placeholder={currentItem.unlimitedStock ? "∞ ไม่จำกัด" : undefined}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                     />
                   </div>
                 )}
               </div>
+
+              {currentItem.type !== "coin_reward" && (
+                <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5">
+                  <input
+                    type="checkbox"
+                    checked={!!currentItem.unlimitedStock}
+                    onChange={(e) => setCurrentItem({...currentItem, unlimitedStock: e.target.checked})}
+                    className="accent-red-600 w-4 h-4"
+                  />
+                  <span className="text-sm font-bold text-slate-700">♾️ สต็อกไม่จำกัด (Infinity)</span>
+                  <span className="text-[11px] text-slate-400 ml-auto">ไม่หักสต็อกเมื่อสุ่มได้</span>
+                </label>
+              )}
+
+              {currentItem.type !== "coin_reward" && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                    ราคาขายคืน (บาท) <span className="font-normal text-slate-400">— เว้นว่างเพื่อใช้มูลค่าไอเทม</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={currentItem.sellPrice ?? ""}
+                    onChange={(e) => setCurrentItem({...currentItem, sellPrice: e.target.value === "" ? undefined : (parseFloat(e.target.value) || 0)})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-black text-slate-800"
+                    placeholder={`ค่าเริ่มต้น: ${(currentItem.price ?? 0).toLocaleString()}`}
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">จำนวนเหรียญที่ผู้เล่นได้รับเมื่อกด “ขายคืนระบบ”</p>
+                </div>
+              )}
+
+              {currentItem.type !== "coin_reward" && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">ช่องทางติดต่อทีมงาน (ตอนกด “รับ item”)</label>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={currentItem.contactChannels?.livechat !== false}
+                        onChange={(e) => setCurrentItem({...currentItem, contactChannels: { discord: currentItem.contactChannels?.discord !== false, livechat: e.target.checked }})}
+                        className="accent-emerald-600 w-4 h-4"
+                      />
+                      <span className="text-sm font-bold text-slate-700">💬 แชทกับทีมงานในเว็บ</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={currentItem.contactChannels?.discord !== false}
+                        onChange={(e) => setCurrentItem({...currentItem, contactChannels: { livechat: currentItem.contactChannels?.livechat !== false, discord: e.target.checked }})}
+                        className="accent-indigo-600 w-4 h-4"
+                      />
+                      <span className="text-sm font-bold text-slate-700">🔵 ส่งผ่าน Discord</span>
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">เลือกว่าจะให้ลูกค้าเห็นช่องทางไหนบ้างเมื่อขอรับสินค้านี้</p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">รายละเอียด (ไม่บังคับ)</label>

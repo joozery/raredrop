@@ -61,20 +61,20 @@ export default function ShopPreview() {
                 <Link
                   key={item._id}
                   href="/shop"
-                  className="bg-white border border-gray-100 rounded-xl p-2 pb-3 shadow-sm hover:shadow-md transition-shadow relative flex flex-col group"
+                  className="bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow relative flex flex-col group overflow-hidden"
                 >
                   {item.stock <= 3 && item.stock > 0 && (
-                    <span className="absolute top-2 left-2 z-10 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-lg shadow-sm">
+                    <span className="absolute top-0 left-0 z-10 bg-orange-500 text-white text-[10px] font-bold px-2 py-1.5 rounded-br-lg shadow-sm">
                       เหลือ {item.stock}
                     </span>
                   )}
                   {item.stock === 0 && (
-                    <span className="absolute top-2 left-2 z-10 bg-gray-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-lg shadow-sm">
+                    <span className="absolute top-0 left-0 z-10 bg-gray-500 text-white text-[10px] font-bold px-2 py-1.5 rounded-br-lg shadow-sm">
                       หมดแล้ว
                     </span>
                   )}
 
-                  <div className="w-full h-28 lg:h-24 rounded-lg flex items-center justify-center mb-2 overflow-hidden bg-[#FFF9F9]">
+                  <div className="w-full aspect-square flex items-center justify-center overflow-hidden bg-[#FFF9F9]">
                     {item.images?.[0] ? (
                       <img
                         src={item.images[0]}
@@ -86,21 +86,23 @@ export default function ShopPreview() {
                     )}
                   </div>
 
-                  <h3 className="font-bold text-gray-900 text-[12px] text-center leading-tight mb-1 line-clamp-2 px-1">
-                    {item.title}
-                  </h3>
+                  <div className="p-2 pb-3 flex flex-col flex-grow">
+                    <h3 className="font-bold text-gray-900 text-[12px] text-center leading-tight mb-1 line-clamp-2 px-1">
+                      {item.title}
+                    </h3>
 
-                  <p className="text-[#E04631] font-black text-[15px] text-center mb-2">
-                    ฿{item.price.toLocaleString()}
-                  </p>
+                    <p className="text-[#E04631] font-black text-[15px] text-center mb-2">
+                      ฿{item.price.toLocaleString()}
+                    </p>
 
-                  <button
-                    className="mt-auto w-full bg-[#E04631] text-white font-bold py-1.5 rounded-lg text-[12px] transition-all active:scale-95 shadow-sm flex items-center justify-center gap-1 group-hover:bg-red-700"
-                    tabIndex={-1}
-                  >
-                    <ShoppingBag size={13} />
-                    ซื้อเลย
-                  </button>
+                    <button
+                      className="mt-auto w-full bg-[#E04631] text-white font-bold py-1.5 rounded-lg text-[12px] transition-all active:scale-95 shadow-sm flex items-center justify-center gap-1 group-hover:bg-red-700"
+                      tabIndex={-1}
+                    >
+                      <ShoppingBag size={13} />
+                      ซื้อเลย
+                    </button>
+                  </div>
                 </Link>
               ))}
         </div>

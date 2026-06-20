@@ -5,6 +5,7 @@ import Transaction from "@/models/Transaction";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { notify } from "@/lib/notify";
+import { awardXp, getExpPerBaht } from "@/lib/xp";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,15 +24,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     await connectToDatabase();
     
-    // Top up coins and also add xp (1 coin = 1 xp as a basic rule, or just add coins)
     const updatedUser = await User.findByIdAndUpdate(
       id,
-      { 
-        $inc: { 
-          coins: amount,
-          xp: amount // Give them some XP for topping up
-        } 
-      },
+      { $inc: { coins: amount } },
       { new: true }
     );
 
@@ -53,6 +48,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       `ยอดเงินในบัญชีของคุณตอนนี้คือ ฿${updatedUser.coins.toLocaleString()}`,
       "success"
     );
+
+    // Award EXP based on topup amount
+    const expRate = await getExpPerBaht();
+    const xpToAdd = Math.floor(amount * expRate);
+    if (xpToAdd > 0) await awardXp(id, xpToAdd);
 
     return NextResponse.json(updatedUser);
   } catch (error: any) {

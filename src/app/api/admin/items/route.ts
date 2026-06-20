@@ -5,6 +5,7 @@ import Category from "@/models/Category"; // To ensure model is registered for p
 import Rarity from "@/models/Rarity";     // To ensure model is registered for populate
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { sendDiscordNewProductBroadcast } from "@/lib/discord";
 
 export async function GET(req: Request) {
   try {
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, description, image, rarityId, categoryId, price, stock, isActive, type, coinRewardAmount } = body;
+    const { name, description, image, rarityId, categoryId, price, sellPrice, stock, unlimitedStock, contactChannels, isActive, type, coinRewardAmount } = body;
     const isCoinReward = type === "coin_reward";
 
     if (!name || (!isCoinReward && !image) || !rarityId || price === undefined) {
@@ -55,7 +56,13 @@ export async function POST(req: Request) {
       rarityId,
       categoryId: categoryId || undefined,
       price: Number(price),
+      sellPrice: (sellPrice === undefined || sellPrice === null || sellPrice === "") ? undefined : Number(sellPrice),
       stock: isCoinReward ? 0 : (Number(stock) || 0),
+      unlimitedStock: isCoinReward ? false : !!unlimitedStock,
+      contactChannels: {
+        discord: contactChannels?.discord !== false,
+        livechat: contactChannels?.livechat !== false,
+      },
       isActive: isActive !== undefined ? isActive : true,
       type: type || "item",
       coinRewardAmount: Number(coinRewardAmount) || 0,
@@ -64,6 +71,17 @@ export async function POST(req: Request) {
     const populatedItem = await Item.findById(newItem._id)
       .populate('categoryId', 'name')
       .populate('rarityId', 'name color');
+
+    if (!isCoinReward && populatedItem?.isActive) {
+      await sendDiscordNewProductBroadcast({
+        name: populatedItem.name,
+        price: populatedItem.price,
+        image: populatedItem.image,
+        productType: "item",
+        stock: populatedItem.stock,
+        unlimitedStock: populatedItem.unlimitedStock,
+      });
+    }
 
     return NextResponse.json(populatedItem, { status: 201 });
   } catch (error: any) {

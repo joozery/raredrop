@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { ShieldCheck, Truck, Users, Package, Headset, Scale, Gift, ShoppingBag } from "lucide-react";
-import PromoBanner from "./PromoBanner";
 
 interface RecentPurchase {
   _id: string;
@@ -92,9 +91,6 @@ export default function RightPanel() {
               ))}
         </div>
       </div>
-
-      {/* Promo Banner */}
-      <PromoBanner />
 
       {/* Why RareDrop */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">

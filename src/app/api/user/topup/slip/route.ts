@@ -5,6 +5,7 @@ import { connectToDatabase } from "@/lib/mongoose";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import { notify } from "@/lib/notify";
+import { awardXp, getExpPerBaht } from "@/lib/xp";
 
 export async function POST(req: Request) {
   try {
@@ -73,6 +74,11 @@ export async function POST(req: Request) {
         `ยอดเงิน ฿${amount.toLocaleString()} เข้าบัญชีของคุณแล้ว (ยอดรวม ฿${user.coins.toLocaleString()})`,
         "success"
       );
+
+      // Award EXP based on topup amount
+      const expRate = await getExpPerBaht();
+      const xpToAdd = Math.floor(amount * expRate);
+      if (xpToAdd > 0) await awardXp(user._id.toString(), xpToAdd);
     }
     
     return NextResponse.json({ success: true, amount, user });

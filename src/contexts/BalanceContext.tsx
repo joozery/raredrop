@@ -22,7 +22,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 
   const refreshBalance = useCallback(async () => {
     try {
-      const res = await fetch("/api/user/balance");
+      const res = await fetch("/api/user/balance", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setCoins(data.coins ?? 0);
