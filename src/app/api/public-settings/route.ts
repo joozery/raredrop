@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongoose";
 import Setting from "@/models/Setting";
 
-const PUBLIC_KEYS = ["site_logo", "site_name", "site_description", "discord_invite_url"];
+const PUBLIC_KEYS = [
+  "site_logo", "site_name", "site_description", "discord_invite_url",
+  "help_line_url", "help_email", "help_phone", "help_facebook_url",
+];
 
 export async function GET() {
   try {

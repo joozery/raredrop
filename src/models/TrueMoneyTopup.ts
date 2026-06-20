@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 export interface ITrueMoneyTopup extends Document {
   userId: Types.ObjectId;
   amount: number;
+  matchCode: string;
   status: "pending" | "completed" | "expired";
   transactionId?: string;
   requestUrl?: string;
@@ -13,6 +14,8 @@ export interface ITrueMoneyTopup extends Document {
 const TrueMoneyTopupSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   amount: { type: Number, required: true },
+  // โค้ดเฉพาะตัวต่อรายการ — ฝังในข้อความตอนสร้างลิงก์ TrueMoney แล้วเช็คย้อนกลับตอน verify
+  matchCode: { type: String, unique: true, sparse: true },
   status: { type: String, enum: ["pending", "completed", "expired"], default: "pending" },
   transactionId: { type: String, unique: true, sparse: true },
   requestUrl: { type: String },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X, Upload, CheckCircle2, AlertCircle, QrCode, Wallet, ExternalLink, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -9,7 +9,8 @@ interface TopupModalProps {
   onClose: () => void;
 }
 
-const CHECK_THROTTLE_MS = 3000;
+const POLL_INTERVAL_MS = 5000;
+const POLL_MAX_ATTEMPTS = 60; // ~5 นาที
 
 export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   const { update } = useSession();
@@ -21,7 +22,10 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   const [tmnUrl, setTmnUrl] = useState<string | null>(null);
   const [tmnRequestId, setTmnRequestId] = useState<string | null>(null);
   const [tmnAmount, setTmnAmount] = useState<number | null>(null);
-  const [checkDisabled, setCheckDisabled] = useState(false);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollAttempts = useRef(0);
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -30,9 +34,64 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   const [message, setMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const stopPolling = () => {
+    if (pollTimer.current) {
+      clearInterval(pollTimer.current);
+      pollTimer.current = null;
+    }
+  };
+
+  // เช็คอัตโนมัติเป็นระยะตอนอยู่หน้า TrueMoney — ลูกค้าไม่ต้องกดตรวจสอบเอง
+  useEffect(() => {
+    if (step !== "truemoney" || !tmnRequestId) return;
+
+    pollAttempts.current = 0;
+    setPollTimedOut(false);
+
+    const check = async () => {
+      pollAttempts.current += 1;
+      try {
+        const res = await fetch("/api/user/topup/truemoney/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestId: tmnRequestId }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          stopPolling();
+          setStatus("success");
+          setMessage(`เติมเงินสำเร็จ! ได้รับ ${data.amount} บาท`);
+          await update();
+          setTimeout(() => {
+            handleClose();
+            window.location.reload();
+          }, 2000);
+          return;
+        }
+      } catch {
+        // เงียบไว้ — ลองใหม่ในรอบถัดไป
+      }
+      if (pollAttempts.current >= POLL_MAX_ATTEMPTS) {
+        stopPolling();
+        setPollTimedOut(true);
+      }
+    };
+
+    check();
+    pollTimer.current = setInterval(check, POLL_INTERVAL_MS);
+    return () => stopPolling();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, tmnRequestId, retryKey]);
+
+  const handleRetryPolling = () => {
+    setPollTimedOut(false);
+    setRetryKey((k) => k + 1);
+  };
+
   if (!isOpen) return null;
 
   const resetState = () => {
+    stopPolling();
     setMethod("promptpay");
     setStep("amount");
     setAmount("");
@@ -40,6 +99,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
     setTmnUrl(null);
     setTmnRequestId(null);
     setTmnAmount(null);
+    setPollTimedOut(false);
     setFile(null);
     setPreview(null);
     setStatus("idle");
@@ -107,43 +167,6 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
     } catch {
       setStatus("error");
       setMessage("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCheckTrueMoney = async () => {
-    if (!tmnRequestId || checkDisabled) return;
-
-    setCheckDisabled(true);
-    setTimeout(() => setCheckDisabled(false), CHECK_THROTTLE_MS);
-
-    setIsLoading(true);
-    setStatus("idle");
-    setMessage("");
-
-    try {
-      const res = await fetch("/api/user/topup/truemoney/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId: tmnRequestId }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setStatus("success");
-        setMessage(`เติมเงินสำเร็จ! ได้รับ ${data.amount} บาท`);
-        await update();
-        setTimeout(() => {
-          handleClose();
-          window.location.reload();
-        }, 2000);
-      } else {
-        setStatus("pending");
-        setMessage(data.message || data.error || "ยังไม่พบรายการโอนของคุณ");
-      }
-    } catch {
-      setStatus("error");
-      setMessage("เกิดข้อผิดพลาดในการตรวจสอบ");
     } finally {
       setIsLoading(false);
     }
@@ -388,11 +411,10 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
                   <Wallet size={26} />
                 </div>
                 <div className="text-center">
-                  <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">โอนให้ตรงยอดนี้เป๊ะๆ</p>
+                  <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">โอนให้ตรงยอดนี้</p>
                   <p className="text-2xl font-black text-red-600">
                     ฿{(tmnAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1">ยอดมีเศษทศนิยมเพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกคน</p>
                 </div>
                 <a
                   href={tmnUrl || "#"}
@@ -405,42 +427,28 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
               </div>
 
               <div className="border-t border-dashed border-slate-200 pt-5">
-                <p className="text-sm font-bold text-slate-700 text-center mb-3">โอนเงินเสร็จแล้ว? กดตรวจสอบได้เลย</p>
-
-                {status === "pending" && (
-                  <div className="mb-3 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium px-4 py-3 rounded-lg flex items-center gap-2">
-                    <AlertCircle size={16} className="shrink-0" /> {message}
-                  </div>
-                )}
-                {status === "error" && (
-                  <div className="mb-3 bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-4 py-3 rounded-lg flex items-center gap-2">
-                    <AlertCircle size={16} className="shrink-0" /> {message}
-                  </div>
-                )}
-                {status === "success" && (
-                  <div className="mb-3 bg-green-50 border border-green-200 text-green-700 text-sm font-bold px-4 py-3 rounded-lg flex items-center gap-2">
+                {status === "success" ? (
+                  <div className="bg-green-50 border border-green-200 text-green-700 text-sm font-bold px-4 py-3 rounded-lg flex items-center gap-2">
                     <CheckCircle2 size={16} className="shrink-0" /> {message}
                   </div>
+                ) : pollTimedOut ? (
+                  <>
+                    <div className="mb-3 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium px-4 py-3 rounded-lg flex items-center gap-2">
+                      <AlertCircle size={16} className="shrink-0" /> ยังไม่พบรายการโอนของคุณ ตรวจสอบว่าโอนเงินแล้วและลองใหม่อีกครั้ง
+                    </div>
+                    <button
+                      onClick={handleRetryPolling}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw size={16} /> ตรวจสอบอีกครั้ง
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center gap-2.5 py-3 text-sm font-bold text-slate-500">
+                    <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin shrink-0" />
+                    กำลังรอตรวจสอบการชำระเงินอัตโนมัติ...
+                  </div>
                 )}
-
-                <button
-                  onClick={handleCheckTrueMoney}
-                  disabled={isLoading || checkDisabled || status === "success"}
-                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      กำลังตรวจสอบ...
-                    </>
-                  ) : status === "success" ? (
-                    "เติมเงินสำเร็จ!"
-                  ) : (
-                    <>
-                      <RefreshCw size={16} /> ตรวจสอบการชำระเงิน
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           )}

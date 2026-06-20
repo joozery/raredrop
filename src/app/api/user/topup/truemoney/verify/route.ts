@@ -46,13 +46,16 @@ export async function POST(req: Request) {
     }
 
     const received = data.data;
+    // โค้ดอ้างอิงเฉพาะตัว (ฝังไว้ใน message ตอนสร้างลิงก์) คือตัวเช็คหลัก — TrueMoney ส่งข้อความนี้กลับมาเป๊ะ
+    // เมื่อลูกค้าจ่ายผ่านลิงก์ที่เราสร้าง แม่นยำกว่าเช็คแค่ยอดเงิน/เวลา
+    const codeMatches = !!received.message && received.message.includes(record.matchCode);
     // my-last-receive ส่ง amount เป็นสตางค์ (เช่น 516 = ฿5.16) ต่างจาก transfer-link-generator ที่รับเป็นบาท
     const receivedBaht = Number(received.amount) / 100;
     const amountMatches = Math.abs(receivedBaht - record.amount) < 0.005;
     const isRecent = parseThaiTime(received.received_time) >= record.createdAt;
     const receiverMatches = !truemoneyNumber || received.receiver_mobile === truemoneyNumber;
 
-    if (!amountMatches || !isRecent || !receiverMatches) {
+    if (!codeMatches || !amountMatches || !isRecent || !receiverMatches) {
       return NextResponse.json({ success: false, message: NOT_FOUND_MESSAGE });
     }
 

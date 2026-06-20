@@ -141,6 +141,38 @@ const DEFAULT_SETTINGS = [
     type: "number",
     group: "เชิญเพื่อน",
   },
+  {
+    key: "help_line_url",
+    value: "",
+    label: "ลิงก์ติดต่อ LINE",
+    description: "แสดงในหน้าช่วยเหลือ — เว้นว่าง = ไม่แสดงช่องทางนี้",
+    type: "text",
+    group: "ช่วยเหลือ",
+  },
+  {
+    key: "help_email",
+    value: "",
+    label: "อีเมลติดต่อ",
+    description: "แสดงในหน้าช่วยเหลือ — เว้นว่าง = ไม่แสดงช่องทางนี้",
+    type: "text",
+    group: "ช่วยเหลือ",
+  },
+  {
+    key: "help_phone",
+    value: "",
+    label: "เบอร์โทรติดต่อ",
+    description: "แสดงในหน้าช่วยเหลือ — เว้นว่าง = ไม่แสดงช่องทางนี้",
+    type: "text",
+    group: "ช่วยเหลือ",
+  },
+  {
+    key: "help_facebook_url",
+    value: "",
+    label: "ลิงก์ Facebook",
+    description: "แสดงในหน้าช่วยเหลือ — เว้นว่าง = ไม่แสดงช่องทางนี้",
+    type: "text",
+    group: "ช่วยเหลือ",
+  },
 ];
 
 async function seedDefaultSettings() {

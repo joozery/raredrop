@@ -71,6 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: session, status } = useSession();
 
   useEffect(() => {
@@ -83,6 +84,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
     }
   }, [status, session, router]);
+
+  // ใต้จอ lg ลดจอบังคับให้ sidebar เป็นโหมดเต็ม (มีตัวหนังสือ) เสมอ — โหมดย่อไอคอนมีไว้สำหรับจอใหญ่เท่านั้น
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const syncOnMobile = () => { if (mq.matches) setIsSidebarOpen(true); };
+    syncOnMobile();
+    mq.addEventListener("change", syncOnMobile);
+    return () => mq.removeEventListener("change", syncOnMobile);
+  }, []);
+
+  // ปิดเมนูมือถืออัตโนมัติทุกครั้งที่เปลี่ยนหน้า
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   if (status === "loading" || status === "unauthenticated") {
     return (
@@ -97,8 +112,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen w-full bg-[#F8FAFC] text-slate-800 font-sans overflow-hidden">
+      {/* Mobile drawer backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={cn("bg-white border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300", isSidebarOpen ? "w-64" : "w-20")}>
+      <aside
+        className={cn(
+          "bg-white border-r border-slate-200 flex flex-col shrink-0 transition-all duration-300 z-50",
+          "fixed inset-y-0 left-0 lg:relative",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          isSidebarOpen ? "w-64" : "w-20"
+        )}
+      >
         <div className={cn("flex flex-col h-full", isSidebarOpen ? "w-64" : "w-20")}>
           <div className={cn("h-20 flex items-center shrink-0 border-b border-slate-100", isSidebarOpen ? "px-6" : "px-0 justify-center")}>
             <Link href="/admin" className="flex items-center gap-2">
@@ -186,28 +216,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-slate-400 hover:text-slate-600 transition-colors"><Menu size={20} /></button>
-            <h1 className="text-xl font-bold text-slate-800">Dashboard</h1>
+        <header className="h-16 lg:h-20 bg-white border-b border-slate-200 px-3 sm:px-6 lg:px-8 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-slate-400 hover:text-slate-600 transition-colors shrink-0"><Menu size={22} /></button>
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="hidden lg:block text-slate-400 hover:text-slate-600 transition-colors shrink-0"><Menu size={20} /></button>
+            <h1 className="text-base sm:text-xl font-bold text-slate-800 truncate">Dashboard</h1>
           </div>
-          
-          <div className="flex items-center gap-6">
-            <button className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 shadow-sm">
+
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 shrink-0">
+            <button className="hidden md:flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 shadow-sm">
               <Calendar size={14} className="text-slate-400" />
               13 พ.ค. 2025 - 19 พ.ค. 2025
             </button>
-            
+
             <button className="relative text-slate-500 hover:text-slate-700">
               <Bell size={20} />
               <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">12</span>
             </button>
-            
-            <div className="flex items-center gap-3 pl-6 border-l border-slate-200 cursor-pointer group relative">
-              <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden">
+
+            <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 lg:pl-6 border-l border-slate-200 cursor-pointer group relative">
+              <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden shrink-0">
                 <img src={session?.user?.image || `https://api.dicebear.com/9.x/avataaars/svg?seed=${session?.user?.name || 'Admin'}`} alt="Admin" className="w-full h-full object-cover" />
               </div>
-              <div className="flex flex-col">
+              <div className="hidden sm:flex flex-col">
                 <span className="text-sm font-bold text-slate-800 leading-tight">{session?.user?.name || "Loading..."}</span>
                 <span className="text-[10px] text-slate-500 font-medium uppercase">{(session?.user as any)?.role || "Admin"}</span>
               </div>
@@ -228,7 +259,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

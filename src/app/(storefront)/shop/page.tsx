@@ -69,6 +69,8 @@ function ImageCarousel({ images }: { images: string[] }) {
 
 function ModalCarousel({ images }: { images: string[] }) {
   const [idx, setIdx] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   if (!images || images.length === 0) {
     return (
       <div className="w-full aspect-square flex items-center justify-center bg-gray-100 rounded-xl">
@@ -77,34 +79,89 @@ function ModalCarousel({ images }: { images: string[] }) {
     );
   }
   return (
-    <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100">
-      <img src={images[idx]} alt="" className="w-full h-full object-cover" />
-      {images.length > 1 && (
-        <>
-          <button
-            onClick={() => setIdx((i) => (i - 1 + images.length) % images.length)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center"
+    <>
+      <div 
+        className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer group" 
+        onClick={() => setIsFullscreen(true)}
+      >
+        <img src={images[idx]} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+           <Search size={32} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
+        </div>
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              <ChevronRight size={18} />
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIdx(i)}
+                  className={`h-1.5 rounded-full transition-all ${i === idx ? "bg-white w-5" : "bg-white/50 w-1.5"}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Fullscreen Overlay */}
+      {isFullscreen && (
+        <div 
+          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm" 
+          onClick={(e) => { e.stopPropagation(); setIsFullscreen(false); }}
+        >
+          <button 
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-colors z-[210]"
+            onClick={(e) => { e.stopPropagation(); setIsFullscreen(false); }}
           >
-            <ChevronLeft size={18} />
+            <X size={24} />
           </button>
-          <button
-            onClick={() => setIdx((i) => (i + 1) % images.length)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center"
-          >
-            <ChevronRight size={18} />
-          </button>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {images.map((_, i) => (
+          <img 
+            src={images[idx]} 
+            alt="" 
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" 
+            onClick={(e) => e.stopPropagation()} 
+          />
+          
+          {images.length > 1 && (
+            <>
               <button
-                key={i}
-                onClick={() => setIdx(i)}
-                className={`h-1.5 rounded-full transition-all ${i === idx ? "bg-white w-5" : "bg-white/50 w-1.5"}`}
-              />
-            ))}
-          </div>
-        </>
+                onClick={(e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); }}
+                className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-16 sm:h-16 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors z-[210] backdrop-blur-md"
+              >
+                <ChevronLeft size={32} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); }}
+                className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-16 sm:h-16 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors z-[210] backdrop-blur-md"
+              >
+                <ChevronRight size={32} />
+              </button>
+              <div className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex gap-2.5 z-[210] bg-black/30 px-4 py-2.5 rounded-full backdrop-blur-md" onClick={(e) => e.stopPropagation()}>
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setIdx(i)}
+                    className={`h-2 rounded-full transition-all ${i === idx ? "bg-white w-8" : "bg-white/40 w-2 hover:bg-white/80"}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 }
 

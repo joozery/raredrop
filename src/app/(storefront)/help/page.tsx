@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { HelpCircle, ChevronDown, MessageCircle, Mail, Phone, Search } from "lucide-react";
+import { HelpCircle, ChevronDown, Mail, Phone, Search } from "lucide-react";
 
 interface FAQ {
   _id: string;
@@ -10,11 +10,27 @@ interface FAQ {
   category: string;
 }
 
+interface ContactSettings {
+  help_line_url?: string;
+  help_email?: string;
+  help_phone?: string;
+  help_facebook_url?: string;
+  discord_invite_url?: string;
+}
+
 export default function HelpPage() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState("ทั้งหมด");
+  const [contact, setContact] = useState<ContactSettings>({});
+
+  useEffect(() => {
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => setContact(d || {}))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/faqs")
@@ -102,50 +118,78 @@ export default function HelpPage() {
       </div>
 
       {/* Contact Section */}
-      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-        <h2 className="font-black text-gray-900 mb-4">ยังต้องการความช่วยเหลือ?</h2>
-        <div className="flex flex-col gap-3">
-          <a
-            href="https://line.me/ti/g/raredrop"
-            className="flex items-center gap-4 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="w-11 h-11 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
-              <MessageCircle size={22} className="text-green-600" />
+      {(() => {
+        const channels = [
+          {
+            key: "line",
+            href: contact.help_line_url,
+            label: "LINE",
+            sub: "ตอบไวที่สุด",
+            bg: "bg-green-100",
+            icon: <img src="/banner/cover/line.svg" alt="LINE" className="w-6 h-6" />,
+          },
+          {
+            key: "facebook",
+            href: contact.help_facebook_url,
+            label: "Facebook",
+            sub: "ส่งข้อความหาเราได้เลย",
+            bg: "bg-blue-100",
+            icon: <img src="/banner/cover/facebook.svg" alt="Facebook" className="w-6 h-6" />,
+          },
+          {
+            key: "discord",
+            href: contact.discord_invite_url,
+            label: "Discord",
+            sub: "พูดคุยกับทีมงานและชุมชน",
+            bg: "bg-indigo-100",
+            icon: <img src="/banner/cover/discord.svg" alt="Discord" className="w-6 h-6" />,
+          },
+          {
+            key: "email",
+            href: contact.help_email ? `mailto:${contact.help_email}` : undefined,
+            label: "อีเมล",
+            sub: contact.help_email,
+            bg: "bg-amber-100",
+            icon: <Mail size={22} className="text-amber-600" />,
+          },
+          {
+            key: "phone",
+            href: contact.help_phone ? `tel:${contact.help_phone}` : undefined,
+            label: "โทรศัพท์",
+            sub: contact.help_phone,
+            bg: "bg-purple-100",
+            icon: <Phone size={22} className="text-purple-600" />,
+          },
+        ].filter((c) => !!c.href);
+
+        if (channels.length === 0) return null;
+
+        return (
+          <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+            <h2 className="font-black text-gray-900 mb-4">ยังต้องการความช่วยเหลือ?</h2>
+            <div className="flex flex-col gap-3">
+              {channels.map((c) => (
+                <a
+                  key={c.key}
+                  href={c.href}
+                  target={c.key === "email" || c.key === "phone" ? undefined : "_blank"}
+                  rel={c.key === "email" || c.key === "phone" ? undefined : "noopener noreferrer"}
+                  className="flex items-center gap-4 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+                >
+                  <div className={`w-11 h-11 ${c.bg} rounded-xl flex items-center justify-center shrink-0`}>
+                    {c.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-900 text-sm">{c.label}</p>
+                    {c.sub && <p className="text-xs text-gray-500">{c.sub}</p>}
+                  </div>
+                  <ChevronDown size={16} className="text-gray-400 -rotate-90 group-hover:text-primary transition-colors" />
+                </a>
+              ))}
             </div>
-            <div className="flex-1">
-              <p className="font-bold text-gray-900 text-sm">Line Official</p>
-              <p className="text-xs text-gray-500">ตอบไวที่สุด • เปิด 9:00 - 21:00</p>
-            </div>
-            <ChevronDown size={16} className="text-gray-400 -rotate-90 group-hover:text-primary transition-colors" />
-          </a>
-          <a
-            href="mailto:support@raredrop.th"
-            className="flex items-center gap-4 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
-              <Mail size={22} className="text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-gray-900 text-sm">อีเมล</p>
-              <p className="text-xs text-gray-500">support@raredrop.th • ตอบภายใน 24 ชม.</p>
-            </div>
-            <ChevronDown size={16} className="text-gray-400 -rotate-90 group-hover:text-primary transition-colors" />
-          </a>
-          <a
-            href="tel:02-xxx-xxxx"
-            className="flex items-center gap-4 bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
-              <Phone size={22} className="text-purple-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-gray-900 text-sm">โทรศัพท์</p>
-              <p className="text-xs text-gray-500">02-xxx-xxxx • จ-ศ 09:00 - 18:00</p>
-            </div>
-            <ChevronDown size={16} className="text-gray-400 -rotate-90 group-hover:text-primary transition-colors" />
-          </a>
-        </div>
-      </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

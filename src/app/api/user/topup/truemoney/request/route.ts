@@ -4,12 +4,17 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import Setting from "@/models/Setting";
 import TrueMoneyTopup from "@/models/TrueMoneyTopup";
+import crypto from "crypto";
 
 const ERROR_MESSAGES: Record<string, string> = {
   Forbidden: "ระบบเติมเงินผ่าน TrueMoney ขัดข้อง กรุณาติดต่อแอดมิน",
   Unauthorized: "ระบบเติมเงินผ่าน TrueMoney ขัดข้อง กรุณาติดต่อแอดมิน",
   "Too Many Requests": "มีผู้ใช้งานระบบ TrueMoney พร้อมกันมาก กรุณาลองใหม่อีกครั้งในไม่ช้า",
 };
+
+function generateMatchCode() {
+  return crypto.randomBytes(4).toString("hex").toUpperCase();
+}
 
 export async function POST(req: Request) {
   try {
@@ -35,9 +40,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "ยังไม่ได้ตั้งค่าเบอร์ TrueMoney กรุณาติดต่อแอดมิน" }, { status: 503 });
     }
 
-    // เลขทศนิยมสุ่มเพิ่มเล็กน้อย (0.01–0.99) กันยอดชนกันถ้ามีลูกค้าหลายคนโอนยอดเท่ากันพร้อมกัน
-    const cents = Math.floor(Math.random() * 99) + 1;
-    const exactAmount = Math.round(Number(amount) * 100 + cents) / 100;
+    const exactAmount = Math.round(Number(amount) * 100) / 100;
+    const matchCode = generateMatchCode();
+    // TrueMoney ส่งข้อความนี้กลับมาเป๊ะใน my-last-receive ตอนลูกค้าจ่ายผ่านลิงก์นี้ — ใช้เป็นโค้ดอ้างอิงเฉพาะตัว
+    const message = `${siteName} ${matchCode}`;
 
     const apiRes = await fetch("https://apis.truemoneyservices.com/utils/v1/transfer-link-generator", {
       method: "POST",
@@ -48,7 +54,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         mobile_number: truemoneyNumber,
         amount: exactAmount.toFixed(2),
-        message: `เติมเงิน ${siteName}`,
+        message,
       }),
     });
 
@@ -61,6 +67,7 @@ export async function POST(req: Request) {
     const record = await TrueMoneyTopup.create({
       userId,
       amount: exactAmount,
+      matchCode,
       status: "pending",
       requestUrl: data.data.url,
     });
