@@ -268,33 +268,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           </div>
         )}
 
-        {/* Stats Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-wrap md:flex-nowrap items-center justify-between gap-4">
-          <div className="flex-1 flex items-center justify-center min-w-[80px]">
-            <div className="flex flex-col items-center">
-              <span className="font-black text-xl text-gray-900 leading-none">{box.items.length}</span>
-              <span className="text-gray-500 text-xs font-bold mt-1">ไอเทม</span>
-            </div>
-          </div>
-          <div className="flex-[2] flex justify-center w-full md:w-auto order-last md:order-none min-w-[200px]">
-            <div className="bg-red-50 text-red-600 px-6 py-2.5 rounded-full font-black flex items-center gap-2 border border-red-100 shadow-sm text-sm">
-              <Zap size={16} className="fill-red-600" /> ราคา ฿{box.price.toLocaleString()} / ครั้ง
-            </div>
-          </div>
-          <div className="flex-1 flex items-center justify-center min-w-[80px]">
-            <div className="flex flex-col items-center">
-              <span className="font-black text-xl text-gray-900 leading-none">
-                {box.pityThreshold}
-              </span>
-              <span className="text-gray-500 text-xs font-bold mt-1">การันตี</span>
-            </div>
-          </div>
-          <div className="pr-1 flex justify-end">
-            <button className="bg-red-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-1.5 hover:bg-red-700 transition-colors shadow-sm text-sm">
-              <History size={16} /> ประวัติ
-            </button>
-          </div>
-        </div>
+
 
         {/* Top Rewards */}
         <div className="mt-2 bg-white p-5 rounded-xl border border-gray-100 shadow-sm relative group/slider">
