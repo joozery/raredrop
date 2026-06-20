@@ -46,7 +46,9 @@ export async function POST(req: Request) {
     }
 
     const received = data.data;
-    const amountMatches = Math.abs(Number(received.amount) - record.amount) < 0.005;
+    // my-last-receive ส่ง amount เป็นสตางค์ (เช่น 516 = ฿5.16) ต่างจาก transfer-link-generator ที่รับเป็นบาท
+    const receivedBaht = Number(received.amount) / 100;
+    const amountMatches = Math.abs(receivedBaht - record.amount) < 0.005;
     const isRecent = parseThaiTime(received.received_time) >= record.createdAt;
     const receiverMatches = !truemoneyNumber || received.receiver_mobile === truemoneyNumber;
 
