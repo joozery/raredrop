@@ -237,7 +237,7 @@ export default function ProfilePage() {
               { icon: HelpCircle, label: "ช่วยเหลือ", href: "/help" },
               { icon: History, label: "ประวัติการสุ่ม", href: "/roll-history" },
               { icon: Wallet, label: "ประวัติการเติมเงิน", href: "/topup-history" },
-              { icon: Settings, label: "การตั้งค่า" },
+              { icon: Settings, label: "การตั้งค่า", onClick: () => !uploadingAvatar && fileInputRef.current?.click() },
             ].map((menu, i) => {
               const content = (
                 <>
