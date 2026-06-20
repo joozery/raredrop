@@ -230,25 +230,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               </div>
             </div>
 
-            {/* Pity Card */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center justify-between">
-              <div className="flex flex-col flex-1 pr-3">
-                <h3 className="font-black text-gray-800 text-sm">การันตี 100%</h3>
-                <p className="text-gray-400 text-[10px] font-semibold mt-0.5">เมื่อเปิดครบ {box.pityThreshold} ครั้ง</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-red-600 font-black text-sm">
-                    {pityCount} <span className="text-gray-300 font-bold mx-1">/</span>
-                    <span className="text-gray-500 font-bold">{box.pityThreshold}</span>
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 h-2 rounded-full mt-2 overflow-hidden shadow-inner">
-                  <div className="bg-gradient-to-r from-red-500 to-red-600 h-full rounded-full transition-all duration-500" style={{ width: `${pityPct}%` }} />
-                </div>
-              </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-red-50 to-white rounded-xl flex items-center justify-center shadow-sm border border-red-100 shrink-0">
-                <span className="text-3xl drop-shadow-sm">🎁</span>
-              </div>
-            </div>
+
           </div>
         </div>
 
