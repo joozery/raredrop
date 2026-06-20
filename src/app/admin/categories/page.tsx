@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Search, X, FolderTree, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, X, FolderTree } from "lucide-react";
+import { UploadInput } from "@/components/ui/UploadInput";
 
 interface CategoryData {
   _id: string;
@@ -236,21 +237,12 @@ export default function ManageCategories() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5">URL รูปภาพ (ไม่บังคับ)</label>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
-                    {currentCat.image ? <img src={currentCat.image} alt="preview" className="w-full h-full object-cover" /> : <ImageIcon size={18} className="text-slate-400" />}
-                  </div>
-                  <input 
-                    type="text" 
-                    value={currentCat.image || ""}
-                    onChange={(e) => setCurrentCat({...currentCat, image: e.target.value})}
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-medium text-slate-800"
-                    placeholder="https://..."
-                  />
-                </div>
-              </div>
+              <UploadInput
+                value={currentCat.image || ""}
+                onChange={(url) => setCurrentCat({ ...currentCat, image: url })}
+                folder="categories"
+                label="รูปภาพ (ไม่บังคับ)"
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

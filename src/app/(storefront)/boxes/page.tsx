@@ -14,23 +14,35 @@ interface Box {
   categoryId?: { _id: string; name: string };
 }
 
-const CATEGORIES = ["ทั้งหมด", "Anime", "Pokémon", "Labubu", "Bearbrick", "Sneaker", "Luxury"];
+interface CategoryOption {
+  _id: string;
+  name: string;
+  image?: string;
+}
+
+const ALL_CAT = "ทั้งหมด";
 
 export default function BoxesPage() {
   const [boxes, setBoxes] = useState<Box[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState("ทั้งหมด");
+  const [selectedCat, setSelectedCat] = useState(ALL_CAT);
 
   useEffect(() => {
     fetch("/api/boxes")
       .then((r) => r.json())
       .then((d) => setBoxes(Array.isArray(d) ? d : []))
       .finally(() => setLoading(false));
+
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(Array.isArray(d) ? d : []))
+      .catch(() => setCategories([]));
   }, []);
 
   const filtered = boxes.filter((b) => {
-    const matchCat = selectedCat === "ทั้งหมด" || b.categoryId?.name === selectedCat;
+    const matchCat = selectedCat === ALL_CAT || b.categoryId?._id === selectedCat;
     const matchSearch = b.name.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
@@ -62,17 +74,20 @@ export default function BoxesPage() {
 
       {/* Category Tabs */}
       <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-3 mb-6">
-        {CATEGORIES.map((cat) => (
+        {[{ _id: ALL_CAT, name: ALL_CAT, image: undefined }, ...categories].map((cat) => (
           <button
-            key={cat}
-            onClick={() => setSelectedCat(cat)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 ${
-              selectedCat === cat
+            key={cat._id}
+            onClick={() => setSelectedCat(cat._id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 ${
+              selectedCat === cat._id
                 ? "bg-primary text-white shadow-sm shadow-red-500/30"
                 : "bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary"
             }`}
           >
-            {cat}
+            {cat.image && (
+              <img src={cat.image} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+            )}
+            {cat.name}
           </button>
         ))}
       </div>

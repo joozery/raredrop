@@ -13,19 +13,15 @@ interface Box {
   categoryId?: { _id: string; name: string };
 }
 
-const CATEGORIES = [
-  { name: "Anime", icon: "🎭" },
-  { name: "Labubu", icon: "🐰" },
-  { name: "Pokémon", icon: "⚡" },
-  { name: "Bearbrick", icon: "🐻" },
-  { name: "Sneaker", icon: "👟" },
-  { name: "Luxury", icon: "💎" },
-  { name: "TCG", icon: "🎴" },
-  { name: "Gaming", icon: "🎮" },
-];
+interface CategoryOption {
+  _id: string;
+  name: string;
+  image?: string;
+}
 
 export default function TrendingBoxes() {
   const [boxes, setBoxes] = useState<Box[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
 
@@ -43,10 +39,15 @@ export default function TrendingBoxes() {
       }
     };
     fetchBoxes();
+
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(Array.isArray(d) ? d : []))
+      .catch(() => setCategories([]));
   }, []);
 
   const filtered = selectedCat
-    ? boxes.filter((b) => b.categoryId?.name === selectedCat)
+    ? boxes.filter((b) => b.categoryId?._id === selectedCat)
     : boxes;
 
   const tagFor = (box: Box) => (box.isFeatured ? "ฮิตสุด" : "");
@@ -69,17 +70,20 @@ export default function TrendingBoxes() {
           >
             ทั้งหมด
           </button>
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
-              key={cat.name}
-              onClick={() => setSelectedCat(selectedCat === cat.name ? null : cat.name)}
+              key={cat._id}
+              onClick={() => setSelectedCat(selectedCat === cat._id ? null : cat._id)}
               className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.02)] ${
-                selectedCat === cat.name
+                selectedCat === cat._id
                   ? "bg-[#DC2626] text-white border border-[#DC2626]"
                   : "bg-white text-gray-800 border border-gray-200/80 hover:bg-gray-50"
               }`}
             >
-              <span className="text-[13px]">{cat.icon}</span> {cat.name}
+              {cat.image && (
+                <img src={cat.image} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
+              )}
+              {cat.name}
             </button>
           ))}
         </div>
