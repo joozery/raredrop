@@ -165,8 +165,13 @@ export default function ShopPage() {
       setBuyModal(null);
       await updateSession();
       fetchItems();
-      
-      // Auto open live chat for the purchased item
+
+      if (!purchasedItem.liveChatEnabled) {
+        setSuccessData({ purchaseId: data.purchaseId });
+        return;
+      }
+
+      // Auto open live chat for the purchased item — เฉพาะสินค้าที่เปิด liveChatEnabled ไว้
       try {
         const chatRes = await fetch("/api/user/chat", {
           method: "POST",
@@ -189,6 +194,28 @@ export default function ShopPage() {
 
     } finally {
       setIsBuying(false);
+    }
+  };
+
+  const handleAskAboutItem = async (item: ShopItem) => {
+    if (!session) { showToast("กรุณาเข้าสู่ระบบก่อน", false); return; }
+    try {
+      const res = await fetch("/api/user/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: `สอบถามสินค้า: ${item.title}`,
+          text: `สวัสดีครับ อยากสอบถามเกี่ยวกับสินค้า "${item.title}" ครับ`,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.conversationId) {
+        window.dispatchEvent(new CustomEvent("open-livechat", { detail: { conversationId: data.conversationId } }));
+      } else {
+        showToast(data.error || "เกิดข้อผิดพลาด", false);
+      }
+    } catch {
+      showToast("เกิดข้อผิดพลาด", false);
     }
   };
 
@@ -388,16 +415,26 @@ export default function ShopPage() {
                   <ShoppingBag size={13} />
                   {item.stock === 0 ? "หมดแล้ว" : "ซื้อเลย"}
                 </button>
-                {item.youtubeUrl && (
+                {(item.youtubeUrl || item.liveChatEnabled) && (
                   <div className="flex gap-1.5">
-                    <a
-                      href={item.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Play size={11} /> ดูวิธี
-                    </a>
+                    {item.youtubeUrl && (
+                      <a
+                        href={item.youtubeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Play size={11} /> ดูวิธี
+                      </a>
+                    )}
+                    {item.liveChatEnabled && (
+                      <button
+                        onClick={() => handleAskAboutItem(item)}
+                        className="flex-1 text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <MessageCircle size={11} /> สอบถาม
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -423,16 +460,26 @@ export default function ShopPage() {
                 {buyModal.description && <p className="text-sm text-gray-500 mt-1">{buyModal.description}</p>}
               </div>
 
-              {buyModal.youtubeUrl && (
+              {(buyModal.youtubeUrl || buyModal.liveChatEnabled) && (
                 <div className="flex gap-2">
-                  <a
-                    href={buyModal.youtubeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-red-600 bg-red-50 border border-red-100 py-2.5 rounded-xl hover:bg-red-100 transition-colors"
-                  >
-                    <Play size={15} /> ดูวิธีใช้งาน
-                  </a>
+                  {buyModal.youtubeUrl && (
+                    <a
+                      href={buyModal.youtubeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-red-600 bg-red-50 border border-red-100 py-2.5 rounded-xl hover:bg-red-100 transition-colors"
+                    >
+                      <Play size={15} /> ดูวิธีใช้งาน
+                    </a>
+                  )}
+                  {buyModal.liveChatEnabled && (
+                    <button
+                      onClick={() => handleAskAboutItem(buyModal)}
+                      className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-blue-600 bg-blue-50 border border-blue-100 py-2.5 rounded-xl hover:bg-blue-100 transition-colors"
+                    >
+                      <MessageCircle size={15} /> สอบถามสินค้านี้
+                    </button>
+                  )}
                 </div>
               )}
 

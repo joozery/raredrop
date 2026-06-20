@@ -25,6 +25,18 @@ export default function ProfilePage() {
   const [isInviteOpen, setIsInviteOpen] = React.useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = React.useState(false);
   const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
+  const [discordUrl, setDiscordUrl] = useState("");
+
+  useEffect(() => {
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => setDiscordUrl(d.discord_invite_url || ""))
+      .catch(() => {});
+  }, []);
+
+  const handleDiscordClick = () => {
+    if (session) fetch("/api/user/discord-join-reward", { method: "POST" }).catch(() => {});
+  };
 
   useEffect(() => {
     if (!session) return;
@@ -152,7 +164,7 @@ export default function ProfilePage() {
               { icon: UserPlus, label: "เชิญเพื่อน", onClick: () => setIsInviteOpen(true) },
               { icon: LibrarySquare, label: "คอลเลกชันของฉัน", href: "/inventory" },
               { icon: HelpCircle, label: "ช่วยเหลือ", href: "/help" },
-              { icon: History, label: "ประวัติการสุ่ม" },
+              { icon: History, label: "ประวัติการสุ่ม", href: "/roll-history" },
               { icon: Settings, label: "การตั้งค่า" },
             ].map((menu, i) => {
               const content = (
@@ -183,6 +195,19 @@ export default function ProfilePage() {
                 </div>
               );
             })}
+
+            <a
+              href={discordUrl || "#"}
+              target={discordUrl ? "_blank" : undefined}
+              rel={discordUrl ? "noopener noreferrer" : undefined}
+              onClick={handleDiscordClick}
+              className="flex flex-col items-center gap-2.5 cursor-pointer group"
+            >
+              <div className="text-gray-600 group-hover:text-primary transition-colors group-active:scale-95">
+                <img src="/banner/cover/discord.svg" alt="Discord" className="w-[26px] h-[26px]" />
+              </div>
+              <span className="text-[10px] font-medium text-gray-700 text-center">เข้าร่วม Discord รับ GemCoin</span>
+            </a>
           </div>
         </div>
 
