@@ -6,7 +6,6 @@ import TrendingBoxes from "@/components/home/TrendingBoxes";
 import ShopPreview from "@/components/home/ShopPreview";
 import RightPanel from "@/components/home/RightPanel";
 import MobileLiveOpenings from "@/components/home/MobileLiveOpenings";
-import PromoBanner from "@/components/home/PromoBanner";
 
 export default function Home() {
   return (
@@ -18,9 +17,6 @@ export default function Home() {
         <FlashSale />
         <TrendingBoxes />
         <ShopPreview />
-        <div className="block lg:hidden mt-2">
-          <PromoBanner />
-        </div>
       </div>
 
       {/* Right Side Panel */}

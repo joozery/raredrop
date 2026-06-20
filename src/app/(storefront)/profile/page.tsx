@@ -1,13 +1,38 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Copy, ChevronRight, Wallet, Coins, Ticket, Gift, UserPlus, MessageCircle, Gamepad2, History, Swords, Truck, Settings, LogOut } from 'lucide-react';
+import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, Settings, LogOut } from 'lucide-react';
 import { TopupModal } from "@/components/payment/TopupModal";
+import { InviteFriendModal } from "@/components/profile/InviteFriendModal";
+import { RedeemCodeModal } from "@/components/profile/RedeemCodeModal";
+
+interface LevelInfo {
+  xp: number;
+  level: number;
+  currentLevelXp: number;
+  nextLevelXp: number | null;
+  nextLevel: number | null;
+  nextRewards: { itemId: { _id: string; name: string; image: string }; quantity: number }[];
+  progress: number;
+  xpToNext: number;
+}
 
 export default function ProfilePage() {
   const { data: session } = useSession();
   const [isTopupOpen, setIsTopupOpen] = React.useState(false);
+  const [isInviteOpen, setIsInviteOpen] = React.useState(false);
+  const [isRedeemOpen, setIsRedeemOpen] = React.useState(false);
+  const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
+
+  useEffect(() => {
+    if (!session) return;
+    fetch("/api/user/level")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setLevelInfo(d))
+      .catch(() => {});
+  }, [session]);
 
   return (
     <div className="flex flex-col min-h-full bg-white pb-24">
@@ -31,39 +56,52 @@ export default function ProfilePage() {
             
             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs text-gray-500">{session?.user?.email || "ID 2837563"}</span>
-              <button className="text-[10px] text-gray-400 underline hover:text-primary transition-colors">คัดลอก</button>
             </div>
-            
-            <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
-              <div>ติดตาม <span className="font-bold text-gray-900">0</span></div>
-              <div>ผู้ติดตาม <span className="font-bold text-gray-900">0</span></div>
-            </div>
+
           </div>
-          
-          <button className="absolute right-0 top-2 bg-white/80 backdrop-blur-sm border border-gray-100 rounded-full py-1.5 pl-3 pr-2 flex items-center gap-1 text-[10px] font-bold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
-            หน้าโปรไฟล์ <ChevronRight size={14} className="text-gray-400" />
-          </button>
         </div>
 
         {/* Level Card */}
-        <div className="mt-6 bg-gradient-to-r from-gray-200 to-gray-100 rounded-2xl p-4 relative overflow-hidden shadow-sm border border-gray-200/50">
-          <div className="relative z-10 w-2/3">
+        <div className="mt-6 bg-gradient-to-r from-indigo-100 to-purple-50 rounded-2xl p-4 relative overflow-hidden shadow-sm border border-indigo-200/50">
+          <div className="relative z-10 w-full">
             <div className="flex items-end justify-between mb-2">
-              <h2 className="text-2xl font-black text-gray-800 italic">Lv.1</h2>
-              <p className="text-[10px] text-gray-600 font-medium flex items-center cursor-pointer hover:text-gray-900">เหลืออีก 8 XP เพื่อเลเวลอัป <ChevronRight size={12} /></p>
+              <h2 className="text-2xl font-black text-indigo-800 italic">Lv.{levelInfo?.level ?? (session?.user as any)?.vipLevel ?? 1}</h2>
+              <p className="text-[10px] text-indigo-600 font-medium flex items-center cursor-pointer hover:text-indigo-900">
+                {levelInfo
+                  ? levelInfo.nextLevelXp != null
+                    ? `เหลืออีก ${levelInfo.xpToNext.toLocaleString()} XP เพื่อเลเวลอัป`
+                    : "เลเวลสูงสุดแล้ว! 🎉"
+                  : "โหลด..."}
+                {levelInfo?.nextLevelXp != null && <ChevronRight size={12} />}
+              </p>
             </div>
-            <div className="h-1.5 bg-black/10 rounded-full w-full overflow-hidden">
-              <div className="h-full bg-gray-800 w-[0%] rounded-full"></div>
+            <div className="h-2 bg-indigo-200/50 rounded-full w-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-700"
+                style={{ width: `${Math.round((levelInfo?.progress ?? 0) * 100)}%` }}
+              />
             </div>
-            <div className="flex justify-between mt-1 text-[10px] text-gray-500 font-bold">
-              <span>0XP</span>
-              <span>8XP</span>
+            <div className="flex justify-between mt-1 text-[10px] text-indigo-500 font-bold">
+              <span>{(levelInfo?.currentLevelXp ?? 0).toLocaleString()} XP</span>
+              <span>{levelInfo?.xp?.toLocaleString() ?? 0} XP ปัจจุบัน</span>
+              <span>{levelInfo?.nextLevelXp != null ? `${levelInfo.nextLevelXp.toLocaleString()} XP` : "MAX"}</span>
             </div>
-          </div>
-          {/* Decorative graphic right side */}
-          <div className="absolute -right-4 -bottom-4 w-32 h-32 opacity-80 pointer-events-none">
-            <div className="absolute right-8 bottom-6 w-16 h-24 bg-gradient-to-br from-gray-300 to-gray-400 transform rotate-12 rounded-lg shadow-lg"></div>
-            <div className="absolute right-2 bottom-10 w-12 h-16 bg-gradient-to-br from-gray-200 to-gray-300 transform -rotate-12 rounded-lg shadow-md"></div>
+
+            {/* Next level rewards preview */}
+            {levelInfo?.nextRewards && levelInfo.nextRewards.length > 0 && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-[10px] text-indigo-500 font-bold shrink-0">รางวัล Lv.{levelInfo.nextLevel}:</span>
+                <div className="flex gap-1.5 flex-wrap">
+                  {levelInfo.nextRewards.map((r, i) => (
+                    <div key={i} className="flex items-center gap-1 bg-white/70 border border-indigo-100 rounded-lg px-1.5 py-0.5">
+                      <img src={r.itemId?.image} alt={r.itemId?.name} className="w-4 h-4 rounded object-cover" />
+                      <span className="text-[10px] font-bold text-indigo-700 max-w-[60px] truncate">{r.itemId?.name}</span>
+                      <span className="text-[9px] text-indigo-400">×{r.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -81,10 +119,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors active:scale-95">
-                ถอนเงิน
-              </button>
-              <button 
+              <button
                 onClick={() => setIsTopupOpen(true)}
                 className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors active:scale-95 shadow-sm"
               >
@@ -94,28 +129,18 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Points & Coupons */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-100 transition-colors border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 shrink-0 shadow-sm">
-              <Coins size={22} className="fill-orange-400 text-orange-200" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-bold text-gray-900 text-[15px]">0.00</div>
-              <div className="text-[10px] text-gray-500 font-medium">คะแนนคงเหลือ</div>
-            </div>
-            <ChevronRight size={14} className="text-gray-300" />
+        {/* Points */}
+        <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-100 transition-colors border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 shrink-0 shadow-sm">
+            <Coins size={22} className="fill-orange-400 text-orange-200" />
           </div>
-          <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-100 transition-colors border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0 shadow-sm">
-              <Ticket size={22} className="fill-red-400 text-red-200" />
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-gray-900 text-[15px]">
+              {session ? ((session.user as any)?.gemCoins || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-bold text-gray-900 text-[15px]">0 <span className="text-[10px] font-normal text-gray-500">ใบ</span></div>
-              <div className="text-[10px] text-gray-500 font-medium">คูปอง</div>
-            </div>
-            <ChevronRight size={14} className="text-gray-300" />
+            <div className="text-[10px] text-gray-500 font-medium">GemCoin</div>
           </div>
+          <ChevronRight size={14} className="text-gray-300" />
         </div>
 
         {/* Other Menus */}
@@ -123,22 +148,41 @@ export default function ProfilePage() {
           <h3 className="font-bold text-gray-900 mb-5 text-[15px]">เมนูอื่นๆ</h3>
           <div className="grid grid-cols-4 gap-y-7 gap-x-2">
             {[
-              { icon: Gift, label: "แลกโค้ด" },
-              { icon: UserPlus, label: "เชิญเพื่อน" },
-              { icon: MessageCircle, label: "ชุมชน" },
-              { icon: Gamepad2, label: "วิธีการเล่น" },
+              { icon: Gift, label: "แลกโค้ด", onClick: () => setIsRedeemOpen(true) },
+              { icon: UserPlus, label: "เชิญเพื่อน", onClick: () => setIsInviteOpen(true) },
+              { icon: LibrarySquare, label: "คอลเลกชันของฉัน", href: "/inventory" },
+              { icon: HelpCircle, label: "ช่วยเหลือ", href: "/help" },
               { icon: History, label: "ประวัติการสุ่ม" },
-              { icon: Swords, label: "ประวัติการแข่ง" },
-              { icon: Truck, label: "ประวัติการจัดส่ง" },
               { icon: Settings, label: "การตั้งค่า" },
-            ].map((menu, i) => (
-              <div key={i} className="flex flex-col items-center gap-2.5 cursor-pointer group">
-                <div className="text-gray-600 group-hover:text-primary transition-colors group-active:scale-95">
-                  <menu.icon size={26} strokeWidth={1.5} />
+            ].map((menu, i) => {
+              const content = (
+                <>
+                  <div className="text-gray-600 group-hover:text-primary transition-colors group-active:scale-95">
+                    <menu.icon size={26} strokeWidth={1.5} />
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-700 text-center">{menu.label}</span>
+                </>
+              );
+              if (menu.href) {
+                return (
+                  <Link key={i} href={menu.href} className="flex flex-col items-center gap-2.5 cursor-pointer group">
+                    {content}
+                  </Link>
+                );
+              }
+              if (menu.onClick) {
+                return (
+                  <button key={i} onClick={menu.onClick} className="flex flex-col items-center gap-2.5 cursor-pointer group">
+                    {content}
+                  </button>
+                );
+              }
+              return (
+                <div key={i} className="flex flex-col items-center gap-2.5 cursor-pointer group">
+                  {content}
                 </div>
-                <span className="text-[10px] font-medium text-gray-700 text-center">{menu.label}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -157,6 +201,8 @@ export default function ProfilePage() {
       </div>
 
       <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
+      <InviteFriendModal isOpen={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
+      <RedeemCodeModal isOpen={isRedeemOpen} onClose={() => setIsRedeemOpen(false)} />
     </div>
   );
 }
