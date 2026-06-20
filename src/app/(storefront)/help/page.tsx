@@ -26,7 +26,7 @@ export default function HelpPage() {
   const [contact, setContact] = useState<ContactSettings>({});
 
   useEffect(() => {
-    fetch("/api/public-settings")
+    fetch("/api/public-settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setContact(d || {}))
       .catch(() => {});

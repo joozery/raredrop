@@ -15,16 +15,18 @@ export function Header() {
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
   const [siteName, setSiteName] = useState("RareDrop");
+  const [gemcoinIcon, setGemcoinIcon] = useState("");
   const { data: session } = useSession();
   const { coins, gemCoins } = useBalance();
   const pathname = usePathname();
 
   useEffect(() => {
-    fetch("/api/public-settings")
+    fetch("/api/public-settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (d.site_logo) setLogoUrl(d.site_logo);
         if (d.site_name) setSiteName(d.site_name);
+        if (d.gemcoin_icon) setGemcoinIcon(d.gemcoin_icon);
       })
       .catch(() => {});
   }, []);
@@ -52,8 +54,8 @@ export function Header() {
                   <span className="text-xs font-black text-white">{coins.toLocaleString()}</span>
                   <span className="text-[10px] text-gray-400 font-medium">฿</span>
                 </button>
-                <div className="flex items-center gap-1 bg-purple-100 px-2.5 py-1.5 rounded-full">
-                  <Coins size={13} className="text-purple-600" />
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5">
+                  {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-7 h-7 object-contain" /> : <Coins size={24} className="text-purple-600" />}
                   <span className="text-xs font-black text-purple-700">{gemCoins.toLocaleString()}</span>
                 </div>
               </div>
@@ -95,10 +97,8 @@ export function Header() {
                     <span className="text-[10px] text-gray-500">THB</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
-                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center shadow-sm">
-                    <Coins size={13} className="text-purple-600" />
-                  </div>
+                <div className="flex items-center gap-2.5 border-l border-gray-200 pl-4">
+                  {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-10 h-10 object-contain" /> : <Coins size={32} className="text-purple-600" />}
                   <div className="flex flex-col">
                     <span className="font-bold text-purple-700 text-sm leading-none">
                       {gemCoins.toLocaleString()}

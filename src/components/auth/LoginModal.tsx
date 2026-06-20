@@ -22,7 +22,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
 
   useEffect(() => {
-    fetch("/api/public-settings")
+    fetch("/api/public-settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (d.site_logo) setLogoUrl(d.site_logo);

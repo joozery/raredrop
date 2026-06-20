@@ -42,6 +42,14 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   const [pityCount, setPityCount] = useState(0);
   const [freeCredits, setFreeCredits] = useState(0);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [gemcoinIcon, setGemcoinIcon] = useState("");
+
+  useEffect(() => {
+    fetch("/api/public-settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setGemcoinIcon(d.gemcoin_icon || ""))
+      .catch(() => {});
+  }, []);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -241,7 +249,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
         {freeCredits > 0 && (
           <div className="bg-gradient-to-r from-purple-600 to-purple-500 rounded-2xl p-4 flex items-center gap-4 shadow-md">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-              <Coins size={24} className="text-white" />
+              {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-6 h-6 object-contain" /> : <Coins size={24} className="text-white" />}
             </div>
             <div className="flex-1">
               <p className="text-white font-black text-base leading-tight">คุณมีสิทธิ์เปิดฟรี!</p>
@@ -413,7 +421,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                     <>
                       {free > 0 && (
                         <div className="flex items-center gap-2 bg-purple-50 border border-purple-100 rounded-xl px-3 py-2">
-                          <Coins size={15} className="text-purple-500" />
+                          {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-[15px] h-[15px] object-contain" /> : <Coins size={15} className="text-purple-500" />}
                           <span className="text-sm font-bold text-purple-700">ใช้สิทธิ์ฟรี {free} ครั้ง</span>
                           {paid > 0 && <span className="text-xs text-purple-400">+ จ่าย {paid} ครั้ง</span>}
                         </div>
@@ -491,7 +499,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   {r.type === "coin_reward" ? (
                     <>
                       <div className="w-20 h-20 rounded-xl flex items-center justify-center border-2 border-purple-300 bg-purple-50">
-                        <Coins size={40} className="text-purple-600" />
+                        {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-10 h-10 object-contain" /> : <Coins size={40} className="text-purple-600" />}
                       </div>
                       <p className="text-xs font-bold text-gray-700 text-center">{r.name}</p>
                       <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">

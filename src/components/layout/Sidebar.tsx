@@ -39,9 +39,10 @@ export function Sidebar() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
   const [siteName, setSiteName] = useState("RareDrop");
+  const [gemcoinIcon, setGemcoinIcon] = useState("");
 
   useEffect(() => {
-    fetch("/api/public-settings")
+    fetch("/api/public-settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         setLogoUrl(d.site_logo || "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
@@ -51,6 +52,7 @@ export function Sidebar() {
         setLineUrl(d.help_line_url || "");
         setTiktokUrl(d.help_tiktok_url || "");
         setYoutubeUrl(d.help_youtube_url || "");
+        setGemcoinIcon(d.gemcoin_icon || "");
       })
       .catch(() => {});
   }, []);
@@ -93,7 +95,13 @@ export function Sidebar() {
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 )}
               >
-                <Icon size={22} className={cn(isActive ? "text-white" : "text-gray-500")} strokeWidth={isActive ? 2 : 1.5} />
+                {item.href === "/exchange" && gemcoinIcon ? (
+                  <div className="w-[22px] h-[22px] flex items-center justify-center shrink-0">
+                    <img src={gemcoinIcon} alt="" className="w-8 h-8 object-contain max-w-none" />
+                  </div>
+                ) : (
+                  <Icon size={22} className={cn(isActive ? "text-white" : "text-gray-500", "shrink-0")} strokeWidth={isActive ? 2 : 1.5} />
+                )}
                 <span className={cn("text-[15px]", isActive ? "font-bold" : "font-medium")}>
                   {item.name}
                 </span>

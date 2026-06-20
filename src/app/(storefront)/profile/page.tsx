@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [isRedeemOpen, setIsRedeemOpen] = React.useState(false);
   const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
   const [discordUrl, setDiscordUrl] = useState("");
+  const [gemcoinIcon, setGemcoinIcon] = useState("");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -65,9 +66,9 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    fetch("/api/public-settings")
+    fetch("/api/public-settings", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setDiscordUrl(d.discord_invite_url || ""))
+      .then((d) => { setDiscordUrl(d.discord_invite_url || ""); setGemcoinIcon(d.gemcoin_icon || ""); })
       .catch(() => {});
   }, []);
 
@@ -214,8 +215,8 @@ export default function ProfilePage() {
 
         {/* Points */}
         <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-100 transition-colors border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 shrink-0 shadow-sm">
-            <Coins size={22} className="fill-orange-400 text-orange-200" />
+          <div className="flex items-center justify-center shrink-0 w-10 h-10">
+            {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-10 h-10 object-contain" /> : <Coins size={32} className="fill-orange-400 text-orange-200" />}
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-gray-900 text-[15px]">

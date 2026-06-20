@@ -13,7 +13,7 @@ export default function HeroBanner() {
   });
 
   useEffect(() => {
-    fetch("/api/public-settings")
+    fetch("/api/public-settings", { cache: "no-store" })
       .then(res => res.json())
       .then(data => {
         setSettings(prev => ({

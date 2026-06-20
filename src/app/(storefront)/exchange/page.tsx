@@ -55,12 +55,17 @@ export default function ExchangePage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const gemCoins = (session?.user as any)?.gemCoins || 0;
+  const [gemcoinIcon, setGemcoinIcon] = useState("");
 
   useEffect(() => {
     fetch("/api/gem-rewards")
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d)) setRewards(d); })
       .finally(() => setLoading(false));
+    fetch("/api/public-settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setGemcoinIcon(d.gemcoin_icon || ""))
+      .catch(() => {});
   }, []);
 
   const showToast = (success: boolean, message: string) => {
@@ -136,7 +141,7 @@ export default function ExchangePage() {
           </div>
         ) : rewards.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
-            <Coins size={48} className="mx-auto mb-3 opacity-30" />
+            {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-12 h-12 mx-auto mb-3 opacity-30 object-contain" /> : <Coins size={48} className="mx-auto mb-3 opacity-30" />}
             <p className="font-bold">ยังไม่มีรางวัลให้แลกในขณะนี้</p>
           </div>
         ) : (
@@ -208,7 +213,7 @@ export default function ExchangePage() {
 
                     <div className="mt-auto pt-3 flex items-center justify-between border-t border-gray-50">
                       <div className="flex items-center gap-1.5">
-                        <Coins size={15} className="text-purple-500" />
+                        {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-[15px] h-[15px] object-contain" /> : <Coins size={15} className="text-purple-500" />}
                         <span className="font-black text-purple-700 text-base">{r.gemCost.toLocaleString()}</span>
                         <span className="text-[10px] font-bold text-purple-400">GEM</span>
                       </div>
@@ -235,7 +240,7 @@ export default function ExchangePage() {
 
         {!session && (
           <div className="text-center mt-8 p-6 bg-purple-50 rounded-2xl border border-purple-100">
-            <Coins size={32} className="mx-auto mb-2 text-purple-400" />
+            {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-8 h-8 mx-auto mb-2 object-contain" /> : <Coins size={32} className="mx-auto mb-2 text-purple-400" />}
             <p className="font-bold text-purple-800 mb-3">เข้าสู่ระบบเพื่อแลก GemCoin</p>
             <button onClick={() => setIsLoginOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-colors">
               เข้าสู่ระบบ

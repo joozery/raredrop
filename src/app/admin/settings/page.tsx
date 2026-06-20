@@ -28,6 +28,9 @@ export default function SettingsPage() {
   const [bannerUrl, setBannerUrl] = useState("");
   const [bannerSaving, setBannerSaving] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
+  const [gemcoinIcon, setGemcoinIcon] = useState("");
+  const [gemcoinIconSaving, setGemcoinIconSaving] = useState(false);
+  const [gemcoinIconSaved, setGemcoinIconSaved] = useState(false);
 
   const fetchSettings = () => {
     setLoading(true);
@@ -41,6 +44,9 @@ export default function SettingsPage() {
           
           const bannerSetting = d.find((s: SettingItem) => s.key === "hero_banner_image");
           if (bannerSetting) setBannerUrl(String(bannerSetting.value));
+
+          const gemcoinIconSetting = d.find((s: SettingItem) => s.key === "gemcoin_icon");
+          if (gemcoinIconSetting) setGemcoinIcon(String(gemcoinIconSetting.value));
         }
       })
       .finally(() => setLoading(false));
@@ -82,6 +88,23 @@ export default function SettingsPage() {
     }
   };
 
+  const saveGemcoinIcon = async () => {
+    setGemcoinIconSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "gemcoin_icon", value: gemcoinIcon }),
+      });
+      if (res.ok) {
+        setGemcoinIconSaved(true);
+        setTimeout(() => setGemcoinIconSaved(false), 2000);
+      }
+    } finally {
+      setGemcoinIconSaving(false);
+    }
+  };
+
   const getValue = (s: SettingItem) =>
     pending[s.key] !== undefined ? pending[s.key] : s.value;
 
@@ -117,7 +140,7 @@ export default function SettingsPage() {
     }
   };
 
-  const displaySettings = settings.filter((s) => s.key !== "site_logo" && s.key !== "hero_banner_image");
+  const displaySettings = settings.filter((s) => s.key !== "site_logo" && s.key !== "hero_banner_image" && s.key !== "gemcoin_icon");
   const groups = [...new Set(displaySettings.map((s) => s.group))];
 
   if (loading) {
@@ -209,6 +232,40 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <span>ตัวอย่าง:</span>
                 <img src={bannerUrl} alt="banner preview" className="h-10 object-cover border border-slate-200 rounded p-0.5" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* GemCoin Icon Upload Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">ไอคอน GemCoin</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="อัพโหลดไอคอน"
+            value={gemcoinIcon}
+            onChange={setGemcoinIcon}
+            folder="branding"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            placeholder="เว้นว่าง = ใช้ไอคอนเหรียญเริ่มต้น"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveGemcoinIcon}
+              disabled={gemcoinIconSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {gemcoinIconSaving ? <Loader2 size={13} className="animate-spin" /> : gemcoinIconSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {gemcoinIconSaved ? "บันทึกแล้ว!" : "บันทึกไอคอน"}
+            </button>
+            {gemcoinIcon && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>ตัวอย่าง:</span>
+                <img src={gemcoinIcon} alt="gemcoin icon preview" className="h-7 w-7 object-contain border border-slate-200 rounded p-0.5" />
               </div>
             )}
           </div>

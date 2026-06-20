@@ -30,6 +30,14 @@ const DEFAULT_SETTINGS = [
     group: "ทั่วไป",
   },
   {
+    key: "gemcoin_icon",
+    value: "",
+    label: "ไอคอน GemCoin",
+    description: "รูปไอคอนที่ใช้แสดงแทน GemCoin ทั่วทั้งเว็บ — เว้นว่าง = ใช้ไอคอนเหรียญเริ่มต้น",
+    type: "text",
+    group: "ทั่วไป",
+  },
+  {
     key: "maintenance_mode",
     value: false,
     label: "โหมดปิดซ่อมบำรุง",
