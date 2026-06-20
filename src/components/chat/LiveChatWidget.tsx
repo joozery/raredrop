@@ -8,6 +8,7 @@ interface ChatMsg {
   _id: string;
   senderRole: "user" | "admin";
   text: string;
+  imageUrl?: string;
   createdAt: string;
 }
 interface Conversation {
@@ -246,6 +247,9 @@ export function LiveChatWidget() {
                           : "bg-white text-gray-800 border border-gray-100 rounded-bl-sm shadow-sm"
                       }`}
                     >
+                      {m.imageUrl && (
+                        <img src={m.imageUrl} alt="" className="w-32 h-32 object-cover rounded-xl mb-2" />
+                      )}
                       {m.text}
                     </div>
                   </div>

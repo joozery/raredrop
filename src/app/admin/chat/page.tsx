@@ -19,6 +19,8 @@ interface ChatMsg {
   _id: string;
   senderRole: "user" | "admin";
   text: string;
+  imageUrl?: string;
+  resolved?: boolean;
   createdAt: string;
 }
 
@@ -111,6 +113,23 @@ export default function AdminChatPage() {
       setInput(text);
     } finally {
       setSending(false);
+    }
+  };
+
+  const toggleMessageResolved = async (messageId: string, resolved: boolean) => {
+    if (!activeId) return;
+    setMessages((prev) => prev.map((m) => m._id === messageId ? { ...m, resolved } : m));
+    try {
+      const res = await fetch(`/api/admin/chat/${activeId}/messages/${messageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolved }),
+      });
+      if (!res.ok) {
+        setMessages((prev) => prev.map((m) => m._id === messageId ? { ...m, resolved: !resolved } : m));
+      }
+    } catch {
+      setMessages((prev) => prev.map((m) => m._id === messageId ? { ...m, resolved: !resolved } : m));
     }
   };
 
@@ -232,10 +251,34 @@ export default function AdminChatPage() {
                 {messages.map((m) => (
                   <div key={m._id} className={`flex ${m.senderRole === "admin" ? "justify-end" : "justify-start"}`}>
                     <div className="max-w-[85%] sm:max-w-[70%] flex flex-col gap-0.5">
-                      <div className={`px-3.5 py-2 rounded-2xl text-sm font-medium break-words ${m.senderRole === "admin" ? "bg-red-600 text-white rounded-br-sm" : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm shadow-sm"}`}>
+                      <div className={`px-3.5 py-2 rounded-2xl text-sm font-medium break-words whitespace-pre-wrap ${m.senderRole === "admin" ? "bg-red-600 text-white rounded-br-sm" : "bg-white text-slate-800 border border-slate-100 rounded-bl-sm shadow-sm"}`}>
+                        {m.imageUrl && (
+                          <a href={m.imageUrl} target="_blank" rel="noopener noreferrer">
+                            <img src={m.imageUrl} alt="" className="w-40 h-40 object-cover rounded-xl mb-2" />
+                          </a>
+                        )}
                         {m.text}
                       </div>
-                      <span className={`text-[10px] text-slate-400 ${m.senderRole === "admin" ? "text-right" : "text-left"}`}>{fmtTime(m.createdAt)}</span>
+                      <div className={`flex items-center gap-1.5 ${m.senderRole === "admin" ? "justify-end" : "justify-start"}`}>
+                        <span className="text-[10px] text-slate-400">{fmtTime(m.createdAt)}</span>
+                        {m.senderRole === "user" && (
+                          m.resolved ? (
+                            <button
+                              onClick={() => toggleMessageResolved(m._id, false)}
+                              className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 hover:bg-emerald-100 transition-colors"
+                            >
+                              ✅ ปิดเคสแล้ว
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => toggleMessageResolved(m._id, true)}
+                              className="text-[10px] font-bold text-slate-400 border border-slate-200 rounded-full px-2 py-0.5 hover:bg-slate-100 transition-colors"
+                            >
+                              ปิดเคสนี้
+                            </button>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

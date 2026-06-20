@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   const err = await requireAdmin();
   if (err) return err;
 
-  const { level, xpRequired, rewardItems } = await req.json();
+  const { level, xpRequired, rewardItems, logoImage, colorTheme, tagImage } = await req.json();
   if (!level || xpRequired == null) {
     return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบ" }, { status: 400 });
   }
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   const exists = await LevelConfig.findOne({ level });
   if (exists) return NextResponse.json({ error: `เลเวล ${level} มีอยู่แล้ว` }, { status: 400 });
 
-  const config = await LevelConfig.create({ level, xpRequired, rewardItems: rewardItems ?? [] });
+  const config = await LevelConfig.create({ level, xpRequired, rewardItems: rewardItems ?? [], logoImage, colorTheme: colorTheme || "gray", tagImage });
   return NextResponse.json(config, { status: 201 });
 }
 

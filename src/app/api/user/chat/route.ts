@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import ChatConversation from "@/models/ChatConversation";
-import ChatMessage from "@/models/ChatMessage";
+import { getOrCreateConversation, appendUserMessage } from "@/lib/chat";
 
 // GET — รายการเคสของฉัน
 // ?countOnly=1 — คืนแค่จำนวนข้อความที่ยังไม่อ่านรวมทุกเคส (สำหรับ badge ปุ่มลอย)
@@ -41,30 +41,18 @@ export async function POST(req: Request) {
     const userId = (session?.user as any)?.id;
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { subject, text } = await req.json();
+    const { subject, text, image } = await req.json();
     const subj = typeof subject === "string" && subject.trim() ? subject.trim() : "สอบถามทั่วไป";
     const firstText = typeof text === "string" ? text.trim() : "";
+    const imageUrl = typeof image === "string" && image.trim() ? image.trim() : undefined;
     if (firstText.length > 2000) return NextResponse.json({ error: "ข้อความยาวเกินไป" }, { status: 400 });
 
     await connectToDatabase();
 
-    const convo = await ChatConversation.create({
-      userId,
-      subject: subj,
-      lastMessage: firstText,
-      lastSender: "user",
-      lastMessageAt: new Date(),
-      unreadByAdmin: firstText ? 1 : 0,
-      status: "open",
-    });
-
+    // เคสเดียวต่อคน — ถ้ามีแชทเดิมอยู่แล้วก็ใช้อันเดิม ไม่เปิดเคสใหม่ซ้อนเคสเก่า
+    const convo = await getOrCreateConversation(userId, subj);
     if (firstText) {
-      await ChatMessage.create({
-        conversationId: convo._id,
-        senderRole: "user",
-        senderId: userId,
-        text: firstText,
-      });
+      await appendUserMessage(convo, firstText, imageUrl);
     }
 
     return NextResponse.json({ success: true, conversationId: String(convo._id) });

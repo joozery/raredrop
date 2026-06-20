@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface ITransaction extends Document {
   userId: Types.ObjectId;
-  type: "topup" | "withdraw" | "buy_box" | "sell_item" | "market_buy" | "market_sell" | "admin_adjust" | "shop_buy";
+  type: "topup" | "withdraw" | "buy_box" | "sell_item" | "market_buy" | "market_sell" | "admin_adjust" | "shop_buy" | "red_envelope";
   amount: number;
   balanceAfter: number;
   description?: string;
@@ -14,7 +14,7 @@ const TransactionSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   type: {
     type: String,
-    enum: ["topup", "withdraw", "buy_box", "sell_item", "market_buy", "market_sell", "admin_adjust", "shop_buy"],
+    enum: ["topup", "withdraw", "buy_box", "sell_item", "market_buy", "market_sell", "admin_adjust", "shop_buy", "red_envelope"],
     required: true
   },
   amount: { type: Number, required: true },
@@ -24,4 +24,7 @@ const TransactionSchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.models.Transaction || mongoose.model<ITransaction>("Transaction", TransactionSchema);
+if (mongoose.models.Transaction) {
+  delete (mongoose as any).models.Transaction;
+}
+export default mongoose.model<ITransaction>("Transaction", TransactionSchema);

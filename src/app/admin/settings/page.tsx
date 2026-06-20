@@ -25,6 +25,9 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoSaving, setLogoSaving] = useState(false);
   const [logoSaved, setLogoSaved] = useState(false);
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [bannerSaving, setBannerSaving] = useState(false);
+  const [bannerSaved, setBannerSaved] = useState(false);
 
   const fetchSettings = () => {
     setLoading(true);
@@ -35,6 +38,9 @@ export default function SettingsPage() {
           setSettings(d);
           const logoSetting = d.find((s: SettingItem) => s.key === "site_logo");
           if (logoSetting) setLogoUrl(String(logoSetting.value));
+          
+          const bannerSetting = d.find((s: SettingItem) => s.key === "hero_banner_image");
+          if (bannerSetting) setBannerUrl(String(bannerSetting.value));
         }
       })
       .finally(() => setLoading(false));
@@ -56,6 +62,23 @@ export default function SettingsPage() {
       }
     } finally {
       setLogoSaving(false);
+    }
+  };
+
+  const saveBanner = async () => {
+    setBannerSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "hero_banner_image", value: bannerUrl }),
+      });
+      if (res.ok) {
+        setBannerSaved(true);
+        setTimeout(() => setBannerSaved(false), 2000);
+      }
+    } finally {
+      setBannerSaving(false);
     }
   };
 
@@ -94,7 +117,7 @@ export default function SettingsPage() {
     }
   };
 
-  const displaySettings = settings.filter((s) => s.key !== "site_logo");
+  const displaySettings = settings.filter((s) => s.key !== "site_logo" && s.key !== "hero_banner_image");
   const groups = [...new Set(displaySettings.map((s) => s.group))];
 
   if (loading) {
@@ -152,6 +175,40 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <span>ตัวอย่าง:</span>
                 <img src={logoUrl} alt="logo preview" className="h-7 object-contain border border-slate-200 rounded p-0.5" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Hero Banner Upload Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">รูปภาพหน้าหลัก (Hero Banner)</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="อัพโหลดรูปภาพ"
+            value={bannerUrl}
+            onChange={setBannerUrl}
+            folder="banner"
+            accept="image/png,image/jpeg,image/webp"
+            placeholder="อัพโหลดรูปภาพหน้าหลัก"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveBanner}
+              disabled={bannerSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {bannerSaving ? <Loader2 size={13} className="animate-spin" /> : bannerSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {bannerSaved ? "บันทึกแล้ว!" : "บันทึกรูปภาพ"}
+            </button>
+            {bannerUrl && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>ตัวอย่าง:</span>
+                <img src={bannerUrl} alt="banner preview" className="h-10 object-cover border border-slate-200 rounded p-0.5" />
               </div>
             )}
           </div>

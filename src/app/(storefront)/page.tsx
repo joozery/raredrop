@@ -1,6 +1,7 @@
 "use client";
 
 import HeroBanner from "@/components/home/HeroBanner";
+import RedEnvelopeBanner from "@/components/home/RedEnvelopeBanner";
 import FlashSale from "@/components/home/FlashSale";
 import TrendingBoxes from "@/components/home/TrendingBoxes";
 import ShopPreview from "@/components/home/ShopPreview";
@@ -13,7 +14,7 @@ export default function Home() {
       {/* Left Main Content */}
       <div className="flex-1 flex flex-col gap-6 lg:gap-8 min-w-0">
         <HeroBanner />
-        <MobileLiveOpenings />
+        <RedEnvelopeBanner />
         <FlashSale />
         <TrendingBoxes />
         <ShopPreview />

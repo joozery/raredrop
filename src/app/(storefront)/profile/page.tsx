@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, Settings, LogOut } from 'lucide-react';
-import { TopupModal } from "@/components/payment/TopupModal";
 import { InviteFriendModal } from "@/components/profile/InviteFriendModal";
 import { RedeemCodeModal } from "@/components/profile/RedeemCodeModal";
 
@@ -17,11 +16,13 @@ interface LevelInfo {
   nextRewards: { itemId: { _id: string; name: string; image: string }; quantity: number }[];
   progress: number;
   xpToNext: number;
+  logoImage: string | null;
+  tagImage: string | null;
+  colorTheme: string;
 }
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const [isTopupOpen, setIsTopupOpen] = React.useState(false);
   const [isInviteOpen, setIsInviteOpen] = React.useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = React.useState(false);
   const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
@@ -63,7 +64,11 @@ export default function ProfilePage() {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-gray-900">{session?.user?.name || "RareDrop User"}</h1>
-              <div className="bg-gray-200 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-600 italic">V{(session?.user as any)?.vipLevel || 1}</div>
+              {levelInfo?.tagImage ? (
+                <img src={levelInfo.tagImage} alt="Level Tag" className="h-6 object-contain drop-shadow-sm" />
+              ) : (
+                <div className="bg-gray-200 px-1.5 py-0.5 rounded text-[10px] font-bold text-gray-600 italic">V{(session?.user as any)?.vipLevel || 1}</div>
+              )}
             </div>
             
             <div className="flex items-center gap-2 mt-1">
@@ -74,41 +79,56 @@ export default function ProfilePage() {
         </div>
 
         {/* Level Card */}
-        <div className="mt-6 bg-gradient-to-r from-indigo-100 to-purple-50 rounded-2xl p-4 relative overflow-hidden shadow-sm border border-indigo-200/50">
-          <div className="relative z-10 w-full">
+        <div 
+          className={`mt-8 rounded-xl p-4 relative overflow-visible shadow-sm border border-gray-100 ${
+            ['gold', 'silver', 'bronze', 'diamond'].includes(levelInfo?.colorTheme || "") ? "" : "bg-[#f1f1f2]"
+          } ${
+            levelInfo?.colorTheme === 'gold' ? 'bg-gradient-to-r from-yellow-100 to-amber-50' :
+            levelInfo?.colorTheme === 'silver' ? 'bg-gradient-to-r from-slate-200 to-gray-100' :
+            levelInfo?.colorTheme === 'bronze' ? 'bg-gradient-to-r from-orange-100 to-amber-50/50' :
+            levelInfo?.colorTheme === 'diamond' ? 'bg-gradient-to-r from-cyan-100 to-blue-50' :
+            ''
+          }`}
+          style={{ backgroundColor: (levelInfo?.colorTheme && !['gold', 'silver', 'bronze', 'diamond', 'gray'].includes(levelInfo?.colorTheme)) ? levelInfo.colorTheme : undefined }}
+        >
+          {/* Level Logo Image */}
+          <div className="absolute -top-8 -right-4 w-32 h-32 z-20 pointer-events-none drop-shadow-md">
+            <img src={levelInfo?.logoImage || `/lv/lv${levelInfo?.level ?? 1}.png`} alt="Level Logo" className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+          </div>
+
+          <div className="relative z-10 w-full pr-14">
             <div className="flex items-end justify-between mb-2">
-              <h2 className="text-2xl font-black text-indigo-800 italic">Lv.{levelInfo?.level ?? (session?.user as any)?.vipLevel ?? 1}</h2>
-              <p className="text-[10px] text-indigo-600 font-medium flex items-center cursor-pointer hover:text-indigo-900">
+              <h2 className="text-xl font-black text-gray-900 tracking-tight">Lv.{levelInfo?.level ?? (session?.user as any)?.vipLevel ?? 1}</h2>
+              <p className="text-[10px] text-gray-500 font-medium flex items-center cursor-pointer hover:text-gray-700">
                 {levelInfo
                   ? levelInfo.nextLevelXp != null
                     ? `เหลืออีก ${levelInfo.xpToNext.toLocaleString()} XP เพื่อเลเวลอัป`
                     : "เลเวลสูงสุดแล้ว! 🎉"
                   : "โหลด..."}
-                {levelInfo?.nextLevelXp != null && <ChevronRight size={12} />}
+                {levelInfo?.nextLevelXp != null && <ChevronRight size={12} className="ml-0.5" />}
               </p>
             </div>
-            <div className="h-2 bg-indigo-200/50 rounded-full w-full overflow-hidden">
+            <div className="h-1.5 bg-gray-200/80 rounded-full w-full overflow-hidden mb-1.5">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-700"
+                className="h-full bg-gray-300 rounded-full transition-all duration-700"
                 style={{ width: `${Math.round((levelInfo?.progress ?? 0) * 100)}%` }}
               />
             </div>
-            <div className="flex justify-between mt-1 text-[10px] text-indigo-500 font-bold">
-              <span>{(levelInfo?.currentLevelXp ?? 0).toLocaleString()} XP</span>
-              <span>{levelInfo?.xp?.toLocaleString() ?? 0} XP ปัจจุบัน</span>
-              <span>{levelInfo?.nextLevelXp != null ? `${levelInfo.nextLevelXp.toLocaleString()} XP` : "MAX"}</span>
+            <div className="flex justify-between text-[9px] text-gray-400 font-bold">
+              <span>{levelInfo?.currentLevelXp != null ? `${levelInfo.currentLevelXp.toLocaleString()}XP` : "0XP"}</span>
+              <span>{levelInfo?.nextLevelXp != null ? `${levelInfo.nextLevelXp.toLocaleString()}XP` : "MAX"}</span>
             </div>
 
             {/* Next level rewards preview */}
             {levelInfo?.nextRewards && levelInfo.nextRewards.length > 0 && (
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-[10px] text-indigo-500 font-bold shrink-0">รางวัล Lv.{levelInfo.nextLevel}:</span>
+              <div className="mt-3 flex items-center gap-2 border-t border-gray-200/50 pt-2">
+                <span className="text-[10px] text-gray-500 font-bold shrink-0">รางวัล Lv.{levelInfo.nextLevel}:</span>
                 <div className="flex gap-1.5 flex-wrap">
                   {levelInfo.nextRewards.map((r, i) => (
-                    <div key={i} className="flex items-center gap-1 bg-white/70 border border-indigo-100 rounded-lg px-1.5 py-0.5">
-                      <img src={r.itemId?.image} alt={r.itemId?.name} className="w-4 h-4 rounded object-cover" />
-                      <span className="text-[10px] font-bold text-indigo-700 max-w-[60px] truncate">{r.itemId?.name}</span>
-                      <span className="text-[9px] text-indigo-400">×{r.quantity}</span>
+                    <div key={i} className="flex items-center gap-1 bg-white border border-gray-200 rounded-md px-1.5 py-0.5 shadow-sm">
+                      <img src={r.itemId?.image} alt={r.itemId?.name} className="w-3.5 h-3.5 rounded object-cover" />
+                      <span className="text-[9px] font-bold text-gray-700 max-w-[60px] truncate">{r.itemId?.name}</span>
+                      <span className="text-[8px] text-gray-400">×{r.quantity}</span>
                     </div>
                   ))}
                 </div>
@@ -130,14 +150,7 @@ export default function ProfilePage() {
                 ฿ {session ? ((session.user as any)?.coins || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) : "0.00"}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsTopupOpen(true)}
-                className="bg-white text-black text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors active:scale-95 shadow-sm"
-              >
-                + เติมเงิน
-              </button>
-            </div>
+
           </div>
         </div>
 
@@ -226,7 +239,6 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
       <InviteFriendModal isOpen={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
       <RedeemCodeModal isOpen={isRedeemOpen} onClose={() => setIsRedeemOpen(false)} />
     </div>

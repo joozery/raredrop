@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongoose";
 import Box from "@/models/Box";
+import Item from "@/models/Item";
 import "@/models/Category";
 
 export async function GET(req: Request) {
@@ -18,11 +19,22 @@ export async function GET(req: Request) {
 
     const boxes = await Box.find(query)
       .populate("categoryId", "name")
+      .populate({
+        path: "items.itemId",
+        model: Item,
+      })
       .sort({ isFeatured: -1, createdAt: -1 })
-      .limit(limit)
       .lean();
 
-    return NextResponse.json(boxes);
+    const availableBoxes = boxes.filter((box) => {
+      const isOutOfStock = box.items?.some((bi: any) => {
+        const item = bi.itemId as any;
+        return item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
+      });
+      return !isOutOfStock;
+    }).slice(0, limit);
+
+    return NextResponse.json(availableBoxes);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

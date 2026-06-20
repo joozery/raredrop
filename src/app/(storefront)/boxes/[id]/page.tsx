@@ -130,6 +130,11 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
   const pityPct = box ? Math.min((pityCount / box.pityThreshold) * 100, 100) : 0;
 
+  const isOutOfStock = box?.items.some((bi: any) => {
+    const item = bi.itemId;
+    return item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -188,12 +193,18 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             </div>
             <p className="text-gray-500 font-semibold text-base mt-2">ลุ้นของหายาก ระดับตำนาน</p>
             <div className="flex items-center gap-3 mt-4">
-              <button
-                onClick={() => handleDrawClick(1)}
-                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-[0_4px_14px_0_rgb(220,38,38,0.39)] transition-transform active:scale-95 text-sm"
-              >
-                <span className="font-sans">฿</span> {box.price.toLocaleString()}
-              </button>
+              {isOutOfStock ? (
+                <button disabled className="bg-gray-400 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm text-sm cursor-not-allowed">
+                  สินค้าบางชิ้นหมดสต็อก
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleDrawClick(1)}
+                  className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-[0_4px_14px_0_rgb(220,38,38,0.39)] transition-transform active:scale-95 text-sm"
+                >
+                  <span className="font-sans">฿</span> {box.price.toLocaleString()}
+                </button>
+              )}
             </div>
           </div>
 
@@ -287,7 +298,10 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               <button
                 key={opt.times}
                 onClick={() => handleDrawClick(opt.times)}
-                className={`flex-1 relative flex flex-col items-center justify-center py-2.5 rounded-xl border transition-all active:scale-95 ${opt.isBest ? "bg-red-50/50 border-red-200 shadow-sm" : "bg-white border-gray-100 hover:bg-gray-50"}`}
+                disabled={isOutOfStock}
+                className={`flex-1 relative flex flex-col items-center justify-center py-2.5 rounded-xl border transition-all active:scale-95 ${
+                  isOutOfStock ? "bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed" : opt.isBest ? "bg-red-50/50 border-red-200 shadow-sm" : "bg-white border-gray-100 hover:bg-gray-50"
+                }`}
               >
                 {opt.isBest && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-red-600 to-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm flex items-center gap-0.5">
@@ -308,17 +322,26 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             ))}
           </div>
           <div className="flex flex-col items-center w-full xl:flex-1">
-            <button
-              onClick={() => handleDrawClick(1)}
-              disabled={isOpening}
-              className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 disabled:from-gray-400 disabled:to-gray-300 text-white font-black text-xl lg:text-2xl py-3 lg:py-4 rounded-xl shadow-[0_6px_0_#991b1b,0_10px_20px_rgba(220,38,38,0.3)] active:shadow-[0_0px_0_#991b1b] active:translate-y-[6px] transition-all flex flex-col items-center justify-center group"
-            >
-              <div className="flex items-center gap-2">
-                <Flame size={24} className="fill-yellow-400 text-yellow-400 group-hover:scale-110 transition-transform" />
-                {isOpening ? "กำลังสุ่ม..." : "เปิดกล่องเลย!"}
-              </div>
-              <span className="text-xs font-semibold text-red-100 mt-1 opacity-90 drop-shadow-sm">ลุ้นของหายากระดับตำนาน</span>
-            </button>
+            {isOutOfStock ? (
+              <button disabled className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white font-black text-xl lg:text-2xl py-3 lg:py-4 rounded-xl shadow-[0_6px_0_#9ca3af] transition-all flex flex-col items-center justify-center cursor-not-allowed">
+                <div className="flex items-center gap-2">
+                  สินค้าหมด (Out of Stock)
+                </div>
+                <span className="text-xs font-semibold text-gray-100 mt-1 opacity-90 drop-shadow-sm">ไม่สามารถสุ่มได้ในขณะนี้</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleDrawClick(1)}
+                disabled={isOpening}
+                className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 disabled:from-gray-400 disabled:to-gray-300 text-white font-black text-xl lg:text-2xl py-3 lg:py-4 rounded-xl shadow-[0_6px_0_#991b1b,0_10px_20px_rgba(220,38,38,0.3)] active:shadow-[0_0px_0_#991b1b] active:translate-y-[6px] transition-all flex flex-col items-center justify-center group"
+              >
+                <div className="flex items-center gap-2">
+                  <Flame size={24} className="fill-yellow-400 text-yellow-400 group-hover:scale-110 transition-transform" />
+                  {isOpening ? "กำลังสุ่ม..." : "เปิดกล่องเลย!"}
+                </div>
+                <span className="text-xs font-semibold text-red-100 mt-1 opacity-90 drop-shadow-sm">ลุ้นของหายากระดับตำนาน</span>
+              </button>
+            )}
             <div className="flex items-center gap-1.5 mt-3 lg:mt-4 text-gray-500 text-[10px] sm:text-xs font-bold">
               <CheckCircle2 size={14} className="text-red-500" /> การันตีของหายากทุก {box.pityThreshold} ครั้ง
             </div>

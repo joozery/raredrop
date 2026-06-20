@@ -9,8 +9,7 @@ import Transaction from "@/models/Transaction";
 import Order from "@/models/Order";
 import Rarity from "@/models/Rarity";
 import Box from "@/models/Box";
-import ChatConversation from "@/models/ChatConversation";
-import ChatMessage from "@/models/ChatMessage";
+import { getOrCreateConversation, appendUserMessage } from "@/lib/chat";
 import { notify } from "@/lib/notify";
 import { createDeliveryTicket } from "@/lib/discordBot";
 
@@ -136,21 +135,8 @@ export async function PATCH(
           `ชื่อในเกม: ${ignValue}`,
         ].join("\n");
 
-        const convo = await ChatConversation.create({
-          userId,
-          subject: `รับของจริง: ${item.name}`,
-          lastMessage: `📦 ขอรับของจริง: ${item.name}`,
-          lastSender: "user",
-          lastMessageAt: new Date(),
-          unreadByAdmin: 1,
-          status: "open",
-        });
-        await ChatMessage.create({
-          conversationId: convo._id,
-          senderRole: "user",
-          senderId: userId,
-          text: ticketSummary,
-        });
+        const convo = await getOrCreateConversation(userId, `รับของจริง: ${item.name}`);
+        await appendUserMessage(convo, ticketSummary, item.image);
         conversationId = String(convo._id);
       }
 

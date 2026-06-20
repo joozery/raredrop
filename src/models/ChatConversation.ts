@@ -24,8 +24,10 @@ const ChatConversationSchema: Schema = new Schema({
   status: { type: String, enum: ["open", "closed"], default: "open" },
 }, { timestamps: true });
 
-ChatConversationSchema.index({ userId: 1, lastMessageAt: -1 });
+ChatConversationSchema.index({ userId: 1 }, { unique: true }); // 1 user มีแชทเดียวเสมอ — กันสร้างซ้ำซ้อนระดับ DB
 ChatConversationSchema.index({ lastMessageAt: -1 });
 
-export default mongoose.models.ChatConversation
-  || mongoose.model<IChatConversation>("ChatConversation", ChatConversationSchema);
+if (mongoose.models.ChatConversation) {
+  delete (mongoose as any).models.ChatConversation;
+}
+export default mongoose.model<IChatConversation>("ChatConversation", ChatConversationSchema);

@@ -221,7 +221,7 @@ function ModalCarousel({ images }: { images: string[] }) {
   );
 }
 
-function ShopItemCard({ item, onBuy, onAsk }: { item: ShopItem; onBuy: (item: ShopItem) => void; onAsk: (item: ShopItem) => void }) {
+function ShopItemCard({ item, onBuy }: { item: ShopItem; onBuy: (item: ShopItem) => void }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group relative">
       {item.isFeatured && (
@@ -257,27 +257,15 @@ function ShopItemCard({ item, onBuy, onAsk }: { item: ShopItem; onBuy: (item: Sh
           <ShoppingBag size={13} />
           {item.stock === 0 ? "หมดแล้ว" : "ซื้อเลย"}
         </button>
-        {(item.youtubeUrl || item.liveChatEnabled) && (
-          <div className="flex gap-1.5">
-            {item.youtubeUrl && (
-              <a
-                href={item.youtubeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
-              >
-                <Play size={11} /> ดูวิธี
-              </a>
-            )}
-            {item.liveChatEnabled && (
-              <button
-                onClick={() => onAsk(item)}
-                className="flex-1 text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
-              >
-                <MessageCircle size={11} /> สอบถาม
-              </button>
-            )}
-          </div>
+        {item.youtubeUrl && (
+          <a
+            href={item.youtubeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+          >
+            <Play size={11} /> ดูวิธี
+          </a>
         )}
       </div>
     </div>
@@ -357,6 +345,7 @@ export default function ShopPage() {
           body: JSON.stringify({
             subject: `รับสินค้า: ${purchasedItem.title}`,
             text: `สั่งซื้อสินค้า "${purchasedItem.title}" สำเร็จแล้วครับ (Ref: ${data.purchaseId}) รบกวนส่งข้อมูลให้ด้วยครับ`,
+            image: purchasedItem.images?.[0],
           }),
         });
         const chatData = await chatRes.json();
@@ -384,6 +373,7 @@ export default function ShopPage() {
         body: JSON.stringify({
           subject: `สอบถามสินค้า: ${item.title}`,
           text: `สวัสดีครับ อยากสอบถามเกี่ยวกับสินค้า "${item.title}" ครับ`,
+          image: item.images?.[0],
         }),
       });
       const data = await res.json();
@@ -431,9 +421,9 @@ export default function ShopPage() {
           </button>
         </div>
       </div>
-      {/* Category Tabs (Mobile) */}
+      {/* Category Tabs (All screens) */}
       {categories.length > 0 && (
-        <div className="flex lg:hidden gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
           <button
             onClick={() => setActiveCategory("")}
             className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === "" ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
@@ -468,34 +458,14 @@ export default function ShopPage() {
           <div className="flex sm:grid gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible hide-scrollbar pb-1 sm:pb-0 snap-x snap-mandatory sm:snap-none sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4">
             {featuredItems.slice(0, 4).map((item) => (
               <div key={item._id} className="w-[calc(50%-0.375rem)] sm:w-auto shrink-0 snap-start sm:snap-align-none">
-                <ShopItemCard item={item} onBuy={setBuyModal} onAsk={handleAskAboutItem} />
+                <ShopItemCard item={item} onBuy={setBuyModal} />
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Category Tabs (Desktop) */}
-      {categories.length > 0 && (
-        <div className="hidden lg:flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-          <button
-            onClick={() => setActiveCategory("")}
-            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === "" ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
-          >
-            ทั้งหมด
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c._id}
-              onClick={() => setActiveCategory(c._id)}
-              className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === c._id ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
-            >
-              {c.image && <img src={c.image} alt="" className="w-5 h-5 rounded-full object-cover" />}
-              {c.name}
-            </button>
-          ))}
-        </div>
-      )}
+
 
       {/* Filter and Sort Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-2 mt-2">
@@ -548,7 +518,7 @@ export default function ShopPage() {
       ) : (
         <div className={`grid gap-4 ${viewMode === "grid" ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"}`}>
           {filtered.map((item) => (
-            <ShopItemCard key={item._id} item={item} onBuy={setBuyModal} onAsk={handleAskAboutItem} />
+            <ShopItemCard key={item._id} item={item} onBuy={setBuyModal} />
           ))}
         </div>
       )}
@@ -570,26 +540,16 @@ export default function ShopPage() {
                 {buyModal.description && <p className="text-sm text-gray-500 mt-1">{buyModal.description}</p>}
               </div>
 
-              {(buyModal.youtubeUrl || buyModal.liveChatEnabled) && (
+              {buyModal.youtubeUrl && (
                 <div className="flex gap-2">
-                  {buyModal.youtubeUrl && (
-                    <a
-                      href={buyModal.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-red-600 bg-red-50 border border-red-100 py-2.5 rounded-xl hover:bg-red-100 transition-colors"
-                    >
-                      <Play size={15} /> ดูวิธีใช้งาน
-                    </a>
-                  )}
-                  {buyModal.liveChatEnabled && (
-                    <button
-                      onClick={() => handleAskAboutItem(buyModal)}
-                      className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-blue-600 bg-blue-50 border border-blue-100 py-2.5 rounded-xl hover:bg-blue-100 transition-colors"
-                    >
-                      <MessageCircle size={15} /> สอบถามสินค้านี้
-                    </button>
-                  )}
+                  <a
+                    href={buyModal.youtubeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-red-600 bg-red-50 border border-red-100 py-2.5 rounded-xl hover:bg-red-100 transition-colors"
+                  >
+                    <Play size={15} /> ดูวิธีใช้งาน
+                  </a>
                 </div>
               )}
 

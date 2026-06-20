@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, RefreshCw, ArrowUpRight, ArrowDownRight, Box, Store, ShieldCheck, ArrowRightLeft } from "lucide-react";
+import { Search, RefreshCw, ArrowUpRight, ArrowDownRight, Box, Store, ShieldCheck, ArrowRightLeft, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UserData {
@@ -29,6 +29,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: any; color: string; bg:
   market_buy:  { label: "ซื้อจากตลาด",  icon: Store,          color: "text-purple-600", bg: "bg-purple-50", sign: "-" },
   market_sell: { label: "ขายในตลาด",    icon: Store,          color: "text-indigo-600", bg: "bg-indigo-50", sign: "+" },
   admin_adjust:{ label: "Admin ปรับ",    icon: ShieldCheck,    color: "text-slate-600",  bg: "bg-slate-50",  sign: "±" },
+  red_envelope:{ label: "เปิดซองแดง",    icon: Gift,           color: "text-rose-600",   bg: "bg-rose-50",   sign: "+" },
 };
 
 const PAGE_SIZE = 50;

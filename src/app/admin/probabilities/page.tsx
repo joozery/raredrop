@@ -71,10 +71,14 @@ export default function ManageProbabilities() {
       if (res.ok) {
         const fullBox = await res.json();
         setSelectedBox(fullBox);
-        setEditingItems(fullBox.items.map((i: any) => ({
-          itemId: i.itemId._id,
-          probability: i.probability
-        })));
+        setEditingItems(
+          fullBox.items
+            .filter((i: any) => i.itemId)
+            .map((i: any) => ({
+              itemId: i.itemId._id,
+              probability: i.probability
+            }))
+        );
         setIsModalOpen(true);
       }
     } catch (err) {

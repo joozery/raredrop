@@ -46,6 +46,9 @@ export async function GET() {
       nextRewards: nextConfig?.rewardItems ?? [],
       progress,
       xpToNext: nextLevelXp != null ? nextLevelXp - xp : 0,
+      logoImage: currentConfig?.logoImage ?? null,
+      tagImage: currentConfig?.tagImage ?? null,
+      colorTheme: currentConfig?.colorTheme ?? "gray",
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, User, ArrowUpRight, ArrowDownRight, ArrowRightLeft } from "lucide-react";
+import { Search, User, ArrowUpRight, ArrowDownRight, ArrowRightLeft, Gift } from "lucide-react";
 
 interface UserData {
   _id: string;
@@ -12,7 +12,7 @@ interface UserData {
 interface TransactionData {
   _id: string;
   userId: UserData;
-  type: "topup" | "withdraw" | "buy_box" | "sell_item" | "market_buy" | "market_sell" | "admin_adjust";
+  type: "topup" | "withdraw" | "buy_box" | "sell_item" | "market_buy" | "market_sell" | "admin_adjust" | "red_envelope";
   amount: number;
   balanceAfter: number;
   description?: string;
@@ -59,6 +59,7 @@ export default function ManageTransactions() {
       case 'market_buy': return { label: 'ซื้อจากตลาด', icon: <ArrowUpRight size={14} />, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', sign: '-' };
       case 'market_sell': return { label: 'ขายในตลาด', icon: <ArrowDownRight size={14} />, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', sign: '+' };
       case 'admin_adjust': return { label: 'แอดมินปรับสมดุล', icon: <ArrowRightLeft size={14} />, color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200', sign: '' };
+      case 'red_envelope': return { label: 'เปิดซองแดง', icon: <Gift size={14} />, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100', sign: '+' };
       default: return { label: type, icon: <ArrowRightLeft size={14} />, color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200', sign: '' };
     }
   };
@@ -97,6 +98,7 @@ export default function ManageTransactions() {
               <option value="market_buy">ซื้อจากตลาด (Market Buy)</option>
               <option value="market_sell">ขายในตลาด (Market Sell)</option>
               <option value="admin_adjust">แอดมินปรับสมดุล (Admin Adjust)</option>
+              <option value="red_envelope">เปิดซองแดง (Red Envelope)</option>
             </select>
           </div>
 

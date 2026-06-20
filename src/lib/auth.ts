@@ -114,6 +114,7 @@ export const authOptions: NextAuthOptions = {
             } else {
               if (account.provider === "google") existingUser.googleId = user.id;
               if (account.provider === "line") existingUser.lineId = user.id;
+              if (!existingUser.avatar && user.image) existingUser.avatar = user.image;
               await existingUser.save();
             }
           }

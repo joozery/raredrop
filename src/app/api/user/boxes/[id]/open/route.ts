@@ -54,6 +54,15 @@ export async function POST(
       return NextResponse.json({ error: "กล่องนี้ยังไม่มีไอเทม" }, { status: 400 });
     }
 
+    const isOutOfStock = box.items.some((bi: any) => {
+      const item = bi.itemId as any;
+      return item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
+    });
+
+    if (isOutOfStock) {
+      return NextResponse.json({ error: "สินค้าบางชิ้นในกล่องนี้หมดสต็อกแล้ว ไม่สามารถสุ่มได้" }, { status: 400 });
+    }
+
     const userId = (session.user as any).id;
 
     const user = await User.findById(userId);
