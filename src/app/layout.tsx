@@ -18,10 +18,25 @@ const notoSansThai = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
 });
 
-export const metadata: Metadata = {
-  title: "RareDrop - Premium Mystery Box",
-  description: "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก",
-};
+import { connectToDatabase } from "@/lib/mongoose";
+import Setting from "@/models/Setting";
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    await connectToDatabase();
+    const siteNameSetting = await Setting.findOne({ key: "site_name" }).lean();
+    const siteName = (siteNameSetting as any)?.value || "RareDrop";
+    return {
+      title: `${siteName} - Premium Mystery Box`,
+      description: "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก",
+    };
+  } catch (err) {
+    return {
+      title: "RareDrop - Premium Mystery Box",
+      description: "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก",
+    };
+  }
+}
 
 export default function RootLayout({
   children,

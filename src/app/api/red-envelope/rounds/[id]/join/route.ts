@@ -5,7 +5,7 @@ import { connectToDatabase } from "@/lib/mongoose";
 import RedEnvelopeRound from "@/models/RedEnvelopeRound";
 import RedEnvelopeItem from "@/models/RedEnvelopeItem";
 import User from "@/models/User";
-import { ensureRoundStatus, getTodaySpend, creditCashReward, creditItemReward } from "@/lib/redEnvelope";
+import { ensureRoundStatus, getTodaySpend, resolveRoundRewards } from "@/lib/redEnvelope";
 
 export async function POST(
   req: Request,
@@ -41,6 +41,7 @@ export async function POST(
     }
 
     // จองช่องแบบ atomic — ใครกดถึงก่อนได้ช่องก่อน กันชนกันด้วย $expr เช็คจำนวนช่องคงเหลือ ณ ตอนอัปเดตจริง
+    // ยังไม่เฉลยผล — แค่จองที่ไว้เฉยๆ รอครบคนหรือหมดเวลาแล้วค่อยจับรางวัลพร้อมกันทีเดียว
     const updated = await RedEnvelopeRound.findOneAndUpdate(
       {
         _id: id,
@@ -61,38 +62,26 @@ export async function POST(
     }
 
     const mySlot = updated.participants.length - 1; // ช่องที่เพิ่ง push เข้าไป
+
+    // ถ้าครบคนแล้วพอดี (คือคนที่กดทำให้เต็ม) — จับรางวัลให้ทุกคนพร้อมกันทันที ไม่ต้องรอ request ถัดไป
+    if (updated.participants.length >= updated.maxPeople) {
+      await resolveRoundRewards(updated);
+    }
+
     const me = updated.participants[mySlot];
+    const result: any = { joined: true, rewardType: updated.rewardType, pending: me.rewardAmount === undefined && me.isWinner === undefined };
 
-    let result: any = { joined: true, rewardType: updated.rewardType };
-    let amountBaht = 0;
-    let isWinner = false;
-
-    if (updated.rewardType === "cash") {
-      const amountSatang = updated.allocations?.[mySlot] ?? 0;
-      amountBaht = amountSatang / 100;
-      me.rewardAmount = amountBaht;
-      result.rewardAmount = amountBaht;
-    } else {
-      isWinner = mySlot === updated.winnerSlot;
-      me.isWinner = isWinner;
-      const itemDoc = await RedEnvelopeItem.findById(updated.itemId).select("name image");
-      result.isWinner = isWinner;
-      result.itemName = itemDoc?.name;
-      result.itemImage = itemDoc?.image;
-    }
-
-    // ปิดรอบทันทีถ้าช่องเต็มแล้ว หรือไอเทมมีคนได้ไปแล้ว — ไม่ต้องรอใครอีก แล้วบันทึกทุกอย่างในครั้งเดียว
-    const shouldClose = updated.participants.length >= updated.maxPeople || (updated.rewardType === "item" && isWinner);
-    if (shouldClose) {
-      updated.status = "resolved";
-      updated.resolvedAt = new Date();
-    }
-    await updated.save();
-
-    if (updated.rewardType === "cash") {
-      await creditCashReward(userId, amountBaht, updated.label, updated._id as any);
-    } else if (isWinner && result.itemName) {
-      await creditItemReward(userId, result.itemName, updated.label);
+    if (!result.pending) {
+      if (updated.rewardType === "cash") {
+        result.rewardAmount = me.rewardAmount;
+      } else {
+        result.isWinner = me.isWinner;
+        if (me.isWinner) {
+          const itemDoc = await RedEnvelopeItem.findById(updated.itemId).select("name image");
+          result.itemName = itemDoc?.name;
+          result.itemImage = itemDoc?.image;
+        }
+      }
     }
 
     return NextResponse.json(result);

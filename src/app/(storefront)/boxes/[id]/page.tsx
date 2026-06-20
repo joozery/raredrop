@@ -41,6 +41,12 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   const [showResult, setShowResult] = useState(false);
   const [pityCount, setPityCount] = useState(0);
   const [freeCredits, setFreeCredits] = useState(0);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const showToast = (msg: string, ok = true) => {
+    setToast({ msg, ok });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +93,12 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       });
       const data = await res.json();
 
-      if (!res.ok) { alert(data.error || "เกิดข้อผิดพลาด"); setIsOpening(false); return; }
+      if (!res.ok) { showToast(data.error || "เกิดข้อผิดพลาด", false); setIsOpening(false); return; }
+
+      // ของหมดสต็อกกลางทาง อาจได้น้อยกว่าที่ขอ (เก็บเงินตามจำนวนที่ได้จริงเท่านั้น) — แจ้งให้รู้
+      if (data.results.length < selectedDraw.times) {
+        showToast(`ได้ของ ${data.results.length} จาก ${selectedDraw.times} ที่ขอ เพราะสินค้าบางชิ้นหมดสต็อกพอดี`, false);
+      }
 
       setResults(data.results);
       setPityCount(data.pityCount);
@@ -100,7 +111,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
         setShowResult(true);
       }
     } catch {
-      alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      showToast("เกิดข้อผิดพลาด กรุณาลองใหม่", false);
     } finally {
       setIsOpening(false);
     }
@@ -518,6 +529,12 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       )}
 
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+
+      {toast && (
+        <div className={`fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center gap-2 transition-all whitespace-nowrap ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>
+          {toast.ok ? "✓" : "✕"} {toast.msg}
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `@keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }` }} />
     </div>

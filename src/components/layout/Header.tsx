@@ -14,6 +14,7 @@ export function Header() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
+  const [siteName, setSiteName] = useState("RareDrop");
   const { data: session } = useSession();
   const { coins, gemCoins } = useBalance();
   const pathname = usePathname();
@@ -21,7 +22,10 @@ export function Header() {
   useEffect(() => {
     fetch("/api/public-settings")
       .then((r) => r.json())
-      .then((d) => { if (d.site_logo) setLogoUrl(d.site_logo); })
+      .then((d) => {
+        if (d.site_logo) setLogoUrl(d.site_logo);
+        if (d.site_name) setSiteName(d.site_name);
+      })
       .catch(() => {});
   }, []);
 
@@ -36,7 +40,7 @@ export function Header() {
         {/* Mobile Top Bar */}
         <div className="flex lg:hidden w-full items-center justify-between px-4 py-3">
           <div className="flex items-center">
-            <img src={logoUrl} alt="RareDrop Logo" className="h-7 w-auto object-contain" />
+            <img src={logoUrl} alt={`${siteName} Logo`} className="h-7 w-auto object-contain" />
           </div>
           <div className="flex items-center gap-3">
             {session && (

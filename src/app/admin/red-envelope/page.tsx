@@ -38,8 +38,10 @@ interface Round {
 
 function formatLocalDatetime(iso: string) {
   const d = new Date(iso);
+  // แปลงให้เป็นเวลาไทย (+07:00) เสมอ
+  const thTime = new Date(d.getTime() + (7 * 60 * 60 * 1000));
   const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${thTime.getUTCFullYear()}-${pad(thTime.getUTCMonth() + 1)}-${pad(thTime.getUTCDate())}T${pad(thTime.getUTCHours())}:${pad(thTime.getUTCMinutes())}`;
 }
 
 type RoundForm = {
@@ -181,8 +183,8 @@ export default function AdminRedEnvelopePage() {
         conditionAmount: Number(form.conditionAmount) || 0,
         conditionLevel: Number(form.conditionLevel) || 0,
         maxPeople: Number(form.maxPeople) || 1,
-        scheduledAt: form.scheduledAt,
-        endsAt: form.endsAt,
+        scheduledAt: new Date(form.scheduledAt + "+07:00").toISOString(),
+        endsAt: new Date(form.endsAt + "+07:00").toISOString(),
       };
       const url = modal === "edit" && editing ? `/api/admin/red-envelope/rounds/${editing._id}` : "/api/admin/red-envelope/rounds";
       const method = modal === "edit" ? "PUT" : "POST";
@@ -312,9 +314,9 @@ export default function AdminRedEnvelopePage() {
                       </p>
                       <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
                         <Clock size={11} />
-                        {new Date(r.scheduledAt).toLocaleString("th-TH", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        {new Date(r.scheduledAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                         {" – "}
-                        {new Date(r.endsAt).toLocaleString("th-TH", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        {new Date(r.endsAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                         {" · "}<Users size={11} className="inline" /> {r.participants.length}/{r.maxPeople} คน
                       </p>
                     </div>
@@ -367,7 +369,7 @@ export default function AdminRedEnvelopePage() {
                                 <span className={`font-bold ${p.isWinner ? "text-rose-600" : "text-slate-400"}`}>{p.isWinner ? "🎉 ผู้โชคดี" : "ไม่ได้รับ"}</span>
                               )
                             ) : (
-                              <span className="text-slate-400">{new Date(p.joinedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}</span>
+                              <span className="text-slate-400">{new Date(p.joinedAt).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" })}</span>
                             )}
                           </div>
                         ))}

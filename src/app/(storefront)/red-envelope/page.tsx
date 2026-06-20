@@ -39,6 +39,7 @@ interface RecentEntry {
 interface JoinResult {
   roundId?: string;
   rewardType: "cash" | "item";
+  pending?: boolean;
   rewardAmount?: number;
   isWinner?: boolean;
   itemName?: string;
@@ -123,7 +124,7 @@ export default function RedEnvelopePage() {
       const res = await fetch(`/api/red-envelope/rounds/${round._id}/join`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) { setJoinError(data.error || "เกิดข้อผิดพลาด"); return; }
-      // แจกสดทันที — รู้ผลตั้งแต่ response นี้เลย ไม่ต้องเช็ค resolved ของรอบ
+      // ปกติจะ pending เสมอ — รอครบคน/หมดเวลาแล้วค่อยรู้ผล ยกเว้นเป็นคนที่กดแล้วครบพอดี จะได้ผลกลับมาทันที
       setJoinResult({ ...data, roundId: round._id });
       await updateSession();
       fetchRounds();
@@ -384,6 +385,10 @@ export default function RedEnvelopePage() {
                             ? `ได้รับ ฿${(r.myResult.rewardAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
                             : "ไม่ได้รางวัล"}
                         </div>
+                      ) : r.joined ? (
+                        <div className="w-full py-3.5 rounded-xl font-bold text-gray-500 text-sm bg-gray-100 text-center">
+                          เข้าร่วมแล้ว · รอครบคน/หมดเวลาเพื่อจับรางวัล
+                        </div>
                       ) : r.status === "scheduled" ? (
                         <button disabled className="w-full py-3.5 rounded-xl font-bold text-white text-base bg-gradient-to-b from-gray-400 to-gray-500 shadow-[0_3px_0_#9ca3af] cursor-not-allowed">
                           {timeFmt(r.scheduledAt)} เริ่ม
@@ -499,7 +504,12 @@ export default function RedEnvelopePage() {
               <Sparkles size={36} className="text-white" />
             </div>
 
-            {joinResult.rewardType === "cash" ? (
+            {joinResult.pending ? (
+              <div>
+                <p className="font-black text-gray-900 text-xl">เข้าร่วมสำเร็จ! 🧧</p>
+                <p className="text-gray-500 text-sm mt-1">รอจนกว่าจะครบคนหรือหมดเวลา ระบบจะสุ่มผลให้ทุกคนพร้อมกันทีเดียว</p>
+              </div>
+            ) : joinResult.rewardType === "cash" ? (
               <>
                 <div>
                   <p className="font-black text-gray-900 text-xl">ยินดีด้วย! 🧧</p>

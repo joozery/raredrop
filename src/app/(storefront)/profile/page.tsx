@@ -63,7 +63,7 @@ export default function ProfilePage() {
           
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900">{session?.user?.name || "RareDrop User"}</h1>
+              <h1 className="text-xl font-bold text-gray-900">{session?.user?.name || "User"}</h1>
               {levelInfo?.tagImage ? (
                 <img src={levelInfo.tagImage} alt="Level Tag" className="h-6 object-contain drop-shadow-sm" />
               ) : (
@@ -92,9 +92,11 @@ export default function ProfilePage() {
           style={{ backgroundColor: (levelInfo?.colorTheme && !['gold', 'silver', 'bronze', 'diamond', 'gray'].includes(levelInfo?.colorTheme)) ? levelInfo.colorTheme : undefined }}
         >
           {/* Level Logo Image */}
-          <div className="absolute -top-8 -right-4 w-32 h-32 z-20 pointer-events-none drop-shadow-md">
-            <img src={levelInfo?.logoImage || `/lv/lv${levelInfo?.level ?? 1}.png`} alt="Level Logo" className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-          </div>
+          {levelInfo?.logoImage && (
+            <div className="absolute -top-8 -right-4 w-32 h-32 z-20 pointer-events-none drop-shadow-md">
+              <img src={levelInfo.logoImage} alt="Level Logo" className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            </div>
+          )}
 
           <div className="relative z-10 w-full pr-14">
             <div className="flex items-end justify-between mb-2">

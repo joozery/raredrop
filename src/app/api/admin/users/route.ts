@@ -4,6 +4,8 @@ import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
+import LevelConfig from "@/models/LevelConfig";
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -12,9 +14,20 @@ export async function GET() {
     }
 
     await connectToDatabase();
+    
+    // Fetch level configs to map tagImage
+    const levelConfigs = await LevelConfig.find({}, "level tagImage").lean();
+    const tagImageMap = new Map(levelConfigs.map((c: any) => [c.level, c.tagImage]));
+
     // Fetch all users with role 'user'
-    const users = await User.find({ role: "user" }).sort({ createdAt: -1 });
-    return NextResponse.json(users);
+    const users = await User.find({ role: "user" }).sort({ createdAt: -1 }).lean();
+    
+    const mappedUsers = users.map((u: any) => ({
+      ...u,
+      tagImage: u.vipLevel ? tagImageMap.get(u.vipLevel) : undefined
+    }));
+
+    return NextResponse.json(mappedUsers);
   } catch (error) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

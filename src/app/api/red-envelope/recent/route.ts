@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     const rangeStart = day === "today" ? todayStart : new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
     const rangeEnd = day === "today" ? new Date(todayStart.getTime() + 24 * 60 * 60 * 1000) : todayStart;
 
-    // แจกสดทันทีตอนกดรับ — ไม่ต้องรอรอบปิด
+    // จับรางวัลพร้อมกันทีเดียวตอนครบคน/หมดเวลา — แสดงเฉพาะคนที่จับรางวัลไปแล้วเท่านั้น (ยังไม่จับ = ไม่ขึ้นในลิสต์)
     // ถ้าระบุ roundId มา ให้ดูเฉพาะรอบนั้นรอบเดียว (ผู้เข้าร่วมของซองที่กำลังเปิดดูอยู่) ไม่ปนกับรอบอื่น
     const matchQuery: any = { "participants.joinedAt": { $gte: rangeStart, $lt: rangeEnd } };
     if (roundId) matchQuery._id = roundId;
@@ -37,6 +37,7 @@ export async function GET(req: Request) {
         if (!p.userId) continue;
         if (new Date(p.joinedAt) < rangeStart || new Date(p.joinedAt) >= rangeEnd) continue;
         if (r.rewardType === "cash" && p.rewardAmount === undefined) continue;
+        if (r.rewardType === "item" && p.isWinner === undefined) continue;
         entries.push({
           userId: p.userId._id,
           name: p.userId.name,

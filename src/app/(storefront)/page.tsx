@@ -5,7 +5,6 @@ import RedEnvelopeBanner from "@/components/home/RedEnvelopeBanner";
 import FlashSale from "@/components/home/FlashSale";
 import TrendingBoxes from "@/components/home/TrendingBoxes";
 import ShopPreview from "@/components/home/ShopPreview";
-import RightPanel from "@/components/home/RightPanel";
 import MobileLiveOpenings from "@/components/home/MobileLiveOpenings";
 
 export default function Home() {
@@ -18,11 +17,6 @@ export default function Home() {
         <FlashSale />
         <TrendingBoxes />
         <ShopPreview />
-      </div>
-
-      {/* Right Side Panel */}
-      <div className="hidden lg:flex">
-        <RightPanel />
       </div>
     </div>
   );

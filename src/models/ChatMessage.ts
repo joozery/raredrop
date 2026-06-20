@@ -14,7 +14,7 @@ const ChatMessageSchema: Schema = new Schema({
   conversationId: { type: Schema.Types.ObjectId, ref: "ChatConversation", required: true },
   senderRole: { type: String, enum: ["user", "admin"], required: true },
   senderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  text: { type: String, required: true },
+  text: { type: String, default: "" }, // ส่งแค่รูปอย่างเดียวได้ ไม่บังคับต้องมีข้อความ
   imageUrl: { type: String },
   resolved: { type: Boolean, default: false },
 }, { timestamps: true });

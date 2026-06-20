@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { connectToDatabase } from "@/lib/mongoose";
 import Otp from "@/models/Otp";
+import Setting from "@/models/Setting";
 
 export async function POST(req: Request) {
   try {
@@ -29,6 +30,9 @@ export async function POST(req: Request) {
     console.log(`[DEV ONLY] OTP for ${email} is: ${otpCode}`);
     console.log("==========================================");
 
+    const siteNameSetting = await Setting.findOne({ key: "site_name" }).lean();
+    const siteName = (siteNameSetting as any)?.value || "RareDrop";
+
     // Setup Nodemailer transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -40,9 +44,9 @@ export async function POST(req: Request) {
 
     try {
       await transporter.sendMail({
-        from: `"RareDrop" <${process.env.GMAIL_USER}>`,
+        from: `"${siteName}" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: "รหัสยืนยันการเข้าสู่ระบบ RareDrop",
+        subject: `รหัสยืนยันการเข้าสู่ระบบ ${siteName}`,
         html: `
           <div style="font-family: sans-serif; text-align: center; padding: 20px;">
             <h2>รหัสยืนยัน (OTP) ของคุณคือ</h2>

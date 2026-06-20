@@ -48,7 +48,7 @@ export async function GET() {
         endsAt: r.endsAt,
         status: r.status,
         joined: !!myEntry,
-        // แจกสดทันทีตอนกดรับ ไม่ต้องรอรอบปิด — โชว์ผลของฉันได้เลยถ้ามีผลแล้ว ไม่ต้องเช็คสถานะรอบ
+        // จับรางวัลพร้อมกันทีเดียวตอนครบคน/หมดเวลา — จะมีผลก็ต่อเมื่อรอบถูกจับรางวัลไปแล้วเท่านั้น
         myResult: myEntry && (myEntry.rewardAmount !== undefined || myEntry.isWinner !== undefined)
           ? { rewardAmount: myEntry.rewardAmount, isWinner: myEntry.isWinner }
           : null,

@@ -44,9 +44,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
-    const { text } = await req.json();
+    const { text, image } = await req.json();
     const trimmed = typeof text === "string" ? text.trim() : "";
-    if (!trimmed) return NextResponse.json({ error: "ข้อความว่างเปล่า" }, { status: 400 });
+    const imageUrl = typeof image === "string" && image.trim() ? image.trim() : undefined;
+    if (!trimmed && !imageUrl) return NextResponse.json({ error: "ข้อความว่างเปล่า" }, { status: 400 });
     if (trimmed.length > 2000) return NextResponse.json({ error: "ข้อความยาวเกินไป" }, { status: 400 });
 
     await connectToDatabase();
@@ -62,9 +63,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       senderRole: "user",
       senderId: userId,
       text: trimmed,
+      imageUrl,
     });
 
-    convo.lastMessage = trimmed;
+    convo.lastMessage = trimmed || "📷 รูปภาพ";
     convo.lastSender = "user";
     convo.lastMessageAt = new Date();
     convo.unreadByAdmin += 1;

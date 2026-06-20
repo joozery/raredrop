@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MessageCircle, Send, Search, CheckCheck, X, ArrowLeft } from "lucide-react";
+import { MessageCircle, Send, Search, CheckCheck, X, ArrowLeft, Paperclip, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UserData { _id: string; name: string; avatar?: string; email?: string }
@@ -34,7 +34,10 @@ export default function AdminChatPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
+  const [pendingImage, setPendingImage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -88,18 +91,34 @@ export default function AdminChatPage() {
     setConversations((prev) => prev.map((x) => x._id === c._id ? { ...x, unreadByAdmin: 0 } : x));
   };
 
+  const handleFileSelect = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("folder", "chat-attachments");
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (res.ok && data.url) setPendingImage(data.url);
+    } catch {} finally {
+      setUploadingImage(false);
+    }
+  };
+
   const send = async () => {
     const text = input.trim();
-    if (!text || sending || !activeId) return;
+    const image = pendingImage;
+    if ((!text && !image) || sending || !activeId) return;
     setSending(true);
-    const optimistic: ChatMsg = { _id: `tmp-${messages.length}`, senderRole: "admin", text, createdAt: new Date().toISOString() };
+    const optimistic: ChatMsg = { _id: `tmp-${messages.length}`, senderRole: "admin", text, imageUrl: image || undefined, createdAt: new Date().toISOString() };
     setMessages((prev) => [...prev, optimistic]);
     setInput("");
+    setPendingImage("");
     try {
       const res = await fetch(`/api/admin/chat/${activeId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, image: image || undefined }),
       });
       if (res.ok) {
         loadMessages(activeId);
@@ -107,10 +126,12 @@ export default function AdminChatPage() {
       } else {
         setMessages((prev) => prev.filter((m) => m._id !== optimistic._id));
         setInput(text);
+        setPendingImage(image);
       }
     } catch {
       setMessages((prev) => prev.filter((m) => m._id !== optimistic._id));
       setInput(text);
+      setPendingImage(image);
     } finally {
       setSending(false);
     }
@@ -284,21 +305,54 @@ export default function AdminChatPage() {
                 ))}
               </div>
 
-              <div className="p-3 border-t border-slate-100 flex items-center gap-2 shrink-0">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                  placeholder="พิมพ์ข้อความตอบกลับ..."
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-800"
-                />
-                <button
-                  onClick={send}
-                  disabled={sending || !input.trim()}
-                  className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center hover:bg-red-700 disabled:bg-slate-300 transition-colors shrink-0"
-                >
-                  <Send size={16} />
-                </button>
+              <div className="border-t border-slate-100 shrink-0">
+                {pendingImage && (
+                  <div className="px-3 pt-2.5 flex items-center gap-2">
+                    <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0">
+                      <img src={pendingImage} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setPendingImage("")}
+                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="p-3 flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileSelect(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 flex items-center justify-center hover:bg-slate-100 transition-colors shrink-0 disabled:opacity-60"
+                  >
+                    {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
+                  </button>
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                    placeholder="พิมพ์ข้อความตอบกลับ..."
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-800"
+                  />
+                  <button
+                    onClick={send}
+                    disabled={sending || (!input.trim() && !pendingImage)}
+                    className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center hover:bg-red-700 disabled:bg-slate-300 transition-colors shrink-0"
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
               </div>
             </>
           )}

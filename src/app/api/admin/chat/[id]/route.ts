@@ -45,9 +45,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const adminId = (session!.user as any).id;
 
     const { id } = await params;
-    const { text } = await req.json();
+    const { text, image } = await req.json();
     const trimmed = typeof text === "string" ? text.trim() : "";
-    if (!trimmed) return NextResponse.json({ error: "ข้อความว่างเปล่า" }, { status: 400 });
+    const imageUrl = typeof image === "string" && image.trim() ? image.trim() : undefined;
+    if (!trimmed && !imageUrl) return NextResponse.json({ error: "ข้อความว่างเปล่า" }, { status: 400 });
     if (trimmed.length > 2000) return NextResponse.json({ error: "ข้อความยาวเกินไป" }, { status: 400 });
 
     await connectToDatabase();
@@ -60,9 +61,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       senderRole: "admin",
       senderId: adminId,
       text: trimmed,
+      imageUrl,
     });
 
-    convo.lastMessage = trimmed;
+    const previewText = trimmed || "📷 รูปภาพ";
+    convo.lastMessage = previewText;
     convo.lastSender = "admin";
     convo.lastMessageAt = new Date();
     convo.unreadByUser += 1;
@@ -72,7 +75,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     await notify(
       String(convo.userId),
       "ทีมงานตอบกลับแล้ว 💬",
-      trimmed.length > 60 ? trimmed.slice(0, 60) + "…" : trimmed,
+      previewText.length > 60 ? previewText.slice(0, 60) + "…" : previewText,
       "info"
     );
 

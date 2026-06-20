@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { MessageCircle, X, Send, ChevronLeft } from "lucide-react";
+import { MessageCircle, X, Send, ChevronLeft, Paperclip, Loader2 } from "lucide-react";
 
 interface ChatMsg {
   _id: string;
@@ -35,7 +35,10 @@ export function LiveChatWidget() {
   const [activeStatus, setActiveStatus] = useState<"open" | "closed">("open");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [pendingImage, setPendingImage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -122,28 +125,45 @@ export function LiveChatWidget() {
     loadUnread();
   };
 
+  const handleFileSelect = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/user/chat/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (res.ok && data.url) setPendingImage(data.url);
+    } catch {} finally {
+      setUploadingImage(false);
+    }
+  };
+
   const send = async () => {
     const text = input.trim();
-    if (!text || sending || !activeId || activeStatus === "closed") return;
+    const image = pendingImage;
+    if ((!text && !image) || sending || !activeId || activeStatus === "closed") return;
     setSending(true);
-    const optimistic: ChatMsg = { _id: `tmp-${messages.length}`, senderRole: "user", text, createdAt: new Date().toISOString() };
+    const optimistic: ChatMsg = { _id: `tmp-${messages.length}`, senderRole: "user", text, imageUrl: image || undefined, createdAt: new Date().toISOString() };
     setMessages((prev) => [...prev, optimistic]);
     setInput("");
+    setPendingImage("");
     try {
       const res = await fetch(`/api/user/chat/${activeId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, image: image || undefined }),
       });
       if (res.ok) {
         loadMessages(activeId);
       } else {
         setMessages((prev) => prev.filter((m) => m._id !== optimistic._id));
         setInput(text);
+        setPendingImage(image);
       }
     } catch {
       setMessages((prev) => prev.filter((m) => m._id !== optimistic._id));
       setInput(text);
+      setPendingImage(image);
     } finally {
       setSending(false);
     }
@@ -262,22 +282,55 @@ export function LiveChatWidget() {
                   <p className="text-xs text-center text-gray-500">เคสนี้ถูกปิดแล้ว — หากต้องการสอบถามเพิ่มเติม กรุณาขอรับไอเทมใหม่อีกครั้ง</p>
                 </div>
               ) : (
-                <div className="p-3 border-t border-gray-100 flex items-center gap-2 shrink-0 bg-white">
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                    placeholder="พิมพ์ข้อความ..."
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-800"
-                  />
-                  <button
-                    onClick={send}
-                    disabled={sending || !input.trim()}
-                    className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center hover:bg-red-700 disabled:bg-gray-300 transition-colors shrink-0"
-                  >
-                    <Send size={16} />
-                  </button>
+                <div className="border-t border-gray-100 shrink-0 bg-white">
+                  {pendingImage && (
+                    <div className="p-2.5 pb-0 flex items-center gap-2">
+                      <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+                        <img src={pendingImage} alt="" className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => setPendingImage("")}
+                          className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-3 flex items-center gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileSelect(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 flex items-center justify-center hover:bg-gray-100 transition-colors shrink-0 disabled:opacity-60"
+                    >
+                      {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
+                    </button>
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                      placeholder="พิมพ์ข้อความ..."
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-800"
+                    />
+                    <button
+                      onClick={send}
+                      disabled={sending || (!input.trim() && !pendingImage)}
+                      className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center hover:bg-red-700 disabled:bg-gray-300 transition-colors shrink-0"
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
                 </div>
               )}
             </>

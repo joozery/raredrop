@@ -14,6 +14,7 @@ interface UserData {
   lineId?: string;
   googleId?: string;
   avatar?: string;
+  tagImage?: string;
 }
 
 export default function ManageUsers() {
@@ -261,9 +262,24 @@ export default function ManageUsers() {
                   </td>
                   <td className="py-4 px-6">
                     <div className="flex flex-col items-center justify-center gap-1.5">
-                      <div className="bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm border border-yellow-300">
-                        <Crown size={12} className="drop-shadow-sm" /> VIP {user.vipLevel || 1}
-                      </div>
+                      {user.tagImage ? (
+                        <div className="h-7 flex items-center justify-center">
+                          <img 
+                            src={user.tagImage} 
+                            alt={`LV ${user.vipLevel || 1}`} 
+                            className="h-full object-contain drop-shadow-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-7 flex items-center justify-center">
+                          <img 
+                            src={`/lv/lv${user.vipLevel || 1}.png`} 
+                            alt={`LV ${user.vipLevel || 1}`} 
+                            className="h-full object-contain drop-shadow-sm"
+                            onError={(e) => { e.currentTarget.src = "/lv/lv1.png"; }}
+                          />
+                        </div>
+                      )}
                       <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full">
                         <Star size={10} className="text-blue-500" /> {user.xp?.toLocaleString() || 0} XP
                       </span>
@@ -364,7 +380,7 @@ export default function ManageUsers() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5 flex items-center gap-1 uppercase tracking-wider">
-                    <Crown size={14} className="text-yellow-500"/> VIP Level
+                    <Crown size={14} className="text-yellow-500"/> เลเวล (LV)
                   </label>
                   <input 
                     type="number" 

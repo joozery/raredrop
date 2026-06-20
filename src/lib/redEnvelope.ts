@@ -1,5 +1,6 @@
 import { Types, HydratedDocument } from "mongoose";
 import RedEnvelopeRound, { IRedEnvelopeRound } from "@/models/RedEnvelopeRound";
+import RedEnvelopeItem from "@/models/RedEnvelopeItem";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import { notify } from "@/lib/notify";
@@ -63,6 +64,37 @@ export function generateAllocations(rewardType: "cash" | "item", totalAmount: nu
   return { winnerSlot: Math.floor(Math.random() * maxPeople) };
 }
 
+// จับรางวัลให้ "ทุกคนที่ยังไม่มีผล" พร้อมกันทีเดียว — เรียกตอนครบคนหรือหมดเวลา
+// ข้าม participant ที่มีผลอยู่แล้ว (กันแจกซ้ำ/เครดิตซ้ำ) — ต้อง round ที่ .select("+allocations +winnerSlot") มาแล้วเท่านั้น
+export async function resolveRoundRewards(round: RoundDoc) {
+  let itemDoc: { name: string; image?: string } | null = null;
+  if (round.rewardType === "item") {
+    itemDoc = await RedEnvelopeItem.findById(round.itemId).select("name image").lean<any>();
+  }
+
+  for (let i = 0; i < round.participants.length; i++) {
+    const p = round.participants[i];
+    if (p.rewardAmount !== undefined || p.isWinner !== undefined) continue; // จับไปแล้ว (เช่น ข้อมูลเก่าก่อนเปลี่ยน logic)
+
+    if (round.rewardType === "cash") {
+      const amountSatang = round.allocations?.[i] ?? 0;
+      const amountBaht = amountSatang / 100;
+      p.rewardAmount = amountBaht;
+      await creditCashReward(String(p.userId), amountBaht, round.label, round._id as any);
+    } else {
+      const isWinner = i === round.winnerSlot;
+      p.isWinner = isWinner;
+      if (isWinner && itemDoc) {
+        await creditItemReward(String(p.userId), itemDoc.name, round.label);
+      }
+    }
+  }
+
+  round.status = "resolved";
+  round.resolvedAt = new Date();
+  await round.save();
+}
+
 // เช็คและอัปเดตสถานะรอบให้ตรงกับเวลาจริงแบบ lazy (ไม่ต้องมี cron) — เรียกทุกครั้งก่อนแสดงผล/ก่อนให้เข้าร่วม
 export async function ensureRoundStatus(round: RoundDoc): Promise<RoundDoc> {
   const now = new Date();
@@ -70,16 +102,21 @@ export async function ensureRoundStatus(round: RoundDoc): Promise<RoundDoc> {
     round.status = "open";
     await round.save();
   }
-  // ปิดรอบเมื่อหมดเวลา หรือช่องเต็มแล้วแต่สถานะยังไม่ถูกปิด (กันเคสตกค้าง) — ไม่มีใครต้องรอจับรางวัลแบบ batch อีกแล้ว เพราะแจกสดทันทีตอนกดรับไปแล้ว
+  // ครบคนแล้ว หรือหมดเวลาแล้วแต่ยังไม่ถูกจับรางวัล (กันเคสตกค้าง) — จับรางวัลให้ทุกคนพร้อมกันทีเดียว
   if (round.status === "open" && (round.participants.length >= round.maxPeople || now >= round.endsAt)) {
-    round.status = "resolved";
-    round.resolvedAt = new Date();
-    await round.save();
+    // allocations/winnerSlot เป็น select:false เสมอ — ต้องโหลดใหม่ให้ครบก่อนจับรางวัล ป้องกันรั่วผ่าน query อื่นที่ไม่ได้ select มา
+    const full = await RedEnvelopeRound.findById(round._id).select("+allocations +winnerSlot");
+    if (full && full.status === "open") {
+      await resolveRoundRewards(full);
+      round.status = full.status;
+      round.resolvedAt = full.resolvedAt;
+      round.participants = full.participants;
+    }
   }
   return round;
 }
 
-// แจกรางวัลเงินให้ "คนเดียว" ทันทีตอนกดรับ — ไม่รอใคร
+// แจกรางวัลเงินให้ "คนเดียว" — เรียกจาก resolveRoundRewards ตอนจับรางวัลพร้อมกันทั้งรอบ
 export async function creditCashReward(userId: string, amountBaht: number, roundLabel: string, roundId: Types.ObjectId) {
   const user = await User.findByIdAndUpdate(userId, { $inc: { coins: amountBaht } }, { new: true });
   if (!user) return;
@@ -94,7 +131,7 @@ export async function creditCashReward(userId: string, amountBaht: number, round
   await notify(userId, "เปิดซองแดงได้เงิน! 🧧", `ได้รับ ฿${amountBaht.toLocaleString()} จากซองแดง "${roundLabel}"`, "success", "/red-envelope");
 }
 
-// แจกรางวัลไอเทมให้ผู้โชคดีทันทีตอนกดรับ — ไอเทมซองแดงเป็นคนละชุดกับไอเทมร้านค้า/กล่องสุ่ม จึงไม่เข้า Inventory ผู้เล่น
+// แจกรางวัลไอเทมให้ผู้โชคดี — ไอเทมซองแดงเป็นคนละชุดกับไอเทมร้านค้า/กล่องสุ่ม จึงไม่เข้า Inventory ผู้เล่น
 // ผลรางวัลถูกบันทึกไว้ใน participants ของรอบเองอยู่แล้ว ดูได้จากประวัติการรับซองแดง
 export async function creditItemReward(userId: string, itemName: string, roundLabel: string) {
   await notify(userId, "เปิดซองแดงได้ไอเทม! 🧧", `ยินดีด้วย! คุณคือผู้โชคดีได้รับ "${itemName}" จากซองแดง "${roundLabel}"`, "success", "/red-envelope");

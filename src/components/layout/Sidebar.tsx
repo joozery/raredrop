@@ -38,12 +38,14 @@ export function Sidebar() {
   const [tiktokUrl, setTiktokUrl] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
+  const [siteName, setSiteName] = useState("RareDrop");
 
   useEffect(() => {
     fetch("/api/public-settings")
       .then((r) => r.json())
       .then((d) => {
         setLogoUrl(d.site_logo || "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
+        setSiteName(d.site_name || "RareDrop");
         setDiscordUrl(d.discord_invite_url || "");
         setFacebookUrl(d.help_facebook_url || "");
         setLineUrl(d.help_line_url || "");
@@ -64,7 +66,7 @@ export function Sidebar() {
         <Link href="/" className="flex items-center w-full justify-center">
           <Image
             src={logoUrl}
-            alt="RareDrop Logo"
+            alt={`${siteName} Logo`}
             width={400}
             height={100}
             className="w-full max-w-[240px] h-auto object-contain drop-shadow-sm"
@@ -148,7 +150,7 @@ export function Sidebar() {
             </a>
           )}
         </div>
-        <p className="text-[11px] text-gray-400 font-medium text-center">© 2024 RareDrop. All rights reserved.</p>
+        <p className="text-[11px] text-gray-400 font-medium text-center">© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
       </div>
     </aside>
   );

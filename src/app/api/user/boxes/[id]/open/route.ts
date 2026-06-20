@@ -68,17 +68,17 @@ export async function POST(
     const user = await User.findById(userId);
     if (!user) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
 
-    // เช็ค BoxCredit (สิทธิ์เปิดฟรีจากการแลก GemCoin)
+    // เช็ค BoxCredit (สิทธิ์เปิดฟรีจากการแลก GemCoin) — เช็คความสามารถจ่ายล่วงหน้าด้วย worst-case (ขอเท่าไหร่คิดเท่านั้น)
+    // ค่าใช้จ่ายจริงจะคิดอีกทีหลังสุ่ม ตามจำนวนที่ได้ของจริง (actualRolls) เผื่อของหมดกลางอากาศได้น้อยกว่าที่ขอ
     const boxCredit = await BoxCredit.findOne({ userId, boxId });
-    const freeOpens = boxCredit ? Math.min(boxCredit.credits, times) : 0;
-    const paidOpens = times - freeOpens;
-    const actualCost = box.price * paidOpens;
+    const worstCaseFreeOpens = boxCredit ? Math.min(boxCredit.credits, times) : 0;
+    const worstCasePaidOpens = times - worstCaseFreeOpens;
+    const worstCaseCost = box.price * worstCasePaidOpens;
 
-    if (user.coins < actualCost) {
+    if (user.coins < worstCaseCost) {
       return NextResponse.json({ error: "เหรียญไม่เพียงพอ กรุณาเติมเงิน" }, { status: 400 });
     }
 
-    const totalCost = actualCost;
     const PITY_THRESHOLD = box.pityThreshold ?? 100;
 
     // ดึง/สร้าง pity counter
@@ -87,78 +87,102 @@ export async function POST(
       pityDoc = await PityCounter.create({ userId, boxId, count: 0 });
     }
 
-    // แยก items เป็น rare+ และ common สำหรับ pity
-    const rareItems = box.items.filter(
-      (bi: any) => bi.itemId?.rarityId?.order >= PITY_MIN_RARITY_ORDER
-    );
-
     const results: any[] = [];
     const inventoryDocs: any[] = [];
     let totalGemCoinsEarned = 0;
+    // item ที่หมดสต็อกไปแล้วระหว่างเปิดล็อตนี้ (ตัดออกจากการสุ่มรอบถัดไป) — กันชนกับ request อื่นที่ชิงหน่วยสุดท้ายไปพร้อมกัน
+    const depletedIds = new Set<string>();
+    let actualRolls = 0;
 
     for (let i = 0; i < times; i++) {
-      let chosenItemId: string;
+      let granted = false;
+      let attemptsLeft = box.items.length + 1; // กันวนซ้ำไม่จบถ้าของหมดพร้อมกันหมดทุกตัว
 
-      // ตรวจสอบ pity
-      if (pityDoc.count + 1 >= PITY_THRESHOLD && rareItems.length > 0) {
-        // force rare
-        chosenItemId = weightedRandom(
-          rareItems.map((bi: any) => ({ itemId: bi.itemId._id, probability: bi.probability }))
+      while (!granted && attemptsLeft-- > 0) {
+        const availableItems = box.items.filter((bi: any) => !depletedIds.has(bi.itemId._id.toString()));
+        if (availableItems.length === 0) break; // ของหมดทั้งกล่องกลางอากาศ (race หายากมาก) — หยุดสุ่มรอบนี้
+
+        const availableRare = availableItems.filter(
+          (bi: any) => bi.itemId?.rarityId?.order >= PITY_MIN_RARITY_ORDER
         );
-        pityDoc.count = 0;
-      } else {
-        chosenItemId = weightedRandom(
-          box.items.map((bi: any) => ({ itemId: bi.itemId._id, probability: bi.probability }))
-        );
-        const chosenItem = box.items.find((bi: any) => bi.itemId._id.toString() === chosenItemId);
-        const isRare = chosenItem?.itemId?.rarityId?.order >= PITY_MIN_RARITY_ORDER;
+
+        let chosenItemId: string;
+        if (pityDoc.count + 1 >= PITY_THRESHOLD && availableRare.length > 0) {
+          chosenItemId = weightedRandom(
+            availableRare.map((bi: any) => ({ itemId: bi.itemId._id, probability: bi.probability }))
+          );
+        } else {
+          chosenItemId = weightedRandom(
+            availableItems.map((bi: any) => ({ itemId: bi.itemId._id, probability: bi.probability }))
+          );
+        }
+
+        const fullItem = availableItems.find((bi: any) => bi.itemId._id.toString() === chosenItemId)?.itemId;
+
+        // ของจำกัดสต็อก — หักแบบ atomic ทันทีตอนสุ่มได้ ไม่ใช่ตอนจบล็อต กันสองคนชิงหน่วยสุดท้ายพร้อมกันได้ของซ้ำ
+        if (fullItem?.type !== "coin_reward" && !fullItem?.unlimitedStock) {
+          const decremented = await Item.findOneAndUpdate(
+            { _id: fullItem._id, stock: { $gt: 0 } },
+            { $inc: { stock: -1 } }
+          );
+          if (!decremented) {
+            depletedIds.add(fullItem._id.toString()); // คนอื่นชิงไปก่อน — ตัดออกแล้วสุ่มใหม่
+            continue;
+          }
+        }
+
+        granted = true;
+        const isRare = fullItem?.rarityId?.order >= PITY_MIN_RARITY_ORDER;
         pityDoc.count = isRare ? 0 : pityDoc.count + 1;
+
+        if (fullItem?.type === "coin_reward") {
+          const gemAmount = fullItem.coinRewardAmount || 0;
+          totalGemCoinsEarned += gemAmount;
+          results.push({
+            itemId: chosenItemId,
+            name: fullItem?.name,
+            image: fullItem?.image,
+            price: fullItem?.price,
+            rarity: fullItem?.rarityId,
+            type: "coin_reward",
+            coinRewardAmount: gemAmount,
+          });
+        } else {
+          inventoryDocs.push({ userId, itemId: chosenItemId, boxId: box._id, status: "kept" });
+          results.push({
+            itemId: chosenItemId,
+            name: fullItem?.name,
+            image: fullItem?.image,
+            price: fullItem?.price,
+            rarity: fullItem?.rarityId,
+            type: "item",
+          });
+        }
       }
 
-      const fullItem = box.items.find((bi: any) => bi.itemId._id.toString() === chosenItemId)?.itemId;
-
-      if (fullItem?.type === "coin_reward") {
-        const gemAmount = fullItem.coinRewardAmount || 0;
-        totalGemCoinsEarned += gemAmount;
-        results.push({
-          itemId: chosenItemId,
-          name: fullItem?.name,
-          image: fullItem?.image,
-          price: fullItem?.price,
-          rarity: fullItem?.rarityId,
-          type: "coin_reward",
-          coinRewardAmount: gemAmount,
-        });
-      } else {
-        inventoryDocs.push({ userId, itemId: chosenItemId, boxId: box._id, status: "kept" });
-        results.push({
-          itemId: chosenItemId,
-          name: fullItem?.name,
-          image: fullItem?.image,
-          price: fullItem?.price,
-          rarity: fullItem?.rarityId,
-          type: "item",
-        });
-      }
+      if (!granted) break; // ของหมดทั้งกล่องกลางอากาศ — หยุดสุ่มที่เหลือ ไม่เก็บเงินส่วนที่ไม่ได้ของจริง
+      actualRolls++;
     }
 
-    // นับว่าแต่ละ item ถูกสุ่มได้กี่ครั้ง เพื่อหักสต็อกรวมครั้งเดียว (เฉพาะ item ปกติ)
-    const stockDeductions: Record<string, number> = {};
-    for (const inv of inventoryDocs) {
-      const id = inv.itemId.toString();
-      stockDeductions[id] = (stockDeductions[id] || 0) + 1;
+    if (actualRolls === 0) {
+      return NextResponse.json({ error: "สินค้าในกล่องนี้หมดสต็อกพอดี กรุณาลองใหม่อีกครั้ง" }, { status: 400 });
     }
+
+    // คิดเงิน/สิทธิ์ฟรีตามจำนวนที่สุ่มได้จริง (อาจน้อยกว่าที่ขอ ถ้าของหมดกลางอากาศ) ไม่เก็บเกินกว่าที่ได้ของจริง
+    const actualFreeOpens = boxCredit ? Math.min(boxCredit.credits, actualRolls) : 0;
+    const actualPaidOpens = actualRolls - actualFreeOpens;
+    const actualTotalCost = box.price * actualPaidOpens;
 
     // หักเหรียญ + เพิ่ม gemCoins + XP
     await User.findByIdAndUpdate(userId, {
-      $inc: { coins: -totalCost, xp: times, gemCoins: totalGemCoinsEarned },
+      $inc: { coins: -actualTotalCost, xp: actualRolls, gemCoins: totalGemCoinsEarned },
     });
 
     // หัก BoxCredit ที่ใช้ไป
-    if (freeOpens > 0) {
+    if (actualFreeOpens > 0) {
       await BoxCredit.findOneAndUpdate(
         { userId, boxId },
-        { $inc: { credits: -freeOpens } }
+        { $inc: { credits: -actualFreeOpens } }
       );
     }
 
@@ -166,24 +190,13 @@ export async function POST(
       await Inventory.insertMany(inventoryDocs);
     }
 
-    // หัก stock ทีละ item (เฉพาะ item ปกติที่มี stock > 0 และไม่ใช่สต็อกไม่จำกัด) — floor ที่ 0 ไม่ให้ติดลบ
-    await Promise.all(
-      Object.entries(stockDeductions).map(([itemId, count]) =>
-        Item.findOneAndUpdate(
-          { _id: itemId, stock: { $gt: 0 }, unlimitedStock: { $ne: true } },
-          [{ $set: { stock: { $max: [{ $subtract: ["$stock", count] }, 0] } } }],
-          { updatePipeline: true }
-        )
-      )
-    );
-
     const updatedUser = await User.findById(userId);
     await Transaction.create({
       userId,
       type: "buy_box",
-      amount: -totalCost,
+      amount: -actualTotalCost,
       balanceAfter: updatedUser!.coins,
-      description: `เปิดกล่อง "${box.name}" ${times} ครั้ง${freeOpens > 0 ? ` (ฟรี ${freeOpens} ครั้ง)` : ""}`,
+      description: `เปิดกล่อง "${box.name}" ${actualRolls} ครั้ง${actualFreeOpens > 0 ? ` (ฟรี ${actualFreeOpens} ครั้ง)` : ""}`,
       referenceId: box._id,
     });
 
@@ -195,10 +208,10 @@ export async function POST(
       .slice(0, 3)
       .join(", ");
     const more = results.length > 3 ? ` และอีก ${results.length - 3} รายการ` : "";
-    const freeNote = freeOpens > 0 ? ` (ใช้สิทธิ์ฟรี ${freeOpens} ครั้ง)` : "";
+    const freeNote = actualFreeOpens > 0 ? ` (ใช้สิทธิ์ฟรี ${actualFreeOpens} ครั้ง)` : "";
     await notify(
       userId,
-      `เปิดกล่อง "${box.name}" ${times} ครั้ง${freeNote}`,
+      `เปิดกล่อง "${box.name}" ${actualRolls} ครั้ง${freeNote}`,
       `ได้รับ: ${itemNames}${more}`,
       "success",
       "/inventory"
@@ -218,11 +231,11 @@ export async function POST(
       results,
       pityCount: pityDoc.count,
       pityThreshold: box.pityThreshold ?? 100,
-      coinsSpent: totalCost,
+      coinsSpent: actualTotalCost,
       coinsLeft: updatedUser!.coins,
       gemCoinsEarned: totalGemCoinsEarned,
       gemCoinsTotal: updatedUser!.gemCoins,
-      freeOpensUsed: freeOpens,
+      freeOpensUsed: actualFreeOpens,
     });
   } catch (error: any) {
     console.error("Box open error:", error);

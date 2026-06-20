@@ -107,7 +107,7 @@ export default function TrendingBoxes() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-gray-400 text-sm py-8">ยังไม่มีกล่องในหมวดนี้</p>
+        <p className="text-center text-gray-400 text-sm py-8">สินค้าหมดแล้ว</p>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-1">
           {filtered.map((box) => {
