@@ -494,7 +494,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   {r.type === "coin_reward" ? (
                     <>
                       <div className="w-20 h-20 rounded-xl flex items-center justify-center border-2 border-purple-300 bg-purple-50">
-                        <span className="text-4xl">💎</span>
+                        <Coins size={40} className="text-purple-600" />
                       </div>
                       <p className="text-xs font-bold text-gray-700 text-center">{r.name}</p>
                       <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">

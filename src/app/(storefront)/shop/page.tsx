@@ -71,14 +71,14 @@ function ModalCarousel({ images }: { images: string[] }) {
   const [idx, setIdx] = useState(0);
   if (!images || images.length === 0) {
     return (
-      <div className="w-full h-56 flex items-center justify-center bg-gray-100 rounded-xl">
+      <div className="w-full aspect-square flex items-center justify-center bg-gray-100 rounded-xl">
         <Package size={50} className="text-gray-300" />
       </div>
     );
   }
   return (
-    <div className="relative w-full rounded-xl overflow-hidden bg-gray-100">
-      <img src={images[idx]} alt="" className="w-full h-56 object-cover" />
+    <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100">
+      <img src={images[idx]} alt="" className="w-full h-full object-cover" />
       {images.length > 1 && (
         <>
           <button
