@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, FolderTree, Percent,
   Box, Boxes, Diamond, Users, Wallet, UserPlus,
   ArrowRightLeft, Store, ShoppingCart, BarChart3,
-  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift
+  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -82,9 +82,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const role = (session?.user as any)?.role;
       if (role !== "admin" && role !== "super_admin") {
         router.replace("/admin-login");
+      } else if (role === "admin" && pathname === "/admin") {
+        router.replace("/admin/shop");
       }
     }
-  }, [status, session, router]);
+  }, [status, session, router, pathname]);
+
+  const role = (session?.user as any)?.role;
+  const isSuperAdmin = role === "super_admin";
+  const isAdmin = role === "admin";
+
+  const isRestrictedPath = isAdmin && pathname !== "/admin" && !pathname.startsWith("/admin/shop") && !pathname.startsWith("/admin/chat");
+
+  const filteredMenuGroups = isSuperAdmin ? menuGroups : menuGroups.map(g => {
+    if (g.title === "ร้านค้า") {
+      return {
+        ...g,
+        items: g.items.filter(i => i.href === "/admin/shop" || i.href === "/admin/chat")
+      };
+    }
+    return null;
+  }).filter(Boolean) as typeof menuGroups;
 
   // ใต้จอ lg ลดจอบังคับให้ sidebar เป็นโหมดเต็ม (มีตัวหนังสือ) เสมอ — โหมดย่อไอคอนมีไว้สำหรับจอใหญ่เท่านั้น
   useEffect(() => {
@@ -144,22 +162,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className={cn("flex-1 overflow-y-auto hide-scrollbar py-6", isSidebarOpen ? "px-4" : "px-3")}>
-            <Link 
-              href="/admin"
-              title={!isSidebarOpen ? "Dashboard" : undefined}
-              className={cn(
-                "flex items-center rounded-lg mb-6 transition-colors group",
-                isSidebarOpen ? "gap-3 px-3 py-2.5" : "justify-center py-3",
-                pathname === "/admin" 
-                  ? "bg-red-600 text-white shadow-md shadow-red-500/20" 
-                  : "text-slate-600 hover:bg-slate-50"
-              )}
-            >
-              <LayoutDashboard size={isSidebarOpen ? 18 : 22} strokeWidth={pathname === "/admin" ? 2.5 : 2} className={cn(!isSidebarOpen && pathname !== "/admin" && "text-slate-400 group-hover:text-slate-600")} />
-              {isSidebarOpen && <span className={cn("text-sm", pathname === "/admin" ? "font-bold" : "font-medium")}>Dashboard</span>}
-            </Link>
+            {isSuperAdmin && (
+              <Link 
+                href="/admin"
+                title={!isSidebarOpen ? "Dashboard" : undefined}
+                className={cn(
+                  "flex items-center rounded-lg mb-6 transition-colors group",
+                  isSidebarOpen ? "gap-3 px-3 py-2.5" : "justify-center py-3",
+                  pathname === "/admin" 
+                    ? "bg-red-600 text-white shadow-md shadow-red-500/20" 
+                    : "text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                <LayoutDashboard size={isSidebarOpen ? 18 : 22} strokeWidth={pathname === "/admin" ? 2.5 : 2} className={cn(!isSidebarOpen && pathname !== "/admin" && "text-slate-400 group-hover:text-slate-600")} />
+                {isSidebarOpen && <span className={cn("text-sm", pathname === "/admin" ? "font-bold" : "font-medium")}>Dashboard</span>}
+              </Link>
+            )}
 
-            {menuGroups.map((group, i) => (
+            {filteredMenuGroups.map((group, i) => (
               <div key={i} className="mb-6">
                 {isSidebarOpen ? (
                   <h3 className="px-3 text-[10px] font-bold text-slate-400 tracking-wider mb-2">{group.title}</h3>
@@ -261,7 +281,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8">
-          {children}
+          {isRestrictedPath ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-20">
+              <ShieldAlert size={60} className="text-red-500 mb-4" />
+              <h2 className="text-2xl font-black text-slate-800">ไม่มีสิทธิ์เข้าถึง</h2>
+              <p className="text-slate-500 mt-2">ระดับ Admin ของคุณไม่สามารถเข้าถึงหน้านี้ได้</p>
+              <Link href="/admin/shop" className="mt-6 bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-sm hover:bg-red-700 transition-colors">
+                กลับไปหน้าร้านค้า
+              </Link>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>
