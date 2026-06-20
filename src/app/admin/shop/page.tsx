@@ -5,7 +5,7 @@ import { Reorder, useDragControls } from "framer-motion";
 import {
   ShoppingBag, Plus, Pencil, Trash2, X, Save, Loader2,
   Eye, EyeOff, Package, ChevronDown, ChevronUp, PlusCircle,
-  AlertCircle, Upload, GripVertical,
+  AlertCircle, Upload, GripVertical, Image as ImageIcon,
 } from "lucide-react";
 import { UploadInput } from "@/components/ui/UploadInput";
 
@@ -15,6 +15,28 @@ interface Account {
   sold: boolean;
   soldAt?: string;
 }
+
+interface CategoryOption {
+  _id: string;
+  name: string;
+  image?: string;
+  order: number;
+  isActive: boolean;
+}
+
+type CategoryForm = { name: string; image: string; order: string; isActive: boolean };
+const EMPTY_CATEGORY_FORM: CategoryForm = { name: "", image: "", order: "0", isActive: true };
+
+interface BannerItem {
+  _id: string;
+  image: string;
+  link?: string;
+  order: number;
+  isActive: boolean;
+}
+
+type BannerForm = { image: string; link: string; order: string; isActive: boolean };
+const EMPTY_BANNER_FORM: BannerForm = { image: "", link: "", order: "0", isActive: true };
 
 interface ShopListing {
   _id: string;
@@ -26,14 +48,17 @@ interface ShopListing {
   status: "active" | "hidden";
   liveChatEnabled?: boolean;
   youtubeUrl?: string;
+  categoryId?: string;
+  isFeatured?: boolean;
   createdAt: string;
 }
 
-type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string };
-const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "" };
+type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string; categoryId: string; isFeatured: boolean };
+const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "", categoryId: "", isFeatured: false };
 
 interface ShopListingCardProps {
   l: ShopListing;
+  categoryName?: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
   toggleStatus: (l: ShopListing) => void;
@@ -49,7 +74,7 @@ interface ShopListingCardProps {
 }
 
 function ShopListingCard({
-  l, isExpanded, onToggleExpand, toggleStatus, openEdit, handleDelete,
+  l, categoryName, isExpanded, onToggleExpand, toggleStatus, openEdit, handleDelete,
   addingTo, setAddingTo, newAccountData, setNewAccountData, handleAddAccount, addingAccount, handleRemoveAccount,
 }: ShopListingCardProps) {
   const dragControls = useDragControls();
@@ -80,6 +105,14 @@ function ShopListingCard({
               <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${l.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                 {l.status === "active" ? "เปิดขาย" : "ซ่อน"}
               </span>
+              {categoryName && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                  {categoryName}
+                </span>
+              )}
+              {l.isFeatured && (
+                <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider">⭐ แนะนำ</span>
+              )}
             </div>
             {l.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{l.description}</p>}
             <div className="flex items-center gap-4 mt-1">
@@ -184,6 +217,7 @@ function ShopListingCard({
 
 export default function AdminShopPage() {
   const [listings, setListings] = useState<ShopListing[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<ShopListing | null>(null);
@@ -201,6 +235,74 @@ export default function AdminShopPage() {
   const bulkUploadRef = useRef<HTMLInputElement>(null);
   const [bulkUploading, setBulkUploading] = useState(false);
 
+  // Banner management
+  const [banners, setBanners] = useState<BannerItem[]>([]);
+  const [bannerModal, setBannerModal] = useState<"create" | "edit" | null>(null);
+  const [editingBanner, setEditingBanner] = useState<BannerItem | null>(null);
+  const [bannerForm, setBannerForm] = useState<BannerForm>(EMPTY_BANNER_FORM);
+  const [bannerSaving, setBannerSaving] = useState(false);
+  const [bannerDeleteConfirm, setBannerDeleteConfirm] = useState<string | null>(null);
+
+  const fetchBanners = useCallback(async () => {
+    const res = await fetch("/api/admin/banners");
+    if (res.ok) setBanners(await res.json());
+  }, []);
+
+  useEffect(() => { fetchBanners(); }, [fetchBanners]);
+
+  const openCreateBanner = () => {
+    setEditingBanner(null);
+    setBannerForm(EMPTY_BANNER_FORM);
+    setBannerModal("create");
+  };
+
+  const openEditBanner = (b: BannerItem) => {
+    setEditingBanner(b);
+    setBannerForm({ image: b.image, link: b.link || "", order: String(b.order), isActive: b.isActive });
+    setBannerModal("edit");
+  };
+
+  const closeBannerModal = () => { setBannerModal(null); setEditingBanner(null); };
+
+  const handleSaveBanner = async () => {
+    if (!bannerForm.image) { showToast("กรุณาอัปโหลดรูปแบนเนอร์", false); return; }
+    setBannerSaving(true);
+    try {
+      const body = {
+        image: bannerForm.image,
+        link: bannerForm.link.trim() || undefined,
+        page: "shop",
+        order: Number(bannerForm.order) || 0,
+        isActive: bannerForm.isActive,
+      };
+      const url = bannerModal === "edit" && editingBanner ? `/api/admin/banners/${editingBanner._id}` : "/api/admin/banners";
+      const method = bannerModal === "edit" ? "PUT" : "POST";
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || "เกิดข้อผิดพลาด", false); return; }
+      showToast(bannerModal === "edit" ? "อัปเดตแบนเนอร์สำเร็จ" : "เพิ่มแบนเนอร์สำเร็จ");
+      closeBannerModal();
+      fetchBanners();
+    } finally {
+      setBannerSaving(false);
+    }
+  };
+
+  const handleDeleteBanner = async (id: string) => {
+    const res = await fetch(`/api/admin/banners/${id}`, { method: "DELETE" });
+    if (res.ok) { showToast("ลบแบนเนอร์สำเร็จ"); setBannerDeleteConfirm(null); fetchBanners(); }
+    else showToast("ลบไม่สำเร็จ", false);
+  };
+
+  const toggleBannerActive = async (b: BannerItem) => {
+    const res = await fetch(`/api/admin/banners/${b._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !b.isActive }),
+    });
+    if (res.ok) fetchBanners();
+  };
+
   const fetchListings = useCallback(async () => {
     setLoading(true);
     try {
@@ -213,9 +315,75 @@ export default function AdminShopPage() {
 
   useEffect(() => { fetchListings(); }, [fetchListings]);
 
+  const fetchCategories = useCallback(async () => {
+    const res = await fetch("/api/admin/shop-categories");
+    if (res.ok) setCategories(await res.json());
+  }, []);
+
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // Category management
+  const [categoryModal, setCategoryModal] = useState<"create" | "edit" | null>(null);
+  const [editingCategory, setEditingCategory] = useState<CategoryOption | null>(null);
+  const [categoryForm, setCategoryForm] = useState<CategoryForm>(EMPTY_CATEGORY_FORM);
+  const [categorySaving, setCategorySaving] = useState(false);
+  const [categoryDeleteConfirm, setCategoryDeleteConfirm] = useState<string | null>(null);
+
+  const openCreateCategory = () => {
+    setEditingCategory(null);
+    setCategoryForm(EMPTY_CATEGORY_FORM);
+    setCategoryModal("create");
+  };
+
+  const openEditCategory = (c: CategoryOption) => {
+    setEditingCategory(c);
+    setCategoryForm({ name: c.name, image: c.image || "", order: String(c.order), isActive: c.isActive });
+    setCategoryModal("edit");
+  };
+
+  const closeCategoryModal = () => { setCategoryModal(null); setEditingCategory(null); };
+
+  const handleSaveCategory = async () => {
+    if (!categoryForm.name.trim()) { showToast("กรุณากรอกชื่อหมวดหมู่", false); return; }
+    setCategorySaving(true);
+    try {
+      const body = {
+        name: categoryForm.name.trim(),
+        image: categoryForm.image || undefined,
+        order: Number(categoryForm.order) || 0,
+        isActive: categoryForm.isActive,
+      };
+      const url = categoryModal === "edit" && editingCategory ? `/api/admin/shop-categories/${editingCategory._id}` : "/api/admin/shop-categories";
+      const method = categoryModal === "edit" ? "PUT" : "POST";
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || "เกิดข้อผิดพลาด", false); return; }
+      showToast(categoryModal === "edit" ? "อัปเดตหมวดหมู่สำเร็จ" : "เพิ่มหมวดหมู่สำเร็จ");
+      closeCategoryModal();
+      fetchCategories();
+    } finally {
+      setCategorySaving(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    const res = await fetch(`/api/admin/shop-categories/${id}`, { method: "DELETE" });
+    if (res.ok) { showToast("ลบหมวดหมู่สำเร็จ"); setCategoryDeleteConfirm(null); fetchCategories(); }
+    else showToast("ลบไม่สำเร็จ", false);
+  };
+
+  const toggleCategoryActive = async (c: CategoryOption) => {
+    const res = await fetch(`/api/admin/shop-categories/${c._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !c.isActive }),
+    });
+    if (res.ok) fetchCategories();
   };
 
   const openCreate = () => {
@@ -234,6 +402,8 @@ export default function AdminShopPage() {
       status: l.status,
       liveChatEnabled: !!l.liveChatEnabled,
       youtubeUrl: l.youtubeUrl || "",
+      categoryId: l.categoryId || "",
+      isFeatured: !!l.isFeatured,
     });
     setModal("edit");
   };
@@ -285,6 +455,8 @@ export default function AdminShopPage() {
         status: form.status,
         liveChatEnabled: form.liveChatEnabled,
         youtubeUrl: form.youtubeUrl.trim(),
+        categoryId: form.categoryId || undefined,
+        isFeatured: form.isFeatured,
       };
       const url = modal === "edit" && editing ? `/api/admin/shop/${editing._id}` : "/api/admin/shop";
       const method = modal === "edit" ? "PUT" : "POST";
@@ -378,6 +550,104 @@ export default function AdminShopPage() {
         </button>
       </div>
 
+      {/* Category management */}
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+            <ShoppingBag size={16} className="text-slate-400" /> หมวดหมู่เกม (ของร้านค้า)
+          </h2>
+          <button
+            onClick={openCreateCategory}
+            className="flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+          >
+            <Plus size={14} /> เพิ่มหมวดหมู่
+          </button>
+        </div>
+        {categories.length === 0 ? (
+          <div className="px-5 py-6 text-center text-slate-400 text-sm">ยังไม่มีหมวดหมู่ — เพิ่มได้เลย (แยกจากหมวดหมู่กล่องสุ่ม)</div>
+        ) : (
+          <div className="flex flex-wrap gap-2 p-4">
+            {categories.map((c) => (
+              <div key={c._id} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl pl-3 pr-1.5 py-1.5">
+                {c.image ? (
+                  <img src={c.image} alt="" className="w-6 h-6 rounded-full object-cover" />
+                ) : (
+                  <span className={`w-2 h-2 rounded-full ${c.isActive ? "bg-emerald-500" : "bg-slate-300"}`} />
+                )}
+                <span className="text-xs font-bold text-slate-700">{c.name}</span>
+                {!c.isActive && <span className="text-[9px] font-bold text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded">ซ่อน</span>}
+                {categoryDeleteConfirm === c._id ? (
+                  <div className="flex items-center gap-1 ml-1">
+                    <button onClick={() => handleDeleteCategory(c._id)} className="text-[10px] font-bold bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700">ยืนยัน</button>
+                    <button onClick={() => setCategoryDeleteConfirm(null)} className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded-lg hover:bg-slate-300">ยกเลิก</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-0.5 ml-1">
+                    <button onClick={() => toggleCategoryActive(c)} title={c.isActive ? "ซ่อน" : "เปิดแสดง"} className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors">
+                      {c.isActive ? <Eye size={12} /> : <EyeOff size={12} />}
+                    </button>
+                    <button onClick={() => openEditCategory(c)} className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors">
+                      <Pencil size={12} />
+                    </button>
+                    <button onClick={() => setCategoryDeleteConfirm(c._id)} className="w-6 h-6 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-100 transition-colors">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Banner management */}
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+            <ImageIcon size={16} className="text-slate-400" /> แบนเนอร์หน้าร้านค้า
+          </h2>
+          <button
+            onClick={openCreateBanner}
+            className="flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+          >
+            <Plus size={14} /> เพิ่มแบนเนอร์
+          </button>
+        </div>
+        {banners.length === 0 ? (
+          <div className="px-5 py-6 text-center text-slate-400 text-sm">ยังไม่มีแบนเนอร์ — เพิ่มได้เลย</div>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            {banners.map((b) => (
+              <div key={b._id} className="flex items-center gap-3 px-5 py-3">
+                <img src={b.image} alt="" className="w-20 h-11 rounded-lg object-cover border border-slate-100 shrink-0 bg-slate-50" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-700 truncate">{b.link || "ไม่มีลิงก์ปลายทาง"}</p>
+                  <p className="text-[10px] text-slate-400">ลำดับ {b.order}</p>
+                </div>
+                {bannerDeleteConfirm === b._id ? (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => handleDeleteBanner(b._id)} className="text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">ยืนยัน</button>
+                    <button onClick={() => setBannerDeleteConfirm(null)} className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-200">ยกเลิก</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => toggleBannerActive(b)} title={b.isActive ? "ซ่อน" : "เปิดแสดง"} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
+                      {b.isActive ? <Eye size={15} /> : <EyeOff size={15} />}
+                    </button>
+                    <button onClick={() => openEditBanner(b)} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
+                      <Pencil size={15} />
+                    </button>
+                    <button onClick={() => setBannerDeleteConfirm(b._id)} className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-400 hover:bg-red-100 transition-colors">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Listings */}
       {loading ? (
         <div className="flex justify-center py-20">
@@ -397,6 +667,7 @@ export default function AdminShopPage() {
             <ShopListingCard
               key={l._id}
               l={l}
+              categoryName={categories.find((c) => c._id === l.categoryId)?.name}
               isExpanded={expandedId === l._id}
               onToggleExpand={() => setExpandedId(expandedId === l._id ? null : l._id)}
               toggleStatus={toggleStatus}
@@ -461,6 +732,21 @@ export default function AdminShopPage() {
                   placeholder="0"
                   min={0}
                 />
+              </div>
+
+              {/* Category */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">หมวดหมู่เกม (แสดงเป็น tab หน้าร้านค้า)</label>
+                <select
+                  value={form.categoryId}
+                  onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                >
+                  <option value="">-- ไม่ระบุหมวดหมู่ --</option>
+                  {categories.map((c) => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Images */}
@@ -536,6 +822,17 @@ export default function AdminShopPage() {
                 <span className="text-sm font-bold text-slate-700">💬 เปิดให้สอบถามผ่าน Live Chat ในเว็บ</span>
               </label>
 
+              {/* Featured toggle */}
+              <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.isFeatured}
+                  onChange={(e) => setForm((f) => ({ ...f, isFeatured: e.target.checked }))}
+                  className="accent-amber-500 w-4 h-4"
+                />
+                <span className="text-sm font-bold text-slate-700">⭐ สินค้าแนะนำ (แสดงใน section พิเศษหน้าร้านค้า)</span>
+              </label>
+
               {/* Status */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-600">สถานะ</label>
@@ -561,6 +858,161 @@ export default function AdminShopPage() {
               <button onClick={handleSave} disabled={saving} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-slate-400 transition-colors text-sm flex items-center justify-center gap-2">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 {saving ? "กำลังบันทึก..." : "บันทึก"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Create/Edit Modal */}
+      {categoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeCategoryModal}>
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+              <h3 className="font-bold text-slate-900">{categoryModal === "edit" ? "แก้ไขหมวดหมู่" : "เพิ่มหมวดหมู่"}</h3>
+              <button onClick={closeCategoryModal} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4 overflow-y-auto">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">ชื่อหมวดหมู่ *</label>
+                <input
+                  type="text"
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm((f) => ({ ...f, name: e.target.value }))}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                  placeholder="เช่น Free Fire, Roblox, มือถือ..."
+                />
+              </div>
+
+              <UploadInput
+                label="ไอคอนหมวดหมู่ (ไม่บังคับ)"
+                value={categoryForm.image}
+                onChange={(url) => setCategoryForm((f) => ({ ...f, image: url }))}
+                folder="shop-categories"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                placeholder="https://... หรืออัพโหลดรูปภาพ"
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-600">ลำดับการแสดงผล</label>
+                  <input
+                    type="number"
+                    value={categoryForm.order}
+                    onChange={(e) => setCategoryForm((f) => ({ ...f, order: e.target.value }))}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-bold text-slate-800"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-600">สถานะ</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCategoryForm((f) => ({ ...f, isActive: true }))}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${categoryForm.isActive ? "bg-red-600 text-white border-red-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"}`}
+                    >
+                      แสดง
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCategoryForm((f) => ({ ...f, isActive: false }))}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${!categoryForm.isActive ? "bg-red-600 text-white border-red-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"}`}
+                    >
+                      ซ่อน
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 flex gap-3 shrink-0">
+              <button onClick={closeCategoryModal} className="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors text-sm">
+                ยกเลิก
+              </button>
+              <button onClick={handleSaveCategory} disabled={categorySaving} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-slate-400 transition-colors text-sm flex items-center justify-center gap-2">
+                {categorySaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {categorySaving ? "กำลังบันทึก..." : "บันทึก"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Banner Create/Edit Modal */}
+      {bannerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeBannerModal}>
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+              <h3 className="font-bold text-slate-900">{bannerModal === "edit" ? "แก้ไขแบนเนอร์" : "เพิ่มแบนเนอร์"}</h3>
+              <button onClick={closeBannerModal} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4 overflow-y-auto">
+              <UploadInput
+                label="รูปแบนเนอร์ *"
+                value={bannerForm.image}
+                onChange={(url) => setBannerForm((f) => ({ ...f, image: url }))}
+                folder="banners"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                placeholder="https://... หรืออัพโหลดรูปภาพ"
+              />
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">ลิงก์ปลายทาง (ไม่บังคับ)</label>
+                <input
+                  type="text"
+                  value={bannerForm.link}
+                  onChange={(e) => setBannerForm((f) => ({ ...f, link: e.target.value }))}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                  placeholder="/shop หรือ https://..."
+                />
+                <p className="text-[11px] text-slate-400">กดที่แบนเนอร์แล้วพาไปหน้านี้ — เว้นว่างได้ถ้าไม่ต้องการ</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-600">ลำดับการแสดงผล</label>
+                  <input
+                    type="number"
+                    value={bannerForm.order}
+                    onChange={(e) => setBannerForm((f) => ({ ...f, order: e.target.value }))}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-bold text-slate-800"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-600">สถานะ</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBannerForm((f) => ({ ...f, isActive: true }))}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${bannerForm.isActive ? "bg-red-600 text-white border-red-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"}`}
+                    >
+                      แสดง
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBannerForm((f) => ({ ...f, isActive: false }))}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${!bannerForm.isActive ? "bg-red-600 text-white border-red-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"}`}
+                    >
+                      ซ่อน
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 flex gap-3 shrink-0">
+              <button onClick={closeBannerModal} className="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors text-sm">
+                ยกเลิก
+              </button>
+              <button onClick={handleSaveBanner} disabled={bannerSaving} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-slate-400 transition-colors text-sm flex items-center justify-center gap-2">
+                {bannerSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {bannerSaving ? "กำลังบันทึก..." : "บันทึก"}
               </button>
             </div>
           </div>

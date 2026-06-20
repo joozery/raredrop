@@ -18,6 +18,8 @@ export async function GET() {
       totalStock: l.accounts.length,
       liveChatEnabled: l.liveChatEnabled,
       youtubeUrl: l.youtubeUrl,
+      categoryId: l.categoryId ? String(l.categoryId) : null,
+      isFeatured: !!l.isFeatured,
       createdAt: l.createdAt,
     }));
 

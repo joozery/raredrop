@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongoose";
+import Banner from "@/models/Banner";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/mongoose";
-import ShopListing from "@/models/ShopListing";
 
 function isAdmin(session: any) {
   return session && ["admin", "super_admin"].includes(session.user?.role);
@@ -18,24 +18,19 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { title, description, images, price, status, liveChatEnabled, youtubeUrl, categoryId, isFeatured } = body;
+    const { image, link, page, order, isActive } = body;
 
-    const update: any = { title, description, images, price: Number(price), status };
-    // อัปเดตเฉพาะเมื่อส่งมา (toggleStatus ไม่ได้ส่ง → คงค่าเดิม)
-    if (liveChatEnabled !== undefined) update.liveChatEnabled = !!liveChatEnabled;
-    if (youtubeUrl !== undefined) update.youtubeUrl = youtubeUrl || "";
-    if (categoryId !== undefined) update.categoryId = categoryId || null;
-    if (isFeatured !== undefined) update.isFeatured = !!isFeatured;
+    const update: any = {};
+    if (image !== undefined) update.image = image;
+    if (link !== undefined) update.link = link || "";
+    if (page !== undefined) update.page = page;
+    if (order !== undefined) update.order = Number(order) || 0;
+    if (isActive !== undefined) update.isActive = !!isActive;
 
     await connectToDatabase();
-    const listing = await ShopListing.findByIdAndUpdate(
-      id,
-      update,
-      { new: true, runValidators: true }
-    );
-
-    if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(listing);
+    const banner = await Banner.findByIdAndUpdate(id, update, { new: true, runValidators: true });
+    if (!banner) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(banner);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -51,7 +46,7 @@ export async function DELETE(
 
     const { id } = await params;
     await connectToDatabase();
-    await ShopListing.findByIdAndDelete(id);
+    await Banner.findByIdAndDelete(id);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

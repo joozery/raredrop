@@ -175,10 +175,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       <div className="max-w-6xl mx-auto w-full px-4 pt-6 pb-4 flex flex-col gap-5">
 
         {/* Hero Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:p-10 relative flex flex-col lg:flex-row items-center justify-between gap-8 z-10">
-          <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl z-0">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[radial-gradient(circle,rgba(254,226,226,0.8)_0%,rgba(255,255,255,0)_70%)]" />
-          </div>
+        <div className="bg-[url('/coverrandon.png')] bg-cover bg-center rounded-2xl shadow-sm border border-gray-100 p-6 lg:p-10 relative flex flex-col lg:flex-row items-center justify-between gap-8 z-10">
 
           {/* Left */}
           <div className="relative z-10 flex flex-col items-start gap-3 flex-1 w-full lg:w-auto">
@@ -186,8 +183,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               {box.description || "กล่องสุ่มสุดพิเศษ!"}
             </div>
             <div className="flex flex-col mt-2">
-              <h1 className="text-5xl lg:text-7xl font-black italic text-gray-900 leading-[0.85] tracking-tighter drop-shadow-sm">HIGH</h1>
-              <h1 className="text-5xl lg:text-7xl font-black italic text-red-600 leading-[0.85] tracking-tighter drop-shadow-sm mt-1">DROPS</h1>
+              <h1 className="text-3xl lg:text-5xl font-black italic text-gray-900 leading-[0.85] tracking-tighter drop-shadow-sm">HIGH</h1>
+              <h1 className="text-3xl lg:text-5xl font-black italic text-red-600 leading-[0.85] tracking-tighter drop-shadow-sm mt-1">DROPS</h1>
             </div>
             <p className="text-gray-500 font-semibold text-base mt-2">ลุ้นของหายาก ระดับตำนาน</p>
             <div className="flex items-center gap-3 mt-4">
@@ -214,24 +211,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             )}
           </div>
 
-          {/* Right Cards */}
-          <div className="relative z-10 flex flex-col gap-3 flex-1 w-full lg:w-auto">
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col gap-3">
-              <h3 className="font-bold text-gray-800 text-sm">ระดับความหายาก</h3>
-              <div className="flex flex-col gap-2.5">
-                {dropRates.length > 0 ? dropRates.map((d) => (
-                  <div key={d.label} className="flex items-center gap-2 bg-gray-50/50 rounded-lg px-2 py-1">
-                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: d.color }} />
-                    <span className="font-black text-xs tracking-wide" style={{ color: d.color }}>{d.label}</span>
-                  </div>
-                )) : (
-                  <p className="text-xs text-gray-400">ยังไม่มีข้อมูล</p>
-                )}
-              </div>
-            </div>
-
-
-          </div>
+          {/* Spacer to balance layout without Rarity Card */}
+          <div className="hidden lg:block flex-1 w-full lg:w-auto"></div>
         </div>
 
         {/* Free Credits Banner */}

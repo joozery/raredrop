@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   ShoppingBag, Search, RefreshCw, X, AlertCircle,
-  ChevronLeft, ChevronRight, Package, History, SlidersHorizontal, ChevronDown,
-  Play, MessageCircle,
+  ChevronLeft, ChevronRight, Package, History, ChevronDown,
+  Play, MessageCircle, Flame, LayoutGrid, List,
 } from "lucide-react";
 
 interface ShopItem {
@@ -19,7 +19,63 @@ interface ShopItem {
   totalStock: number;
   liveChatEnabled?: boolean;
   youtubeUrl?: string;
+  categoryId?: string | null;
+  isFeatured?: boolean;
   createdAt: string;
+}
+
+interface CategoryTab {
+  _id: string;
+  name: string;
+  image?: string;
+}
+
+interface BannerSlide {
+  _id: string;
+  image: string;
+  link?: string;
+}
+
+function ShopBannerCarousel({ banners }: { banners: BannerSlide[] }) {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % banners.length), 4500);
+    return () => clearInterval(t);
+  }, [banners.length]);
+
+  if (banners.length === 0) return null;
+  const current = banners[idx];
+
+  const content = (
+    <img src={current.image} alt="" className="w-full h-full object-cover" />
+  );
+
+  return (
+    <div className="relative w-full aspect-[16/5] sm:aspect-[16/4] rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
+      {current.link ? (
+        current.link.startsWith("/") ? (
+          <Link href={current.link}>{content}</Link>
+        ) : (
+          <a href={current.link} target="_blank" rel="noopener noreferrer">{content}</a>
+        )
+      ) : (
+        content
+      )}
+      {banners.length > 1 && (
+        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+          {banners.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIdx(i)}
+              className={`h-1.5 rounded-full transition-all ${i === idx ? "bg-white w-5" : "bg-white/50 w-1.5"}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ImageCarousel({ images }: { images: string[] }) {
@@ -165,26 +221,91 @@ function ModalCarousel({ images }: { images: string[] }) {
   );
 }
 
+function ShopItemCard({ item, onBuy, onAsk }: { item: ShopItem; onBuy: (item: ShopItem) => void; onAsk: (item: ShopItem) => void }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group relative">
+      {item.isFeatured && (
+        <span className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+          <Flame size={12} className="fill-white/30" /> แนะนำ
+        </span>
+      )}
+      {/* Image */}
+      <div className="h-44 overflow-hidden relative">
+        <ImageCarousel images={item.images} />
+        {item.stock === 0 && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="text-white font-black text-sm">หมดแล้ว</span>
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-3 flex flex-col flex-1 gap-2">
+        <p className="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">{item.title}</p>
+        {item.description && (
+          <p className="text-[11px] text-gray-400 line-clamp-2">{item.description}</p>
+        )}
+        <div className="mt-auto flex items-center justify-between">
+          <span className="font-black text-red-600 text-base">฿{item.price.toLocaleString()}</span>
+          <span className="text-[10px] text-gray-400">สต็อก {item.stock}</span>
+        </div>
+        <button
+          onClick={() => item.stock > 0 && onBuy(item)}
+          disabled={item.stock === 0}
+          className="w-full text-[12px] font-black text-white py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:bg-gray-200 disabled:text-gray-400 bg-red-600 hover:bg-red-700"
+        >
+          <ShoppingBag size={13} />
+          {item.stock === 0 ? "หมดแล้ว" : "ซื้อเลย"}
+        </button>
+        {(item.youtubeUrl || item.liveChatEnabled) && (
+          <div className="flex gap-1.5">
+            {item.youtubeUrl && (
+              <a
+                href={item.youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+              >
+                <Play size={11} /> ดูวิธี
+              </a>
+            )}
+            {item.liveChatEnabled && (
+              <button
+                onClick={() => onAsk(item)}
+                className="flex-1 text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+              >
+                <MessageCircle size={11} /> สอบถาม
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ShopPage() {
   const { data: session, update: updateSession } = useSession();
   const balance = (session?.user as any)?.coins || 0;
 
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
+  const [sortBy, setSortBy] = useState("newest");
+  const [viewMode, setViewMode] = useState("grid");
+
+  const [categories, setCategories] = useState<CategoryTab[]>([]);
+  const [activeCategory, setActiveCategory] = useState("");
+  const [banners, setBanners] = useState<BannerSlide[]>([]);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setFilterOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    fetch("/api/shop-categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(Array.isArray(d) ? d : []))
+      .catch(() => {});
+    fetch("/api/banners?page=shop")
+      .then((r) => r.json())
+      .then((d) => setBanners(Array.isArray(d) ? d : []))
+      .catch(() => {});
   }, []);
 
   const [buyModal, setBuyModal] = useState<ShopItem | null>(null);
@@ -278,16 +399,18 @@ export default function ShopPage() {
 
   const filtered = items
     .filter((i) => {
-      if (search && !i.title.toLowerCase().includes(search.toLowerCase())) return false;
-      if (minPrice !== "" && i.price < Number(minPrice)) return false;
-      if (maxPrice !== "" && i.price > Number(maxPrice)) return false;
+      if (activeCategory && i.categoryId !== activeCategory) return false;
       return true;
     })
-    .sort((a, b) => (a.stock === 0 ? 1 : 0) - (b.stock === 0 ? 1 : 0));
+    .sort((a, b) => {
+      if (a.stock === 0 && b.stock > 0) return 1;
+      if (a.stock > 0 && b.stock === 0) return -1;
+      if (sortBy === "price_asc") return a.price - b.price;
+      if (sortBy === "price_desc") return b.price - a.price;
+      return 0;
+    });
 
-  const hasFilter = search || minPrice !== "" || maxPrice !== "";
-  const totalStockRemaining = items.filter((i) => i.stock > 0).length;
-  const totalStockAll = items.length;
+  const featuredItems = items.filter((i) => i.isFeatured && i.stock > 0);
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-7xl mx-auto">
@@ -297,14 +420,9 @@ export default function ShopPage() {
           <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
             <ShoppingBag size={24} className="text-red-500" /> ร้านค้า
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">ซื้อ ID เกมจากร้านค้าโดยตรง</p>
+          <p className="text-sm text-gray-500 mt-0.5">เลือกดูสินค้าทั้งหมด</p>
         </div>
         <div className="flex items-center gap-3">
-          {session && (
-            <div className="bg-gray-900 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm">
-              <span className="font-sans">฿</span> {balance.toLocaleString()}
-            </div>
-          )}
           <Link href="/purchases" className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 font-bold text-sm px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
             <History size={14} /> ประวัติการซื้อ
           </Link>
@@ -313,117 +431,107 @@ export default function ShopPage() {
           </button>
         </div>
       </div>
-
-      {/* Search + Filter */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="ค้นหาสินค้า..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white border border-gray-200 text-sm rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
-          />
-        </div>
-
-        {/* Price Filter Dropdown */}
-        <div className="relative shrink-0" ref={filterRef}>
+      {/* Category Tabs (Mobile) */}
+      {categories.length > 0 && (
+        <div className="flex lg:hidden gap-2 overflow-x-auto hide-scrollbar pb-1">
           <button
-            onClick={() => setFilterOpen((v) => !v)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold transition-colors shadow-sm ${(minPrice !== "" || maxPrice !== "") ? "bg-red-600 border-red-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+            onClick={() => setActiveCategory("")}
+            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === "" ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
           >
-            <SlidersHorizontal size={15} />
-            ราคา
-            {(minPrice !== "" || maxPrice !== "") && (
-              <span className="text-[10px] font-black bg-white/20 px-1.5 py-0.5 rounded-md">
-                {minPrice !== "" ? `฿${Number(minPrice).toLocaleString()}` : "0"} – {maxPrice !== "" ? `฿${Number(maxPrice).toLocaleString()}` : "∞"}
-              </span>
-            )}
-            <ChevronDown size={14} className={`transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+            ทั้งหมด
           </button>
+          {categories.map((c) => (
+            <button
+              key={c._id}
+              onClick={() => setActiveCategory(c._id)}
+              className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === c._id ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+            >
+              {c.image && <img src={c.image} alt="" className="w-5 h-5 rounded-full object-cover" />}
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
 
-          {filterOpen && (
-            <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 p-4 flex flex-col gap-4">
-              <p className="text-sm font-black text-gray-700">กรองตามราคา</p>
+      {/* Banner */}
+      <ShopBannerCarousel banners={banners} />
 
-              {/* Quick presets */}
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { label: "ต่ำกว่า ฿100",  min: "",    max: "100"  },
-                  { label: "฿100–500",        min: "100", max: "500"  },
-                  { label: "฿500–1,000",      min: "500", max: "1000" },
-                  { label: "มากกว่า ฿1,000", min: "1000",max: ""     },
-                ].map((p) => {
-                  const active = minPrice === p.min && maxPrice === p.max;
-                  return (
-                    <button
-                      key={p.label}
-                      onClick={() => { setMinPrice(p.min); setMaxPrice(p.max); }}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors ${active ? "bg-red-600 text-white border-red-600" : "bg-gray-50 text-gray-600 border-gray-200 hover:border-red-400 hover:text-red-600"}`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Custom range */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">฿</span>
-                  <input
-                    type="number"
-                    placeholder="ต่ำสุด"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-red-400 text-gray-700 bg-gray-50"
-                  />
-                </div>
-                <span className="text-gray-400 font-bold text-sm">—</span>
-                <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">฿</span>
-                  <input
-                    type="number"
-                    placeholder="สูงสุด"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-red-400 text-gray-700 bg-gray-50"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-1 border-t border-gray-100">
-                <button
-                  onClick={() => { setMinPrice(""); setMaxPrice(""); }}
-                  className="flex-1 text-xs font-bold text-gray-500 hover:text-red-600 py-2 rounded-lg hover:bg-red-50 transition-colors"
-                >
-                  ล้าง
-                </button>
-                <button
-                  onClick={() => setFilterOpen(false)}
-                  className="flex-1 text-xs font-bold bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  ตกลง
-                </button>
-              </div>
+      {/* Featured Products */}
+      {!loading && featuredItems.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-lg font-black text-gray-900 flex items-center gap-2">
+            <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
+              <Flame size={18} className="fill-orange-500" />
             </div>
-          )}
+            สินค้าแนะนำ
+          </h2>
+          <div className="flex sm:grid gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible hide-scrollbar pb-1 sm:pb-0 snap-x snap-mandatory sm:snap-none sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4">
+            {featuredItems.slice(0, 4).map((item) => (
+              <div key={item._id} className="w-[calc(50%-0.375rem)] sm:w-auto shrink-0 snap-start sm:snap-align-none">
+                <ShopItemCard item={item} onBuy={setBuyModal} onAsk={handleAskAboutItem} />
+              </div>
+            ))}
+          </div>
         </div>
+      )}
 
-        {hasFilter && (
+      {/* Category Tabs (Desktop) */}
+      {categories.length > 0 && (
+        <div className="hidden lg:flex gap-2 overflow-x-auto hide-scrollbar pb-1">
           <button
-            onClick={() => { setSearch(""); setMinPrice(""); setMaxPrice(""); }}
-            className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-red-600 transition-colors"
-            title="ล้างทั้งหมด"
+            onClick={() => setActiveCategory("")}
+            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === "" ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
           >
-            <X size={15} />
+            ทั้งหมด
           </button>
-        )}
+          {categories.map((c) => (
+            <button
+              key={c._id}
+              onClick={() => setActiveCategory(c._id)}
+              className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === c._id ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+            >
+              {c.image && <img src={c.image} alt="" className="w-5 h-5 rounded-full object-cover" />}
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
 
-        <div className="ml-auto shrink-0 flex items-center gap-1.5 bg-white border border-gray-200 text-gray-600 font-bold text-xs px-3 py-2 rounded-xl shadow-sm">
-          <Package size={14} className="text-red-500" />
-          สินค้าพร้อมขาย {totalStockRemaining.toLocaleString()}/{totalStockAll.toLocaleString()}
+      {/* Filter and Sort Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-2 mt-2">
+        <h2 className="text-lg font-black text-gray-900">สินค้าทั้งหมด</h2>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-500">จัดเรียง:</span>
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl pl-4 pr-9 py-2 outline-none focus:border-red-400 hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+              >
+                <option value="newest">ใหม่ล่าสุด</option>
+                <option value="price_asc">ราคาต่ำ-สูง</option>
+                <option value="price_desc">ราคาสูง-ต่ำ</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-lg transition-colors ${viewMode === "grid" ? "bg-white shadow-sm text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-lg transition-colors ${viewMode === "list" ? "bg-white shadow-sm text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
+            >
+              <List size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -438,64 +546,9 @@ export default function ShopPage() {
           <p className="font-bold text-lg">ยังไม่มีสินค้าในร้านค้า</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className={`grid gap-4 ${viewMode === "grid" ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"}`}>
           {filtered.map((item) => (
-            <div
-              key={item._id}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group"
-            >
-              {/* Image */}
-              <div className="h-44 overflow-hidden relative">
-                <ImageCarousel images={item.images} />
-                {item.stock === 0 && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <span className="text-white font-black text-sm">หมดแล้ว</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="p-3 flex flex-col flex-1 gap-2">
-                <p className="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">{item.title}</p>
-                {item.description && (
-                  <p className="text-[11px] text-gray-400 line-clamp-2">{item.description}</p>
-                )}
-                <div className="mt-auto flex items-center justify-between">
-                  <span className="font-black text-red-600 text-base">฿{item.price.toLocaleString()}</span>
-                  <span className="text-[10px] text-gray-400">สต็อก {item.stock}</span>
-                </div>
-                <button
-                  onClick={() => item.stock > 0 && setBuyModal(item)}
-                  disabled={item.stock === 0}
-                  className="w-full text-[12px] font-black text-white py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:bg-gray-200 disabled:text-gray-400 bg-red-600 hover:bg-red-700"
-                >
-                  <ShoppingBag size={13} />
-                  {item.stock === 0 ? "หมดแล้ว" : "ซื้อเลย"}
-                </button>
-                {(item.youtubeUrl || item.liveChatEnabled) && (
-                  <div className="flex gap-1.5">
-                    {item.youtubeUrl && (
-                      <a
-                        href={item.youtubeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 text-[11px] font-bold text-red-600 bg-red-50 border border-red-100 py-1.5 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Play size={11} /> ดูวิธี
-                      </a>
-                    )}
-                    {item.liveChatEnabled && (
-                      <button
-                        onClick={() => handleAskAboutItem(item)}
-                        className="flex-1 text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 py-1.5 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <MessageCircle size={11} /> สอบถาม
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+            <ShopItemCard key={item._id} item={item} onBuy={setBuyModal} onAsk={handleAskAboutItem} />
           ))}
         </div>
       )}

@@ -74,34 +74,8 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
-        <div className="flex lg:hidden w-full px-4 pb-3">
-          <div className="relative w-full">
-            <input 
-              type="text" 
-              placeholder="ค้นหากล่อง, สินค้า หรือคอลเลกชัน..." 
-              className="w-full bg-gray-50 border border-gray-200 rounded-full py-2 pl-10 pr-4 text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            />
-            <button className="absolute left-3.5 top-1/2 -translate-y-1/2 p-0 text-gray-400">
-              <Search size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Desktop Header */}
-        <div className="hidden lg:flex w-full items-center justify-between px-6 h-20">
-          <div className="flex-1 max-w-xl">
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="ค้นหากล่อง, สินค้า หรือคอลเลกชัน..." 
-                className="w-full bg-gray-50 border border-gray-200 rounded-full py-2.5 pl-5 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              />
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-primary transition-colors">
-                <Search size={18} />
-              </button>
-            </div>
-          </div>
+        {/* Search removed for both Mobile and Desktop */}
+        <div className="hidden lg:flex w-full items-center justify-end px-6 h-20">
           
           <div className="flex items-center gap-6">
             {session && (

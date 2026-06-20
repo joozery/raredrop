@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     if (!isAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { title, description, images, price, status, liveChatEnabled, youtubeUrl } = body;
+    const { title, description, images, price, status, liveChatEnabled, youtubeUrl, categoryId, isFeatured } = body;
 
     if (!title || price === undefined) {
       return NextResponse.json({ error: "title and price are required" }, { status: 400 });
@@ -44,6 +44,8 @@ export async function POST(req: Request) {
       status: status || "active",
       liveChatEnabled: !!liveChatEnabled,
       youtubeUrl: youtubeUrl || undefined,
+      categoryId: categoryId || undefined,
+      isFeatured: !!isFeatured,
     });
 
     if (listing.status === "active") {

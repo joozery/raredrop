@@ -16,6 +16,8 @@ export interface IShopListing extends Document {
   status: "active" | "hidden";
   liveChatEnabled: boolean;
   youtubeUrl?: string;
+  categoryId?: Types.ObjectId;
+  isFeatured: boolean;
   order: number;
   createdAt: Date;
   updatedAt: Date;
@@ -39,6 +41,10 @@ const ShopListingSchema: Schema = new Schema({
   liveChatEnabled: { type: Boolean, default: false },
   // ลิงก์ YouTube สอนวิธีใช้งาน — แสดงปุ่ม "ดูวิธี"
   youtubeUrl: { type: String },
+  // หมวดหมู่เกมของร้านค้า — แยกชุดข้อมูลจาก Category ของกล่องสุ่มโดยสิ้นเชิง
+  categoryId: { type: Schema.Types.ObjectId, ref: "ShopCategory" },
+  // สินค้าแนะนำ — แสดงใน section พิเศษหน้าร้านค้า
+  isFeatured: { type: Boolean, default: false },
   // ลำดับการแสดงผล — เรียงจากน้อยไปมาก, ค่าเริ่มต้น 0 ทุกตัว (จะ tiebreak ด้วย createdAt จนกว่าแอดมินจะลากจัดเรียงจริง)
   order: { type: Number, default: 0 },
 }, { timestamps: true });
