@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     const imageUrl = `${R2_PUBLIC_URL}/${key}`;
 
     await connectToDatabase();
-    await User.findByIdAndUpdate(userId, { image: imageUrl });
+    await User.findByIdAndUpdate(userId, { avatar: imageUrl });
 
     return NextResponse.json({ url: imageUrl });
   } catch (error: any) {

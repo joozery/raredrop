@@ -159,6 +159,7 @@ export const authOptions: NextAuthOptions = {
              (session.user as any).gemCoins = dbUser.gemCoins;
              (session.user as any).vipLevel = dbUser.vipLevel;
              (session.user as any).role = dbUser.role;
+             if (dbUser.avatar) (session.user as any).image = dbUser.avatar;
            }
          } catch(e) {}
       } else if (token && token.sub) {
@@ -175,6 +176,7 @@ export const authOptions: NextAuthOptions = {
              (session.user as any).gemCoins = dbUser.gemCoins;
              (session.user as any).vipLevel = dbUser.vipLevel;
              (session.user as any).role = dbUser.role;
+             if (dbUser.avatar) (session.user as any).image = dbUser.avatar;
            }
          } catch(e) {}
       }
