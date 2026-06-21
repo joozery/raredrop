@@ -214,7 +214,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Points */}
-        <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-100 transition-colors border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        <Link href="/exchange" className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-100 transition-colors border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
           <div className="flex items-center justify-center shrink-0 w-10 h-10">
             {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-10 h-10 object-contain" /> : <Coins size={32} className="fill-orange-400 text-orange-200" />}
           </div>
@@ -225,7 +225,7 @@ export default function ProfilePage() {
             <div className="text-[10px] text-gray-500 font-medium">GemCoin</div>
           </div>
           <ChevronRight size={14} className="text-gray-300" />
-        </div>
+        </Link>
 
         {/* Other Menus */}
         <div className="mt-4">
