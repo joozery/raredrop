@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
-import Setting from "@/models/Setting";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import { notify } from "@/lib/notify";
@@ -33,33 +32,14 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
-    // บัญชีผู้รับที่ตั้งไว้ใน Admin Settings — มาจาก QR ที่ถอดรหัสอัตโนมัติ และ/หรือเบอร์พร้อมเพย์ที่กรอกไว้
-    const [qrAccountTypeSetting, qrAccountNumberSetting, promptpayNumberSetting] = await Promise.all([
-      Setting.findOne({ key: "payment_qr_account_type" }).lean(),
-      Setting.findOne({ key: "payment_qr_account_number" }).lean(),
-      Setting.findOne({ key: "promptpay_number" }).lean(),
-    ]);
-
-    const qrAccountType = (qrAccountTypeSetting as any)?.value as string;
-    const qrAccountNumber = (qrAccountNumberSetting as any)?.value as string;
-    const promptpayNumber = (promptpayNumberSetting as any)?.value as string;
-
-    const checkReceiver: Array<{ accountType?: string; accountNumber: string }> = [];
-    if (qrAccountNumber) {
-      checkReceiver.push(qrAccountType ? { accountType: qrAccountType, accountNumber: qrAccountNumber } : { accountNumber: qrAccountNumber });
-    }
-    if (promptpayNumber && promptpayNumber !== qrAccountNumber) {
-      checkReceiver.push({ accountType: "02001", accountNumber: promptpayNumber });
-    }
-
     // slipBase64 เป็น data URI เต็มรูปแบบจาก FileReader.readAsDataURL (เช่น "data:image/jpeg;base64,...")
     const match = String(slipBase64).match(/^data:(.+);base64,(.+)$/);
     const mimeType = match?.[1] || "image/jpeg";
     const rawBase64 = match ? match[2] : slipBase64;
     const fileBuffer = Buffer.from(rawBase64, "base64");
 
-    const conditionPayload: { checkDuplicate: boolean; checkReceiver?: typeof checkReceiver } = { checkDuplicate: true };
-    if (checkReceiver.length > 0) conditionPayload.checkReceiver = checkReceiver;
+    // ปิดการเช็ค checkReceiver ไว้ก่อน — Slip2Go ไม่มี accountType สำหรับ QR ถุงเงิน (BILLERID) ให้ตรวจสอบได้ตรง
+    const conditionPayload = { checkDuplicate: true };
 
     const formData = new FormData();
     formData.append("file", new Blob([fileBuffer], { type: mimeType }), "slip.jpg");
@@ -79,7 +59,7 @@ export async function POST(req: Request) {
     // เมื่อส่ง checkCondition ไปด้วย ผลลัพธ์ที่ผ่านเงื่อนไขทั้งหมดจะได้ code "200200" (ไม่ใช่ "200000")
     const isSuccess = data.code === "200000" || data.code === "200200";
     if (!response.ok || !isSuccess || !data.data) {
-      console.error("Slip error:", data);
+      console.error("Slip error:", JSON.stringify(data, null, 2));
       const friendlyMessage = SLIP_RESULT_MESSAGES[data.code] || data.message || "สลิปไม่ถูกต้อง หรือถูกใช้งานไปแล้ว";
       return NextResponse.json({ error: friendlyMessage }, { status: 400 });
     }
