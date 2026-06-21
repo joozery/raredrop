@@ -279,6 +279,14 @@ const DEFAULT_SETTINGS = [
     group: "หน้าแรก (Hero Banner)",
   },
   {
+    key: "hero_banner_carousel",
+    value: [],
+    label: "สไลด์รูปภาพแบนเนอร์",
+    description: "แบนเนอร์แบบหลายรูปที่สามารถเลื่อนเป็นสไลด์ได้",
+    type: "mixed",
+    group: "หน้าแรก (Hero Banner)",
+  },
+  {
     key: "hero_banner_title1",
     value: "เปิดลุ้นของสะสมสุดพิเศษ",
     label: "ข้อความหลัก 1",
@@ -366,6 +374,38 @@ const DEFAULT_SETTINGS = [
     type: "text",
     group: "วิธีการเล่น (Hero Banner)",
   },
+  {
+    key: "popup_enabled",
+    value: false,
+    label: "เปิดใช้งาน Popup หน้าแรก",
+    description: "แสดง popup โฆษณา/ประกาศให้ผู้ใช้เห็นทันทีที่เข้าหน้าแรก",
+    type: "boolean",
+    group: "Popup หน้าแรก",
+  },
+  {
+    key: "popup_image",
+    value: "",
+    label: "รูปภาพ Popup",
+    description: "รูปภาพที่แสดงใน popup",
+    type: "text",
+    group: "Popup หน้าแรก",
+  },
+  {
+    key: "popup_link",
+    value: "",
+    label: "ลิงก์เมื่อคลิกรูป Popup (ไม่บังคับ)",
+    description: "เว้นว่างไว้ถ้าไม่ต้องการให้คลิกที่รูป popup ได้ (เช่น /boxes หรือ https://...)",
+    type: "text",
+    group: "Popup หน้าแรก",
+  },
+  {
+    key: "popup_dismiss_days",
+    value: 1,
+    label: "โชว์ Popup ซ้ำทุกกี่วัน (หลังผู้ใช้กดปิด)",
+    description: "ผู้ใช้กดปิด popup แล้วจะไม่เห็นอีกจนครบจำนวนวันนี้ จึงจะกลับมาโชว์ใหม่ — 0 = กดปิดแล้วไม่โชว์อีกเลย (จนกว่าจะเปลี่ยนรูป)",
+    type: "number",
+    group: "Popup หน้าแรก",
+  },
 ];
 
 async function seedDefaultSettings() {
@@ -409,7 +449,7 @@ export async function PATCH(req: Request) {
     const updated = await Setting.findOneAndUpdate(
       { key },
       { $set: { value, updatedBy: (session.user as any)?._id } },
-      { new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     if (!updated) {

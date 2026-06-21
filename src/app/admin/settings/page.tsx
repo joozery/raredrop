@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Save, RefreshCw, CheckCircle2, ImageIcon, Loader2, ScanLine } from "lucide-react";
+import { Settings, Save, RefreshCw, CheckCircle2, ImageIcon, Loader2, ScanLine, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadInput } from "@/components/ui/UploadInput";
+
+interface HeroBannerData {
+  image: string;
+  link: string;
+}
 
 interface SettingItem {
   _id: string;
@@ -28,8 +33,7 @@ export default function SettingsPage() {
   const [ogImageUrl, setOgImageUrl] = useState("");
   const [ogImageSaving, setOgImageSaving] = useState(false);
   const [ogImageSaved, setOgImageSaved] = useState(false);
-  const [bannerUrl, setBannerUrl] = useState("");
-  const [bannerLink, setBannerLink] = useState("");
+  const [heroBanners, setHeroBanners] = useState<HeroBannerData[]>([{ image: "", link: "" }]);
   const [bannerSaving, setBannerSaving] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
   const [knowledgeBannerUrl, setKnowledgeBannerUrl] = useState("");
@@ -47,6 +51,10 @@ export default function SettingsPage() {
   const [qrDecoding, setQrDecoding] = useState(false);
   const [qrDecodeError, setQrDecodeError] = useState("");
   const [qrDecodeResult, setQrDecodeResult] = useState<{ type: string; shopName?: string; accountType?: string; accountNumber?: string } | null>(null);
+  const [popupImage, setPopupImage] = useState("");
+  const [popupLink, setPopupLink] = useState("");
+  const [popupSaving, setPopupSaving] = useState(false);
+  const [popupSaved, setPopupSaved] = useState(false);
 
   const fetchSettings = () => {
     setLoading(true);
@@ -61,11 +69,16 @@ export default function SettingsPage() {
           const ogImageSetting = d.find((s: SettingItem) => s.key === "site_og_image");
           if (ogImageSetting) setOgImageUrl(String(ogImageSetting.value));
           
-          const bannerSetting = d.find((s: SettingItem) => s.key === "hero_banner_image");
-          if (bannerSetting) setBannerUrl(String(bannerSetting.value));
-
-          const bannerLinkSetting = d.find((s: SettingItem) => s.key === "hero_banner_link");
-          if (bannerLinkSetting) setBannerLink(String(bannerLinkSetting.value));
+          const heroCarouselSetting = d.find((s: SettingItem) => s.key === "hero_banner_carousel");
+          if (heroCarouselSetting && Array.isArray(heroCarouselSetting.value) && heroCarouselSetting.value.length > 0) {
+            setHeroBanners(heroCarouselSetting.value as HeroBannerData[]);
+          } else {
+            const legacyBanner = d.find((s: SettingItem) => s.key === "hero_banner_image");
+            const legacyLink = d.find((s: SettingItem) => s.key === "hero_banner_link");
+            if (legacyBanner?.value) {
+              setHeroBanners([{ image: String(legacyBanner.value), link: String(legacyLink?.value || "") }]);
+            }
+          }
 
           const knowledgeBannerSetting = d.find((s: SettingItem) => s.key === "knowledge_hero_image");
           if (knowledgeBannerSetting) setKnowledgeBannerUrl(String(knowledgeBannerSetting.value));
@@ -94,6 +107,12 @@ export default function SettingsPage() {
               shopName: qrShopName ? String(qrShopName) : undefined,
             });
           }
+
+          const popupImageSetting = d.find((s: SettingItem) => s.key === "popup_image");
+          if (popupImageSetting) setPopupImage(String(popupImageSetting.value));
+
+          const popupLinkSetting = d.find((s: SettingItem) => s.key === "popup_link");
+          if (popupLinkSetting) setPopupLink(String(popupLinkSetting.value));
         }
       })
       .finally(() => setLoading(false));
@@ -135,18 +154,14 @@ export default function SettingsPage() {
     }
   };
 
-  const saveBanner = async () => {
+  const saveBannersArray = async () => {
     setBannerSaving(true);
     try {
+      const validBanners = heroBanners.filter(b => b.image);
       await fetch("/api/admin/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "hero_banner_image", value: bannerUrl }),
-      });
-      await fetch("/api/admin/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "hero_banner_link", value: bannerLink }),
+        body: JSON.stringify({ key: "hero_banner_carousel", value: validBanners }),
       });
       setBannerSaved(true);
       setTimeout(() => setBannerSaved(false), 2000);
@@ -252,6 +267,26 @@ export default function SettingsPage() {
     }
   };
 
+  const savePopup = async () => {
+    setPopupSaving(true);
+    try {
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "popup_image", value: popupImage }),
+      });
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "popup_link", value: popupLink }),
+      });
+      setPopupSaved(true);
+      setTimeout(() => setPopupSaved(false), 2000);
+    } finally {
+      setPopupSaving(false);
+    }
+  };
+
   const getValue = (s: SettingItem) =>
     pending[s.key] !== undefined ? pending[s.key] : s.value;
 
@@ -288,9 +323,10 @@ export default function SettingsPage() {
   };
 
   const excludedKeys = [
-    "site_logo", "site_og_image", "hero_banner_image", "hero_banner_link",
+    "site_logo", "site_og_image", "hero_banner_carousel", "hero_banner_image", "hero_banner_link",
     "knowledge_hero_image", "knowledge_hero_link", "gemcoin_icon",
     "payment_method", "payment_qr_image", "payment_qr_type", "payment_qr_account_type", "payment_qr_account_number", "payment_qr_shop_name",
+    "popup_image", "popup_link",
   ];
   const displaySettings = settings.filter((s) => !excludedKeys.includes(s.key));
   const groups = [...new Set(displaySettings.map((s) => s.group))];
@@ -392,44 +428,67 @@ export default function SettingsPage() {
 
       {/* Hero Banner Upload Card */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
-          <ImageIcon size={15} className="text-slate-400" />
-          <h2 className="text-sm font-bold text-slate-700">รูปภาพหน้าหลัก (Hero Banner)</h2>
-        </div>
-        <div className="px-6 py-5 flex flex-col gap-4">
-          <UploadInput
-            label="อัพโหลดรูปภาพ"
-            value={bannerUrl}
-            onChange={setBannerUrl}
-            folder="banner"
-            accept="image/png,image/jpeg,image/webp"
-            placeholder="อัพโหลดรูปภาพหน้าหลัก"
-          />
-          <div className="flex flex-col gap-1.5 -mt-1">
-            <label className="text-xs font-bold text-slate-600">ลิงก์เมื่อคลิกรูปแบนเนอร์ (ไม่บังคับ)</label>
-            <input
-              type="text"
-              value={bannerLink}
-              onChange={(e) => setBannerLink(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
-              placeholder="เช่น /boxes หรือ https://..."
-            />
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ImageIcon size={15} className="text-slate-400" />
+            <h2 className="text-sm font-bold text-slate-700">รูปภาพหน้าหลัก (Hero Banner - สไลด์ได้)</h2>
           </div>
+          <button
+            onClick={() => setHeroBanners([...heroBanners, { image: "", link: "" }])}
+            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+          >
+            <Plus size={14} /> เพิ่มรูป
+          </button>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-6">
+          {heroBanners.map((banner, index) => (
+            <div key={index} className="flex flex-col gap-4 p-4 border border-slate-100 bg-slate-50 rounded-xl relative">
+              {heroBanners.length > 1 && (
+                <button
+                  onClick={() => setHeroBanners(heroBanners.filter((_, i) => i !== index))}
+                  className="absolute top-2 right-2 text-red-400 hover:text-red-600 p-1"
+                >
+                  <X size={16} />
+                </button>
+              )}
+              <UploadInput
+                label={`รูปที่ ${index + 1}`}
+                value={banner.image}
+                onChange={(url) => {
+                  const newBanners = [...heroBanners];
+                  newBanners[index].image = url;
+                  setHeroBanners(newBanners);
+                }}
+                folder="banner"
+                accept="image/png,image/jpeg,image/webp"
+                placeholder="อัพโหลดรูปภาพหน้าหลัก"
+              />
+              <div className="flex flex-col gap-1.5 -mt-1">
+                <label className="text-xs font-bold text-slate-600">ลิงก์เมื่อคลิกรูปแบนเนอร์ (ไม่บังคับ)</label>
+                <input
+                  type="text"
+                  value={banner.link}
+                  onChange={(e) => {
+                    const newBanners = [...heroBanners];
+                    newBanners[index].link = e.target.value;
+                    setHeroBanners(newBanners);
+                  }}
+                  className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+                  placeholder="เช่น /boxes หรือ https://..."
+                />
+              </div>
+            </div>
+          ))}
+
           <div className="flex items-center gap-3">
             <button
-              onClick={saveBanner}
+              onClick={saveBannersArray}
               disabled={bannerSaving}
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
             >
               {bannerSaving ? <Loader2 size={13} className="animate-spin" /> : bannerSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
-              {bannerSaved ? "บันทึกแล้ว!" : "บันทึกรูปภาพ"}
+              {bannerSaved ? "บันทึกแล้ว!" : "บันทึกรูปภาพหน้าหลัก"}
             </button>
-            {bannerUrl && (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <span>ตัวอย่าง:</span>
-                <img src={bannerUrl} alt="banner preview" className="h-10 object-cover border border-slate-200 rounded p-0.5" />
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -586,6 +645,53 @@ export default function SettingsPage() {
               <p>เลขอ้างอิงบัญชีผู้รับ: {qrDecodeResult.accountNumber}</p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Popup Upload Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">Popup หน้าแรก</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="รูปภาพ Popup"
+            value={popupImage}
+            onChange={setPopupImage}
+            folder="popup"
+            accept="image/png,image/jpeg,image/webp"
+            placeholder="อัพโหลดรูปภาพ popup"
+          />
+          <div className="flex flex-col gap-1.5 -mt-1">
+            <label className="text-xs font-bold text-slate-600">ลิงก์เมื่อคลิกรูป Popup (ไม่บังคับ)</label>
+            <input
+              type="text"
+              value={popupLink}
+              onChange={(e) => setPopupLink(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+              placeholder="เช่น /boxes หรือ https://..."
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={savePopup}
+              disabled={popupSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {popupSaving ? <Loader2 size={13} className="animate-spin" /> : popupSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {popupSaved ? "บันทึกแล้ว!" : "บันทึกรูป Popup"}
+            </button>
+            {popupImage && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>ตัวอย่าง:</span>
+                <img src={popupImage} alt="popup preview" className="h-10 object-cover border border-slate-200 rounded p-0.5" />
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-slate-400">
+            หมายเหตุ: ต้องเปิด &quot;เปิดใช้งาน Popup หน้าแรก&quot; ในกลุ่ม &quot;Popup หน้าแรก&quot; ด้านล่าง เพื่อให้ popup แสดงผลจริง
+          </p>
         </div>
       </div>
 

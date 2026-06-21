@@ -74,7 +74,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [siteLogo, setSiteLogo] = useState("");
+  const [siteName, setSiteName] = useState("RAREDROP");
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    fetch("/api/public-settings", { cache: "no-store" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.site_logo) setSiteLogo(data.site_logo);
+        if (data.site_name) setSiteName(data.site_name);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -152,10 +164,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className={cn("flex flex-col h-full", isSidebarOpen ? "w-64" : "w-20")}>
           <div className={cn("h-20 flex items-center shrink-0 border-b border-slate-100", isSidebarOpen ? "px-6" : "px-0 justify-center")}>
             <Link href="/admin" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-black text-xl leading-none shrink-0">R</div>
+              {siteLogo ? (
+                <img src={siteLogo} alt={siteName} className="w-8 h-8 object-contain shrink-0" />
+              ) : (
+                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-black text-xl leading-none shrink-0">
+                  {siteName ? siteName.charAt(0).toUpperCase() : "R"}
+                </div>
+              )}
               {isSidebarOpen && (
                 <div className="flex flex-col overflow-hidden">
-                  <span className="font-black text-sm tracking-tight leading-none text-slate-900 truncate">RAREDROP</span>
+                  <span className="font-black text-sm tracking-tight leading-none text-slate-900 truncate uppercase">{siteName}</span>
                   <span className="text-[9px] font-bold text-slate-400 tracking-wider truncate">ADMIN PANEL</span>
                 </div>
               )}

@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { BalanceProvider } from "@/contexts/BalanceContext";
 import { LiveChatWidget } from "@/components/chat/LiveChatWidget";
 import { ReferralCapture } from "@/components/referral/ReferralCapture";
+import { PopupAd } from "@/components/home/PopupAd";
 
 export default function StorefrontLayout({
   children,
@@ -27,6 +28,7 @@ export default function StorefrontLayout({
         <BottomNav />
       </div>
       <LiveChatWidget />
+      <PopupAd />
     </BalanceProvider>
   );
 }

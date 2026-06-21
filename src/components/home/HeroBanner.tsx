@@ -12,8 +12,19 @@ export default function HeroBanner() {
     subtitle: "กล่องสุ่มหลากหลาย สินค้าพรีเมียม\\nลุ้นได้จริง ส่งถึงมือคุณ",
     icon: "✦",
     button1: "เปิดกล่องเลย",
-    button2: "ดูทั้งหมด"
+    button2: "ดูทั้งหมด",
+    carousel: [] as { image: string, link: string }[]
   });
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (settings.carousel.length > 1) {
+      const timer = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % settings.carousel.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [settings.carousel.length]);
 
   useEffect(() => {
     fetch("/api/public-settings", { cache: "no-store" })
@@ -27,27 +38,42 @@ export default function HeroBanner() {
           subtitle: data.hero_banner_subtitle || prev.subtitle,
           icon: data.hero_banner_icon || prev.icon,
           button1: data.hero_banner_button1 || prev.button1,
-          button2: data.hero_banner_button2 || prev.button2
+          button2: data.hero_banner_button2 || prev.button2,
+          carousel: (data.hero_banner_carousel && Array.isArray(data.hero_banner_carousel) && data.hero_banner_carousel.length > 0)
+            ? data.hero_banner_carousel
+            : [{ image: data.hero_banner_image || prev.image, link: data.hero_banner_link || prev.link }]
         }));
       })
       .catch(() => {});
   }, []);
 
+  const currentSlide = settings.carousel[currentIndex] || { image: settings.image, link: settings.link };
+
   return (
     <div 
-      className={`relative w-full h-48 md:h-80 bg-cover bg-center rounded-xl overflow-hidden border border-red-100 p-6 md:p-10 flex items-center shadow-sm ${settings.link ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-      style={{ backgroundImage: `url('${settings.image}')` }}
+      className={`relative w-full h-48 md:h-80 bg-slate-900 rounded-xl overflow-hidden border border-red-100 shadow-sm ${currentSlide.link ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
       onClick={(e) => {
-        if (settings.link && (e.target as HTMLElement).tagName !== 'A' && !(e.target as HTMLElement).closest('a')) {
-          if (settings.link.startsWith('http')) {
-            window.open(settings.link, '_blank');
+        if (currentSlide.link && (e.target as HTMLElement).tagName !== 'A' && !(e.target as HTMLElement).closest('a') && !(e.target as HTMLElement).closest('.nav-dot')) {
+          if (currentSlide.link.startsWith('http')) {
+            window.open(currentSlide.link, '_blank');
           } else {
-            router.push(settings.link);
+            router.push(currentSlide.link);
           }
         }
       }}
     >
-      <div className="relative z-10 max-w-lg">
+      {/* Background Images Slider */}
+      {settings.carousel.map((slide, idx) => (
+        <div
+          key={idx}
+          className={`absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ${idx === currentIndex ? 'opacity-100' : 'opacity-0'}`}
+          style={{ backgroundImage: `url('${slide.image}')` }}
+        />
+      ))}
+      
+      {/* Content Overlay */}
+      <div className="relative z-10 w-full h-full p-6 md:p-10 flex items-center pointer-events-none">
+        <div className="max-w-lg pointer-events-auto">
         <h1 className="text-base sm:text-xl md:text-4xl font-extrabold text-gray-900 leading-tight">
           {settings.title1}<br/>
           <span className="text-primary flex items-center gap-1.5 md:gap-2 mt-0.5 md:mt-2">
@@ -70,7 +96,21 @@ export default function HeroBanner() {
             {settings.button2}
           </Link>
         </div>
+        </div>
       </div>
+
+      {/* Dots Indicator */}
+      {settings.carousel.length > 1 && (
+        <div className="absolute bottom-4 left-0 right-0 z-20 flex items-center justify-center gap-2">
+          {settings.carousel.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }}
+              className={`nav-dot w-2 h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-red-600 w-6' : 'bg-white/60 hover:bg-white'}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
