@@ -7,6 +7,7 @@ import {
   Search, Package, AlertCircle, Store, RefreshCw, SlidersHorizontal, X,
   ShoppingCart, TrendingUp, Tag,
 } from "lucide-react";
+import { TopupModal } from "@/components/payment/TopupModal";
 
 interface RarityData { name: string; color: string; order: number }
 interface ItemData { _id: string; name: string; image: string; price: number; rarityId: RarityData }
@@ -28,6 +29,7 @@ export default function MarketplacePage() {
 
   const [buyModal, setBuyModal] = useState<OrderData | null>(null);
   const [isBuying, setIsBuying] = useState(false);
+  const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const fetchOrders = useCallback(async () => {
@@ -297,9 +299,9 @@ export default function MarketplacePage() {
                   {isBuying ? "กำลังดำเนินการ..." : "ซื้อเลย"}
                 </button>
               ) : (
-                <Link href="/profile" className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors text-sm text-center flex items-center justify-center">
+                <button onClick={() => { setBuyModal(null); setIsTopupOpen(true); }} className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors text-sm text-center flex items-center justify-center">
                   เติมเงิน
-                </Link>
+                </button>
               )}
             </div>
           </div>
@@ -312,6 +314,9 @@ export default function MarketplacePage() {
           {toast.ok ? "✓" : "✕"} {toast.msg}
         </div>
       )}
+
+      {/* Topup Modal */}
+      <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, Package, History, ChevronDown,
   Play, MessageCircle, Flame, LayoutGrid, List,
 } from "lucide-react";
+import { TopupModal } from "@/components/payment/TopupModal";
 
 interface ShopItem {
   _id: string;
@@ -300,6 +301,7 @@ export default function ShopPage() {
 
   const [buyModal, setBuyModal] = useState<ShopItem | null>(null);
   const [isBuying, setIsBuying] = useState(false);
+  const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [successData, setSuccessData] = useState<{ purchaseId: string } | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -600,9 +602,9 @@ export default function ShopPage() {
                   {isBuying ? "กำลังดำเนินการ..." : "ยืนยันซื้อ"}
                 </button>
               ) : (
-                <Link href="/profile" className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors text-sm text-center flex items-center justify-center">
+                <button onClick={() => { setBuyModal(null); setIsTopupOpen(true); }} className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors text-sm text-center flex items-center justify-center">
                   เติมเงิน
-                </Link>
+                </button>
               )}
             </div>
           </div>
@@ -642,6 +644,9 @@ export default function ShopPage() {
           {toast.ok ? "✓" : "✕"} {toast.msg}
         </div>
       )}
+
+      {/* Topup Modal */}
+      <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
     </div>
   );
 }

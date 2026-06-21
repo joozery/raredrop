@@ -225,8 +225,8 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden relative">
-        <div className="bg-gradient-to-r from-red-600 to-red-500 p-5 flex items-center justify-between">
+      <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden relative flex flex-col max-h-[90vh]">
+        <div className="bg-gradient-to-r from-red-600 to-red-500 p-5 flex items-center justify-between shrink-0">
           <h2 className="text-white font-bold text-lg">
             {step === "amount" ? "ระบุจำนวนเงิน" : step === "qrcode" ? "สแกนชำระเงิน" : "ชำระผ่าน TrueMoney"}
           </h2>
@@ -235,7 +235,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-5 md:p-6 overflow-y-auto">
           {step === "amount" && (
             <div className="animate-in slide-in-from-right-4 duration-300">
               <div className="grid grid-cols-2 gap-2 mb-5">
@@ -317,22 +317,22 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
 
           {step === "qrcode" && (
             <div className="animate-in slide-in-from-right-4 duration-300">
-              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col items-center justify-center mb-5">
-                <p className="text-slate-500 text-sm font-medium mb-3">สแกน QR Code นี้เพื่อชำระเงิน</p>
-                <div className="bg-white p-2 rounded-lg shadow-sm mb-3">
+              <div className="bg-slate-50 border border-slate-200 p-3 md:p-4 rounded-xl flex flex-col items-center justify-center mb-4">
+                <p className="text-slate-500 text-sm font-medium mb-2">สแกน QR Code นี้เพื่อชำระเงิน</p>
+                <div className="bg-white p-2 rounded-lg shadow-sm mb-2">
                   {qrImage ? (
-                    <img src={qrImage} alt="QR Code" className="w-48 h-48 object-contain" />
+                    <img src={qrImage} alt="QR Code" className="w-40 h-40 md:w-48 md:h-48 object-contain" />
                   ) : (
-                    <div className="w-48 h-48 bg-slate-100 flex items-center justify-center text-slate-400 text-sm font-bold">QR ERROR</div>
+                    <div className="w-40 h-40 md:w-48 md:h-48 bg-slate-100 flex items-center justify-center text-slate-400 text-sm font-bold">QR ERROR</div>
                   )}
                 </div>
                 <div className="text-center">
                   <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">ยอดที่ต้องชำระ</p>
-                  <p className="text-2xl font-black text-red-600">฿{Number(amount).toLocaleString(undefined, {minimumFractionDigits:2})}</p>
+                  <p className="text-2xl font-black text-red-600 leading-none mt-1">฿{Number(amount).toLocaleString(undefined, {minimumFractionDigits:2})}</p>
                 </div>
               </div>
 
-              <div className="border-t border-dashed border-slate-200 pt-5">
+              <div className="border-t border-dashed border-slate-200 pt-4">
                 <p className="text-sm font-bold text-slate-700 text-center mb-3">เมื่อชำระเสร็จแล้ว ให้อัปโหลดสลิปที่นี่</p>
 
                 <input
@@ -345,7 +345,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
 
                 <div
                   onClick={() => !isLoading && fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
+                  className={`border-2 border-dashed rounded-xl p-3 md:p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
                     preview ? "border-slate-200 bg-slate-50" : "border-red-200 hover:border-red-400 hover:bg-red-50 bg-slate-50"
                   }`}
                 >
