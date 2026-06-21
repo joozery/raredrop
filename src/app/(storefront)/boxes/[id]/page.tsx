@@ -378,9 +378,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <span className="text-xs font-semibold text-red-100 mt-1 opacity-90 drop-shadow-sm">ลุ้นของหายากระดับตำนาน</span>
               </button>
             )}
-            <div className="flex items-center gap-1.5 mt-3 lg:mt-4 text-gray-500 text-[10px] sm:text-xs font-bold">
-              <CheckCircle2 size={14} className="text-red-500" /> การันตีของหายากทุก {box.pityThreshold} ครั้ง
-            </div>
           </div>
         </div>
       </div>

@@ -292,7 +292,7 @@ export default function ManageBoxes() {
                 placeholder="https://... หรืออัพโหลดรูปภาพ/gif"
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">ราคาต่อการเปิด 1 ครั้ง (บาท) <span className="text-red-500">*</span></label>
                   <input
@@ -302,16 +302,7 @@ export default function ManageBoxes() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-black text-red-600"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Pity (การันตีทุกกี่ครั้ง)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={currentBox.pityThreshold ?? 100}
-                    onChange={(e) => setCurrentBox({...currentBox, pityThreshold: parseInt(e.target.value) || 100})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-black text-slate-800"
-                  />
-                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5">หมวดหมู่</label>
                   <select 
