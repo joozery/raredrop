@@ -156,7 +156,7 @@ export default function ManageItems() {
 
   const filteredItems = items.filter(item => {
     const matchName = item.name?.toLowerCase().includes(search.toLowerCase());
-    const catId = typeof item.categoryId === 'object' ? (item.categoryId as any)._id : item.categoryId;
+    const catId = item.categoryId && typeof item.categoryId === 'object' ? (item.categoryId as any)._id : item.categoryId;
     const matchCat = searchCategory ? catId === searchCategory : true;
     return matchName && matchCat;
   });
