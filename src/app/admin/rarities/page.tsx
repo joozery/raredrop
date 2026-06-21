@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Search, X, Diamond } from "lucide-react";
+import { UploadInput } from "@/components/ui/UploadInput";
 
 interface RarityData {
   _id: string;
   name: string;
   color: string;
+  backgroundImage?: string;
   order: number;
   isActive: boolean;
   createdAt: string;
@@ -235,6 +237,16 @@ export default function ManageRarities() {
                     placeholder="#HEXCODE"
                   />
                 </div>
+              </div>
+
+              <div>
+                <UploadInput
+                  label="รูปภาพพื้นหลังการ์ด (ไม่บังคับ)"
+                  value={currentRarity.backgroundImage || ""}
+                  onChange={(url) => setCurrentRarity({...currentRarity, backgroundImage: url})}
+                  folder="rarities"
+                  placeholder="https://... หรืออัพโหลดรูป"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

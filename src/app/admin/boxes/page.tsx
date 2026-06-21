@@ -15,6 +15,7 @@ interface BoxData {
   name: string;
   description?: string;
   image: string;
+  titleImage?: string;
   animation?: string;
   price: number;
   pityThreshold: number;
@@ -280,6 +281,15 @@ export default function ManageBoxes() {
                 folder="boxes"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 placeholder="https://... หรืออัพโหลดรูปภาพ"
+              />
+
+              <UploadInput
+                label="รูปข้อความ (แทนคำว่า HIGH DROPS - ไม่บังคับ)"
+                value={currentBox.titleImage || ""}
+                onChange={(url) => setCurrentBox({ ...currentBox, titleImage: url })}
+                folder="boxes"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                placeholder="https://... หรืออัพโหลดรูปภาพ/gif"
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -9,6 +9,7 @@ export interface IBox extends Document {
   name: string;
   description?: string;
   image: string;
+  titleImage?: string;
   price: number;
   categoryId?: Types.ObjectId;
   isFeatured: boolean;
@@ -29,6 +30,7 @@ const BoxSchema: Schema = new Schema({
   name: { type: String, required: true },
   description: { type: String },
   image: { type: String, required: true },
+  titleImage: { type: String },
   price: { type: Number, required: true, min: 0 },
   categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
   isFeatured: { type: Boolean, default: false },
@@ -38,4 +40,8 @@ const BoxSchema: Schema = new Schema({
   pityThreshold: { type: Number, default: 100, min: 1 },
 }, { timestamps: true });
 
-export default mongoose.models.Box || mongoose.model<IBox>("Box", BoxSchema);
+if (mongoose.models.Box) {
+  delete mongoose.models.Box;
+}
+
+export default mongoose.model<IBox>("Box", BoxSchema);

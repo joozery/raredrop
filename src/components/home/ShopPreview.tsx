@@ -34,9 +34,6 @@ export default function ShopPreview() {
           <div className="flex items-center gap-2">
             <ShoppingBag className="text-[#E04631]" size={22} />
             <h2 className="text-xl font-bold text-gray-900">ร้านค้า</h2>
-            <span className="bg-red-100 text-[#E04631] text-[10px] font-bold px-2 py-0.5 rounded-full ml-1">
-              ID เกมมือ 1
-            </span>
           </div>
           <Link
             href="/shop"
