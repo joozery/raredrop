@@ -76,9 +76,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [siteLogo, setSiteLogo] = useState("");
   const [siteName, setSiteName] = useState("RAREDROP");
+  const [alerts, setAlerts] = useState({ total: 0, unreadChats: 0, pendingTopups: 0 });
+  const [currentDate, setCurrentDate] = useState("");
   const { data: session, status } = useSession();
 
   useEffect(() => {
+    const today = new Date();
+    setCurrentDate(today.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }));
+    
     fetch("/api/public-settings", { cache: "no-store" })
       .then(res => res.json())
       .then(data => {
@@ -100,6 +105,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
     }
   }, [status, session, router, pathname]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      const fetchAlerts = () => {
+        fetch("/api/admin/alerts", { cache: "no-store" })
+          .then(res => res.json())
+          .then(data => {
+            if (data && typeof data.total === "number") {
+              setAlerts(data);
+            }
+          })
+          .catch(() => {});
+      };
+      fetchAlerts();
+      const interval = setInterval(fetchAlerts, 30000); // 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [status]);
 
   const role = (session?.user as any)?.role;
   const isSuperAdmin = role === "super_admin";
@@ -264,15 +287,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 shrink-0">
-            <button className="hidden md:flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 shadow-sm">
+            <button className="hidden md:flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 shadow-sm cursor-default">
               <Calendar size={14} className="text-slate-400" />
-              13 พ.ค. 2025 - 19 พ.ค. 2025
+              {currentDate}
             </button>
 
-            <button className="relative text-slate-500 hover:text-slate-700">
+            <Link href="/admin/chat" className="relative text-slate-500 hover:text-slate-700" title={`แชทใหม่ ${alerts.unreadChats} | รอตรวจสอบ ${alerts.pendingTopups}`}>
               <Bell size={20} />
-              <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">12</span>
-            </button>
+              {alerts.total > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                  {alerts.total > 99 ? '99+' : alerts.total}
+                </span>
+              )}
+            </Link>
 
             <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 lg:pl-6 border-l border-slate-200 cursor-pointer group relative">
               <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden shrink-0">
