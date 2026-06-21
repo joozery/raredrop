@@ -186,5 +186,9 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
+  pages: {
+    signIn: "/",
+    error: "/",
+  },
   secret: process.env.NEXTAUTH_SECRET || "raredrop_secret_key_123", // Fallback for dev
 };
