@@ -29,11 +29,17 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: `${siteName} - Premium Mystery Box`,
       description: "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก",
+      verification: {
+        google: "bv74cjpKuiCRWSf5iptZ7vDVqHNUqObUBOxsoBjatV4",
+      },
     };
   } catch (err) {
     return {
       title: "RareDrop - Premium Mystery Box",
       description: "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก",
+      verification: {
+        google: "bv74cjpKuiCRWSf5iptZ7vDVqHNUqObUBOxsoBjatV4",
+      },
     };
   }
 }
