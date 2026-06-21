@@ -20,12 +20,18 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
-    const [methodSetting, qrImageSetting, numberSetting, nameSetting] = await Promise.all([
+    const [methodSetting, qrImageSetting, numberSetting, nameSetting, minTopupSetting] = await Promise.all([
       Setting.findOne({ key: "payment_method" }).lean(),
       Setting.findOne({ key: "payment_qr_image" }).lean(),
       Setting.findOne({ key: "promptpay_number" }).lean(),
       Setting.findOne({ key: "promptpay_name" }).lean(),
+      Setting.findOne({ key: "min_topup_amount" }).lean(),
     ]);
+
+    const minTopup = parseFloat((minTopupSetting as any)?.value) || 1;
+    if (amount < minTopup) {
+      return NextResponse.json({ error: `ยอดเติมเงินขั้นต่ำคือ ${minTopup} บาท` }, { status: 400 });
+    }
 
     const paymentMethod = (methodSetting as any)?.value as string;
     const accountName = (nameSetting as any)?.value as string || "บัญชีพร้อมเพย์";

@@ -10,7 +10,7 @@ const PUBLIC_KEYS = [
   "hero_banner_icon", "hero_banner_button1", "hero_banner_button2",
   "knowledge_hero_label", "knowledge_hero_image", "knowledge_hero_link", "knowledge_hero_title", "knowledge_hero_subtitle",
   "red_envelope_help_text", "gemcoin_icon",
-  "payment_method", "payment_qr_image"
+  "payment_method", "payment_qr_image", "min_topup_amount"
 ];
 
 export async function GET() {

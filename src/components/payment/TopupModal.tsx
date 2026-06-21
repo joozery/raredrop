@@ -22,6 +22,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   const [tmnUrl, setTmnUrl] = useState<string | null>(null);
   const [tmnRequestId, setTmnRequestId] = useState<string | null>(null);
   const [tmnAmount, setTmnAmount] = useState<number | null>(null);
+  const [minTopup, setMinTopup] = useState(1);
   const [pollTimedOut, setPollTimedOut] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -40,6 +41,15 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
       pollTimer.current = null;
     }
   };
+
+  useEffect(() => {
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.min_topup_amount) setMinTopup(Number(d.min_topup_amount));
+      })
+      .catch(() => {});
+  }, []);
 
   // เช็คอัตโนมัติเป็นระยะตอนอยู่หน้า TrueMoney — ลูกค้าไม่ต้องกดตรวจสอบเอง
   useEffect(() => {
@@ -112,7 +122,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   };
 
   const handleGenerateQR = async () => {
-    if (!amount || amount <= 0) return;
+    if (!amount || amount < minTopup) return;
 
     setIsLoading(true);
     setStatus("idle");
@@ -142,7 +152,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   };
 
   const handleRequestTrueMoney = async () => {
-    if (!amount || amount <= 0) return;
+    if (!amount || amount < minTopup) return;
 
     setIsLoading(true);
     setStatus("idle");
@@ -254,7 +264,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
               </div>
 
               <div className="mb-6 text-center">
-                <p className="text-sm text-slate-500 font-medium">โปรดระบุจำนวนเงินที่ต้องการเติม</p>
+                <p className="text-sm text-slate-500 font-medium">โปรดระบุจำนวนเงินที่ต้องการเติม (ขั้นต่ำ {minTopup} บาท)</p>
                 <p className="text-xs text-slate-400 mt-1">
                   {method === "promptpay" ? "ระบบจะสร้าง QR Code ชำระเงินให้คุณ" : "ระบบจะเปิดแอป TrueMoney ให้ชำระเงิน"}
                 </p>
@@ -292,7 +302,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
 
               <button
                 onClick={method === "promptpay" ? handleGenerateQR : handleRequestTrueMoney}
-                disabled={!amount || amount <= 0 || isLoading}
+                disabled={!amount || amount < minTopup || isLoading}
                 className="w-full bg-red-600 hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
               >
                 {isLoading ? (

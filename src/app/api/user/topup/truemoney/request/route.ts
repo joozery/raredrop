@@ -29,12 +29,18 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
-    const [numberSetting, nameSetting] = await Promise.all([
+    const [numberSetting, nameSetting, minTopupSetting] = await Promise.all([
       Setting.findOne({ key: "truemoney_number" }).lean(),
       Setting.findOne({ key: "site_name" }).lean(),
+      Setting.findOne({ key: "min_topup_amount" }).lean(),
     ]);
     const truemoneyNumber = (numberSetting as any)?.value as string;
     const siteName = (nameSetting as any)?.value as string || "RareDrop";
+    const minTopup = parseFloat((minTopupSetting as any)?.value) || 1;
+
+    if (amount < minTopup) {
+      return NextResponse.json({ error: `ยอดเติมเงินขั้นต่ำคือ ${minTopup} บาท` }, { status: 400 });
+    }
 
     if (!truemoneyNumber) {
       return NextResponse.json({ error: "ยังไม่ได้ตั้งค่าเบอร์ TrueMoney กรุณาติดต่อแอดมิน" }, { status: 503 });
