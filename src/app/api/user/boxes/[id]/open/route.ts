@@ -117,7 +117,7 @@ export async function POST(
           );
         }
 
-        const fullItem = availableItems.find((bi: any) => bi.itemId._id.toString() === chosenItemId)?.itemId;
+        const fullItem = availableItems.find((bi: any) => bi.itemId._id.toString() === chosenItemId)?.itemId as any;
 
         // ของจำกัดสต็อก — หักแบบ atomic ทันทีตอนสุ่มได้ ไม่ใช่ตอนจบล็อต กันสองคนชิงหน่วยสุดท้ายพร้อมกันได้ของซ้ำ
         if (fullItem?.type !== "coin_reward" && !fullItem?.unlimitedStock) {
