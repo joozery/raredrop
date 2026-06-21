@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import User from "@/models/User";
 import LevelConfig from "@/models/LevelConfig";
+import "@/models/Item";
+import "@/models/Rarity";
 
 export async function GET() {
   try {

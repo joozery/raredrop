@@ -22,7 +22,7 @@ export async function GET(
       .populate({
         path: "items.itemId",
         model: Item,
-        populate: { path: "rarityId", model: Rarity, select: "name color order" },
+        populate: { path: "rarityId", model: Rarity, select: "name color order backgroundImage" },
       });
 
     if (!box || !box.isActive) {

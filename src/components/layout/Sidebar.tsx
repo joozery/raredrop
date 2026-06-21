@@ -11,11 +11,13 @@ import {
   PackageCheck,
   Briefcase,
   LibrarySquare,
+  BookOpen,
   HelpCircle,
   Apple,
   Play,
   Coins,
-  Gift
+  Gift,
+  Gamepad2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +28,7 @@ const menuItems = [
   { name: "ซองแดง", icon: Gift, href: "/red-envelope" },
   { name: "คอลเลกชันของฉัน", icon: LibrarySquare, href: "/inventory" },
   { name: "แลก GemCoin", icon: Coins, href: "/exchange" },
+  { name: "วิธีการเล่น", icon: Gamepad2, href: "/knowledge-base" },
   { name: "ช่วยเหลือ", icon: HelpCircle, href: "/help" },
 ];
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, Settings, LogOut } from 'lucide-react';
+import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, Settings, LogOut, Gamepad2 } from 'lucide-react';
 import { InviteFriendModal } from "@/components/profile/InviteFriendModal";
 import { RedeemCodeModal } from "@/components/profile/RedeemCodeModal";
 
@@ -238,7 +238,7 @@ export default function ProfilePage() {
               { icon: HelpCircle, label: "ช่วยเหลือ", href: "/help" },
               { icon: History, label: "ประวัติการสุ่ม", href: "/roll-history" },
               { icon: Wallet, label: "ประวัติการเติมเงิน", href: "/topup-history" },
-              { icon: Settings, label: "การตั้งค่า", onClick: () => !uploadingAvatar && fileInputRef.current?.click() },
+              { icon: Gamepad2, label: "วิธีการเล่น", href: "/knowledge-base" },
             ].map((menu, i) => {
               const content = (
                 <>

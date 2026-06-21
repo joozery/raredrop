@@ -25,10 +25,28 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     await connectToDatabase();
     const siteNameSetting = await Setting.findOne({ key: "site_name" }).lean();
+    const siteDescSetting = await Setting.findOne({ key: "site_description" }).lean();
+    const siteOgSetting = await Setting.findOne({ key: "site_og_image" }).lean();
+    
     const siteName = (siteNameSetting as any)?.value || "RareDrop";
+    const siteDesc = (siteDescSetting as any)?.value || "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก";
+    const ogImage = (siteOgSetting as any)?.value || "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png";
+    
     return {
       title: `${siteName} - Premium Mystery Box`,
-      description: "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก",
+      description: siteDesc,
+      openGraph: {
+        title: `${siteName} - Premium Mystery Box`,
+        description: siteDesc,
+        images: [{ url: ogImage }],
+        type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${siteName} - Premium Mystery Box`,
+        description: siteDesc,
+        images: [ogImage],
+      }
     };
   } catch (err) {
     return {

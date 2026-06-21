@@ -20,13 +20,30 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
-    const [numberSetting, nameSetting] = await Promise.all([
+    const [methodSetting, qrImageSetting, numberSetting, nameSetting] = await Promise.all([
+      Setting.findOne({ key: "payment_method" }).lean(),
+      Setting.findOne({ key: "payment_qr_image" }).lean(),
       Setting.findOne({ key: "promptpay_number" }).lean(),
       Setting.findOne({ key: "promptpay_name" }).lean(),
     ]);
 
-    const promptpayNumber = (numberSetting as any)?.value as string;
+    const paymentMethod = (methodSetting as any)?.value as string;
     const accountName = (nameSetting as any)?.value as string || "บัญชีพร้อมเพย์";
+
+    // ใช้ QR ที่แอดมินอัพโหลดไว้ตรง ๆ (เช่น QR ถุงเงิน) — ไม่มีช่องระบุยอดเงินฝังอยู่ในตัว QR
+    if (paymentMethod === "qr_image") {
+      const qrImageLink = (qrImageSetting as any)?.value as string;
+      if (!qrImageLink) {
+        return NextResponse.json({ error: "ยังไม่ได้ตั้งค่ารูป QR กรุณาติดต่อแอดมิน" }, { status: 503 });
+      }
+      return NextResponse.json({
+        code: "200",
+        message: "Success",
+        data: { qrImageLink, accountName, amount: amount.toString() },
+      });
+    }
+
+    const promptpayNumber = (numberSetting as any)?.value as string;
 
     if (!promptpayNumber) {
       return NextResponse.json({ error: "ยังไม่ได้ตั้งค่าเบอร์พร้อมเพย์ กรุณาติดต่อแอดมิน" }, { status: 503 });

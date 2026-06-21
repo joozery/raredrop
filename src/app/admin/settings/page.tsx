@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Save, RefreshCw, CheckCircle2, ImageIcon, Loader2 } from "lucide-react";
+import { Settings, Save, RefreshCw, CheckCircle2, ImageIcon, Loader2, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadInput } from "@/components/ui/UploadInput";
 
@@ -25,13 +25,28 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoSaving, setLogoSaving] = useState(false);
   const [logoSaved, setLogoSaved] = useState(false);
+  const [ogImageUrl, setOgImageUrl] = useState("");
+  const [ogImageSaving, setOgImageSaving] = useState(false);
+  const [ogImageSaved, setOgImageSaved] = useState(false);
   const [bannerUrl, setBannerUrl] = useState("");
   const [bannerLink, setBannerLink] = useState("");
   const [bannerSaving, setBannerSaving] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
+  const [knowledgeBannerUrl, setKnowledgeBannerUrl] = useState("");
+  const [knowledgeBannerLink, setKnowledgeBannerLink] = useState("");
+  const [knowledgeBannerSaving, setKnowledgeBannerSaving] = useState(false);
+  const [knowledgeBannerSaved, setKnowledgeBannerSaved] = useState(false);
   const [gemcoinIcon, setGemcoinIcon] = useState("");
   const [gemcoinIconSaving, setGemcoinIconSaving] = useState(false);
   const [gemcoinIconSaved, setGemcoinIconSaved] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("promptpay");
+  const [paymentMethodSaving, setPaymentMethodSaving] = useState(false);
+  const [paymentQrImage, setPaymentQrImage] = useState("");
+  const [qrImageSaving, setQrImageSaving] = useState(false);
+  const [qrImageSaved, setQrImageSaved] = useState(false);
+  const [qrDecoding, setQrDecoding] = useState(false);
+  const [qrDecodeError, setQrDecodeError] = useState("");
+  const [qrDecodeResult, setQrDecodeResult] = useState<{ type: string; shopName?: string; accountType?: string; accountNumber?: string } | null>(null);
 
   const fetchSettings = () => {
     setLoading(true);
@@ -42,6 +57,9 @@ export default function SettingsPage() {
           setSettings(d);
           const logoSetting = d.find((s: SettingItem) => s.key === "site_logo");
           if (logoSetting) setLogoUrl(String(logoSetting.value));
+
+          const ogImageSetting = d.find((s: SettingItem) => s.key === "site_og_image");
+          if (ogImageSetting) setOgImageUrl(String(ogImageSetting.value));
           
           const bannerSetting = d.find((s: SettingItem) => s.key === "hero_banner_image");
           if (bannerSetting) setBannerUrl(String(bannerSetting.value));
@@ -49,8 +67,33 @@ export default function SettingsPage() {
           const bannerLinkSetting = d.find((s: SettingItem) => s.key === "hero_banner_link");
           if (bannerLinkSetting) setBannerLink(String(bannerLinkSetting.value));
 
+          const knowledgeBannerSetting = d.find((s: SettingItem) => s.key === "knowledge_hero_image");
+          if (knowledgeBannerSetting) setKnowledgeBannerUrl(String(knowledgeBannerSetting.value));
+
+          const knowledgeBannerLinkSetting = d.find((s: SettingItem) => s.key === "knowledge_hero_link");
+          if (knowledgeBannerLinkSetting) setKnowledgeBannerLink(String(knowledgeBannerLinkSetting.value));
+
           const gemcoinIconSetting = d.find((s: SettingItem) => s.key === "gemcoin_icon");
           if (gemcoinIconSetting) setGemcoinIcon(String(gemcoinIconSetting.value));
+
+          const paymentMethodSetting = d.find((s: SettingItem) => s.key === "payment_method");
+          if (paymentMethodSetting) setPaymentMethod(String(paymentMethodSetting.value));
+
+          const paymentQrImageSetting = d.find((s: SettingItem) => s.key === "payment_qr_image");
+          if (paymentQrImageSetting) setPaymentQrImage(String(paymentQrImageSetting.value));
+
+          const qrType = d.find((s: SettingItem) => s.key === "payment_qr_type")?.value;
+          const qrAccountType = d.find((s: SettingItem) => s.key === "payment_qr_account_type")?.value;
+          const qrAccountNumber = d.find((s: SettingItem) => s.key === "payment_qr_account_number")?.value;
+          const qrShopName = d.find((s: SettingItem) => s.key === "payment_qr_shop_name")?.value;
+          if (qrType) {
+            setQrDecodeResult({
+              type: String(qrType),
+              accountType: qrAccountType ? String(qrAccountType) : undefined,
+              accountNumber: qrAccountNumber ? String(qrAccountNumber) : undefined,
+              shopName: qrShopName ? String(qrShopName) : undefined,
+            });
+          }
         }
       })
       .finally(() => setLoading(false));
@@ -75,6 +118,23 @@ export default function SettingsPage() {
     }
   };
 
+  const saveOgImage = async () => {
+    setOgImageSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "site_og_image", value: ogImageUrl }),
+      });
+      if (res.ok) {
+        setOgImageSaved(true);
+        setTimeout(() => setOgImageSaved(false), 2000);
+      }
+    } finally {
+      setOgImageSaving(false);
+    }
+  };
+
   const saveBanner = async () => {
     setBannerSaving(true);
     try {
@@ -95,6 +155,26 @@ export default function SettingsPage() {
     }
   };
 
+  const saveKnowledgeBanner = async () => {
+    setKnowledgeBannerSaving(true);
+    try {
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "knowledge_hero_image", value: knowledgeBannerUrl }),
+      });
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "knowledge_hero_link", value: knowledgeBannerLink }),
+      });
+      setKnowledgeBannerSaved(true);
+      setTimeout(() => setKnowledgeBannerSaved(false), 2000);
+    } finally {
+      setKnowledgeBannerSaving(false);
+    }
+  };
+
   const saveGemcoinIcon = async () => {
     setGemcoinIconSaving(true);
     try {
@@ -109,6 +189,66 @@ export default function SettingsPage() {
       }
     } finally {
       setGemcoinIconSaving(false);
+    }
+  };
+
+  const savePaymentMethod = async (method: string) => {
+    setPaymentMethodSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "payment_method", value: method }),
+      });
+      if (res.ok) setPaymentMethod(method);
+    } finally {
+      setPaymentMethodSaving(false);
+    }
+  };
+
+  const saveQrImage = async () => {
+    setQrImageSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "payment_qr_image", value: paymentQrImage }),
+      });
+      if (res.ok) {
+        setQrImageSaved(true);
+        setTimeout(() => setQrImageSaved(false), 2000);
+      }
+    } finally {
+      setQrImageSaving(false);
+    }
+  };
+
+  const decodeQr = async () => {
+    if (!paymentQrImage) return;
+    setQrDecoding(true);
+    setQrDecodeError("");
+    try {
+      const res = await fetch("/api/admin/settings/decode-qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: paymentQrImage }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setQrDecodeError(data.error || "ถอดรหัสไม่สำเร็จ");
+        return;
+      }
+      setQrDecodeResult(data);
+      await Promise.all([
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "payment_qr_type", value: data.type }) }),
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "payment_qr_account_type", value: data.accountType || "" }) }),
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "payment_qr_account_number", value: data.accountNumber || "" }) }),
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "payment_qr_shop_name", value: data.shopName || "" }) }),
+      ]);
+    } catch {
+      setQrDecodeError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setQrDecoding(false);
     }
   };
 
@@ -147,7 +287,12 @@ export default function SettingsPage() {
     }
   };
 
-  const displaySettings = settings.filter((s) => s.key !== "site_logo" && s.key !== "hero_banner_image" && s.key !== "hero_banner_link" && s.key !== "gemcoin_icon");
+  const excludedKeys = [
+    "site_logo", "site_og_image", "hero_banner_image", "hero_banner_link",
+    "knowledge_hero_image", "knowledge_hero_link", "gemcoin_icon",
+    "payment_method", "payment_qr_image", "payment_qr_type", "payment_qr_account_type", "payment_qr_account_number", "payment_qr_shop_name",
+  ];
+  const displaySettings = settings.filter((s) => !excludedKeys.includes(s.key));
   const groups = [...new Set(displaySettings.map((s) => s.group))];
 
   if (loading) {
@@ -211,6 +356,40 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* OG Image Upload Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">รูปภาพแชร์ลิงก์ (OG Image)</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="อัพโหลดรูปภาพ OG Image"
+            value={ogImageUrl}
+            onChange={setOgImageUrl}
+            folder="branding"
+            accept="image/png,image/jpeg,image/webp"
+            placeholder="รูปภาพเวลาแชร์ลิงก์"
+          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveOgImage}
+              disabled={ogImageSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {ogImageSaving ? <Loader2 size={13} className="animate-spin" /> : ogImageSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {ogImageSaved ? "บันทึกแล้ว!" : "บันทึกรูปภาพ"}
+            </button>
+            {ogImageUrl && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>ตัวอย่าง:</span>
+                <img src={ogImageUrl} alt="og image preview" className="h-10 object-cover border border-slate-200 rounded p-0.5" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Hero Banner Upload Card */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
@@ -255,6 +434,50 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Knowledge Base Hero Banner Upload Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">รูปภาพหน้าวิธีการเล่น (Hero Banner)</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="อัพโหลดรูปภาพ"
+            value={knowledgeBannerUrl}
+            onChange={setKnowledgeBannerUrl}
+            folder="banner"
+            accept="image/png,image/jpeg,image/webp"
+            placeholder="อัพโหลดรูปภาพหน้าวิธีการเล่น"
+          />
+          <div className="flex flex-col gap-1.5 -mt-1">
+            <label className="text-xs font-bold text-slate-600">ลิงก์เมื่อคลิกรูปแบนเนอร์ (ไม่บังคับ)</label>
+            <input
+              type="text"
+              value={knowledgeBannerLink}
+              onChange={(e) => setKnowledgeBannerLink(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+              placeholder="เช่น /boxes หรือ https://..."
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveKnowledgeBanner}
+              disabled={knowledgeBannerSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {knowledgeBannerSaving ? <Loader2 size={13} className="animate-spin" /> : knowledgeBannerSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {knowledgeBannerSaved ? "บันทึกแล้ว!" : "บันทึกรูปภาพ"}
+            </button>
+            {knowledgeBannerUrl && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>ตัวอย่าง:</span>
+                <img src={knowledgeBannerUrl} alt="knowledge banner preview" className="h-10 object-cover border border-slate-200 rounded p-0.5" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* GemCoin Icon Upload Card */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
@@ -286,6 +509,83 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Payment Method / QR Upload Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ScanLine size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">ช่องทางรับเงิน (QR ร้านค้า)</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-slate-600">ช่องทางที่ใช้งานอยู่</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => savePaymentMethod("promptpay")}
+                disabled={paymentMethodSaving}
+                className={cn(
+                  "flex-1 px-4 py-2.5 rounded-xl text-sm font-bold border transition-colors",
+                  paymentMethod === "promptpay" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                พร้อมเพย์ (สร้าง QR อัตโนมัติ)
+              </button>
+              <button
+                onClick={() => savePaymentMethod("qr_image")}
+                disabled={paymentMethodSaving}
+                className={cn(
+                  "flex-1 px-4 py-2.5 rounded-xl text-sm font-bold border transition-colors",
+                  paymentMethod === "qr_image" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                )}
+              >
+                QR ที่อัพโหลด
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              ใช้ตัดสินว่าหน้าเติมเงินจะแสดง QR แบบไหน และใช้เช็คบัญชีผู้รับตอนตรวจสลิป
+            </p>
+          </div>
+
+          <UploadInput
+            label="รูปภาพ QR Code ร้านค้า"
+            value={paymentQrImage}
+            onChange={(url) => { setPaymentQrImage(url); setQrDecodeResult(null); }}
+            folder="qrcode"
+            accept="image/png,image/jpeg,image/webp"
+            placeholder="อัพโหลด QR เช่น QR ถุงเงิน"
+          />
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={saveQrImage}
+              disabled={qrImageSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white text-xs font-bold rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            >
+              {qrImageSaving ? <Loader2 size={13} className="animate-spin" /> : qrImageSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {qrImageSaved ? "บันทึกแล้ว!" : "บันทึกรูป QR"}
+            </button>
+            <button
+              onClick={decodeQr}
+              disabled={qrDecoding || !paymentQrImage}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {qrDecoding ? <Loader2 size={13} className="animate-spin" /> : <ScanLine size={13} />}
+              {qrDecoding ? "กำลังถอดรหัส..." : "ถอดรหัส QR"}
+            </button>
+          </div>
+
+          {qrDecodeError && <p className="text-xs text-red-500 font-medium">{qrDecodeError}</p>}
+
+          {qrDecodeResult && (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-xs text-emerald-700 flex flex-col gap-1">
+              <p className="font-bold flex items-center gap-1.5"><CheckCircle2 size={13} /> ผลถอดรหัส (ใช้เช็คบัญชีผู้รับตอนตรวจสลิป)</p>
+              <p>ประเภท: {qrDecodeResult.type === "billpayment" ? "Thai QR Bill Payment (เช่น ถุงเงิน)" : "พร้อมเพย์"}</p>
+              {qrDecodeResult.shopName && <p>ชื่อร้านค้า: {qrDecodeResult.shopName}</p>}
+              <p>เลขอ้างอิงบัญชีผู้รับ: {qrDecodeResult.accountNumber}</p>
+            </div>
+          )}
         </div>
       </div>
 

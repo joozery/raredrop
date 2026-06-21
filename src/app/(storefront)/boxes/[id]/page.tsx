@@ -4,17 +4,18 @@ import React, { useState, useRef, useEffect, use } from "react";
 import Link from "next/link";
 import {
   ChevronLeft, ChevronRight, Zap, History, Flame, CheckCircle2, Ticket,
-  ShieldCheck, Wallet, HelpCircle, Headphones, Share, Package, Coins,
+  ShieldCheck, Wallet, HelpCircle, Headphones, Share, Package, Coins, Sparkles,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { TopupModal } from "@/components/payment/TopupModal";
 
-interface RarityData { name: string; color: string; order: number }
+interface RarityData { name: string; color: string; order: number; backgroundImage?: string }
 interface ItemData { _id: string; name: string; image: string; price: number; rarityId: RarityData }
 interface BoxItem { itemId: ItemData; probability: number }
 interface BoxData {
-  _id: string; name: string; description?: string; image: string; animation?: string;
+  _id: string; name: string; description?: string; image: string; titleImage?: string; animation?: string;
   price: number; items: BoxItem[]; pityCount: number; pityThreshold: number; freeCredits: number;
 }
 interface DrawResult {
@@ -32,6 +33,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   const [loading, setLoading] = useState(true);
 
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedDraw, setSelectedDraw] = useState<{ times: number; price: number } | null>(null);
   const [playAnimation, setPlayAnimation] = useState(true);
@@ -189,9 +191,22 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             {box.name}
           </h1>
           <div className="flex items-center gap-1 text-gray-600">
-            <button className="hover:bg-gray-100 p-1.5 rounded-lg transition-colors"><HelpCircle size={20} strokeWidth={2} /></button>
-            <button className="hover:bg-gray-100 p-1.5 rounded-lg transition-colors"><Headphones size={20} strokeWidth={2} /></button>
-            <button className="hover:bg-gray-100 p-1.5 rounded-lg transition-colors"><Share size={20} strokeWidth={2} /></button>
+            <Link href="/knowledge-base" className="hover:bg-gray-100 p-1.5 rounded-lg transition-colors">
+              <HelpCircle size={20} strokeWidth={2} />
+            </Link>
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: box.name, url: window.location.href }).catch(() => {});
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                  alert("คัดลอกลิ้งก์เรียบร้อยแล้ว!");
+                }
+              }}
+              className="hover:bg-gray-100 p-1.5 rounded-lg transition-colors"
+            >
+              <Share size={20} strokeWidth={2} />
+            </button>
           </div>
         </div>
       </div>
@@ -199,50 +214,37 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       <div className="max-w-6xl mx-auto w-full px-4 pt-6 pb-4 flex flex-col gap-5">
 
         {/* Hero Section */}
-        <div className="bg-[url('/coverrandon.png')] bg-cover bg-center rounded-2xl shadow-sm border border-gray-100 p-6 lg:p-10 relative flex flex-col lg:flex-row items-center justify-between gap-8 z-10">
+        <div className="bg-[url('/coverrandon.png')] bg-cover bg-center rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-10 relative flex flex-row items-center justify-between gap-2 lg:gap-8 z-10">
+          
+          {/* Left (Text) */}
+          <div className="relative z-10 flex flex-col items-start text-left gap-1 lg:gap-3 flex-1 w-1/2">
+            {box.titleImage ? (
+              <div className="w-[115%] sm:w-[95%] lg:w-[85%] mt-1 lg:mt-2 z-20 pointer-events-none">
+                <img src={box.titleImage} alt="HIGH DROPS" className="w-full h-auto object-contain object-left drop-shadow-md" />
+              </div>
+            ) : (
+              <div className="flex flex-col mt-1 lg:mt-2">
+                <h1 className="text-2xl lg:text-5xl font-black italic text-gray-900 leading-[0.85] tracking-tighter drop-shadow-sm">HIGH</h1>
+                <h1 className="text-2xl lg:text-5xl font-black italic text-red-600 leading-[0.85] tracking-tighter drop-shadow-sm mt-0.5 lg:mt-1">DROPS</h1>
+              </div>
+            )}
 
-          {/* Left */}
-          <div className="relative z-10 flex flex-col items-start gap-3 flex-1 w-full lg:w-auto">
-            <div className="bg-gradient-to-r from-red-50 to-white text-red-600 text-xs font-bold px-3 py-1.5 rounded-full border border-red-100 shadow-sm">
-              {box.description || "กล่องสุ่มสุดพิเศษ!"}
-            </div>
-            <div className="flex flex-col mt-2">
-              <h1 className="text-3xl lg:text-5xl font-black italic text-gray-900 leading-[0.85] tracking-tighter drop-shadow-sm">HIGH</h1>
-              <h1 className="text-3xl lg:text-5xl font-black italic text-red-600 leading-[0.85] tracking-tighter drop-shadow-sm mt-1">DROPS</h1>
-            </div>
-            <p className="text-gray-500 font-semibold text-base mt-2">ลุ้นของหายาก ระดับตำนาน</p>
-            <div className="flex items-center gap-3 mt-4">
-              {isOutOfStock ? (
-                <button disabled className="bg-gray-400 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm text-sm cursor-not-allowed">
-                  สินค้าบางชิ้นหมดสต็อก
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleDrawClick(1)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-[0_4px_14px_0_rgb(220,38,38,0.39)] transition-transform active:scale-95 text-sm"
-                >
-                  <span className="font-sans">฿</span> {box.price.toLocaleString()}
-                </button>
-              )}
-            </div>
           </div>
 
-          {/* Center Box */}
-          <div className="relative z-10 flex-[1.5] flex justify-center items-center h-[280px] lg:h-[380px] w-full">
-            <div className="absolute bottom-4 lg:bottom-10 w-[250px] lg:w-[350px] h-[60px] lg:h-[80px] border-[6px] border-red-500/10 rounded-[100%] shadow-[inset_0_0_20px_rgba(239,68,68,0.1)]" />
-            <div className="absolute bottom-6 lg:bottom-14 w-[200px] lg:w-[280px] h-[50px] lg:h-[60px] border-4 border-red-400/30 rounded-[100%] bg-white/40 backdrop-blur-sm" />
-            <div className="absolute bottom-8 lg:bottom-16 w-[150px] lg:w-[200px] h-[40px] lg:h-[40px] bg-red-100/80 rounded-[100%] shadow-[0_0_30px_rgba(239,68,68,0.4)]" />
+          {/* Right (Image) */}
+          <div className="relative z-10 flex-1 flex justify-center items-center h-[200px] sm:h-[280px] lg:h-[380px] w-1/2">
+            <div className="absolute bottom-2 lg:bottom-10 w-[160px] sm:w-[220px] lg:w-[350px] h-[40px] sm:h-[50px] lg:h-[80px] border-[3px] lg:border-[6px] border-red-500/10 rounded-[100%] shadow-[inset_0_0_10px_rgba(239,68,68,0.1)]" />
+            <div className="absolute bottom-3 lg:bottom-14 w-[130px] sm:w-[180px] lg:w-[280px] h-[35px] sm:h-[40px] lg:h-[60px] border-2 lg:border-4 border-red-400/30 rounded-[100%] bg-white/40 backdrop-blur-sm" />
+            <div className="absolute bottom-4 lg:bottom-16 w-[100px] sm:w-[140px] lg:w-[200px] h-[30px] sm:h-[35px] lg:h-[40px] bg-red-100/80 rounded-[100%] shadow-[0_0_15px_rgba(239,68,68,0.4)]" />
             {box.image ? (
-              <img src={box.image} alt={box.name} className="relative z-10 w-56 lg:w-72 object-contain drop-shadow-[0_20px_30px_rgba(220,38,38,0.4)] hover:-translate-y-2 transition-transform duration-500 ease-out" />
+              <img src={box.image} alt={box.name} className="relative z-10 w-48 sm:w-56 lg:w-72 object-contain rounded-2xl border-[3px] border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)] hover:-translate-y-1 lg:hover:-translate-y-2 hover:shadow-[0_0_45px_rgba(239,68,68,0.8)] transition-all duration-500 ease-out" />
             ) : (
-              <div className="relative z-10 w-56 lg:w-72 h-56 flex items-center justify-center">
-                <Package size={80} className="text-red-200" />
+              <div className="relative z-10 w-48 sm:w-56 lg:w-72 h-48 sm:h-56 flex items-center justify-center">
+                <Package size={50} className="text-red-200 lg:w-[80px] lg:h-[80px]" />
               </div>
             )}
           </div>
-
-          {/* Spacer to balance layout without Rarity Card */}
-          <div className="hidden lg:block flex-1 w-full lg:w-auto"></div>
+          
         </div>
 
         {/* Free Credits Banner */}
@@ -264,43 +266,63 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
 
         {/* Top Rewards */}
-        <div className="mt-2 bg-white p-5 rounded-xl border border-gray-100 shadow-sm relative group/slider">
-          <div className="flex items-center justify-between mb-5">
+        <div className="mt-6 relative">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Flame size={22} className="text-red-500 fill-red-500" />
-              <h2 className="font-black text-xl text-gray-900 tracking-tight">TOP REWARDS</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1 mr-2 opacity-0 group-hover/slider:opacity-100 transition-opacity">
-                <button onClick={() => scroll("left")} className="p-1.5 rounded-full border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-colors shadow-sm">
-                  <ChevronLeft size={16} strokeWidth={2.5} />
-                </button>
-                <button onClick={() => scroll("right")} className="p-1.5 rounded-full border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-colors shadow-sm">
-                  <ChevronRight size={16} strokeWidth={2.5} />
-                </button>
-              </div>
+              <h2 className="font-black text-xl text-gray-900 tracking-tight">ของรางวัลทั้งหมด</h2>
             </div>
           </div>
-          <div ref={scrollRef} className="flex overflow-x-auto gap-4 pb-4 snap-x [&::-webkit-scrollbar]:hidden scroll-smooth" style={{ scrollbarWidth: "none" }}>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-4 pb-4">
             {[...box.items]
               .sort((a, b) => (b.itemId?.rarityId?.order || 0) - (a.itemId?.rarityId?.order || 0))
               .map((bi, i) => {
                 const item = bi.itemId;
                 const rarity = item?.rarityId;
                 return (
-                  <div key={i} className="snap-start min-w-[150px] max-w-[150px] bg-white rounded-xl border-2 p-3 flex flex-col relative hover:shadow-md transition-shadow cursor-pointer group" style={{ borderColor: rarity?.color ? `${rarity.color}60` : "#e2e8f0" }}>
-                    <div className="absolute top-2 left-2 text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider z-10" style={{ backgroundColor: rarity?.color ? `${rarity.color}20` : "#f1f5f9", color: rarity?.color || "#64748b" }}>
-                      {rarity?.name || "N/A"}
+                  <div key={i} className={`rounded-xl sm:rounded-2xl flex flex-col relative hover:-translate-y-1 hover:shadow-xl transition-all cursor-pointer group overflow-hidden ${!rarity?.backgroundImage ? 'bg-white border-2' : 'border border-white/10'}`} style={{ borderColor: !rarity?.backgroundImage ? (rarity?.color ? `${rarity.color}60` : "#e2e8f0") : undefined }}>
+                    
+                    {rarity?.backgroundImage && (
+                      <div className="absolute inset-0 z-0 bg-[#0a0a14]">
+                        <img src={rarity.backgroundImage} alt="bg" className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700 ease-out" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a14] via-[#0a0a14]/60 to-transparent" />
+                      </div>
+                    )}
+
+                    <div className="absolute top-2 left-2 sm:top-3 sm:left-3 text-[8px] sm:text-[10px] font-black px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider z-20 text-white shadow-sm flex items-center gap-1" style={{ backgroundColor: rarity?.color || "#64748b" }}>
+                      <Sparkles size={8} className="sm:w-[10px] sm:h-[10px]" />
+                      <span className="hidden sm:inline">{rarity?.name || "N/A"}</span>
+                      <span className="sm:hidden">{rarity?.name?.slice(0, 3)}</span>
                     </div>
-                    <div className="h-[140px] mt-6 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50/50 group-hover:bg-gray-100 transition-colors p-2">
-                      {item?.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply drop-shadow-md group-hover:scale-110 transition-transform duration-300" />
-                      ) : (
-                        <Package size={40} className="text-gray-300" />
+                    
+                    <div 
+                      className="mt-8 sm:mt-12 mx-auto w-[70px] h-[70px] sm:w-[120px] sm:h-[120px] flex items-center justify-center rounded-[10px] sm:rounded-[14px] relative z-10 transition-all duration-300 bg-white/5 backdrop-blur-sm overflow-hidden"
+                      style={{
+                        boxShadow: rarity?.backgroundImage ? `0 0 15px ${rarity.color}60, inset 0 0 10px ${rarity.color}30` : 'none',
+                        border: rarity?.backgroundImage ? `1.5px solid ${rarity.color}` : '2px solid transparent',
+                        backgroundColor: !rarity?.backgroundImage ? '#f8fafc' : undefined
+                      }}
+                    >
+                      <div className="relative w-full h-full flex items-center justify-center p-1 sm:p-2">
+                        {item?.image ? (
+                          <img src={item.image} alt={item.name} className={`w-full h-full object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] group-hover:scale-110 group-hover:rotate-2 transition-all duration-500 ease-out ${!rarity?.backgroundImage ? "mix-blend-multiply drop-shadow-none" : ""}`} />
+                        ) : (
+                          <Package size={24} className="text-gray-300 sm:w-10 sm:h-10" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-2 mb-2 sm:mt-4 sm:mb-4 flex flex-col items-center text-center relative z-10 px-1.5 sm:px-3">
+                      {rarity?.backgroundImage && (
+                        <div className="flex items-center w-full justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 opacity-70">
+                          <div className="h-[1px] w-3 sm:w-6 bg-gradient-to-r from-transparent to-white/60"></div>
+                          <Sparkles size={8} className="text-white sm:w-[10px] sm:h-[10px]" />
+                          <div className="h-[1px] w-3 sm:w-6 bg-gradient-to-l from-transparent to-white/60"></div>
+                        </div>
                       )}
-                    </div>
-                    <div className="mt-4 flex flex-col gap-1 text-center">
-                      <p className="font-bold text-gray-800 text-xs line-clamp-2 leading-tight">{item?.name}</p>
+                      <p className={`font-bold text-[9px] sm:text-[13px] line-clamp-1 w-full ${rarity?.backgroundImage ? 'text-white' : 'text-gray-800'}`}>{item?.name}</p>
+                      {rarity?.backgroundImage && (
+                        <p className="hidden sm:block text-[9px] sm:text-[10px] text-white/50 leading-tight mt-0.5 sm:mt-1 font-medium">ไอเทมระดับ {rarity?.name}</p>
+                      )}
                     </div>
                   </div>
                 );
@@ -332,11 +354,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <span className="font-black text-sm flex items-center gap-1 text-red-600">
                   <span className="font-sans">฿</span> {(box.price * opt.times).toLocaleString()}
                 </span>
-                {opt.save ? (
-                  <span className="text-[9px] font-semibold text-gray-500 mt-0.5">{opt.save}</span>
-                ) : (
-                  <span className="text-[9px] font-semibold text-transparent mt-0.5">-</span>
-                )}
               </button>
             ))}
           </div>
@@ -392,9 +409,9 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   <span className="text-3xl font-black tracking-tight text-white flex items-center gap-2">
                     <span className="font-sans">฿</span> {balance.toLocaleString()}
                   </span>
-                  <Link href="/profile" className="bg-white text-gray-900 font-bold text-sm px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors flex items-center gap-1 shadow-sm">
+                  <button onClick={() => setIsTopupOpen(true)} className="bg-white text-gray-900 font-bold text-sm px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors flex items-center gap-1 shadow-sm">
                     + เติมเงิน
-                  </Link>
+                  </button>
                 </div>
               </div>
               <div className="bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm border border-gray-100">
@@ -443,7 +460,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   {isOpening ? "กำลังดำเนินการ..." : "ยืนยันการชำระเงิน"}
                 </button>
               ) : (
-                <button className="w-full bg-gray-100 text-gray-400 font-black py-4 rounded-xl text-sm cursor-not-allowed">
+                <button onClick={() => setIsTopupOpen(true)} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 font-black py-4 rounded-xl text-sm transition-colors cursor-pointer">
                   ยอดเงินไม่เพียงพอ (โปรดเติมเงิน)
                 </button>
               )}
@@ -537,6 +554,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       )}
 
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
 
       {toast && (
         <div className={`fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center gap-2 transition-all whitespace-nowrap ${toast.ok ? "bg-emerald-600" : "bg-red-600"}`}>

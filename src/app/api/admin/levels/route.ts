@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongoose";
 import LevelConfig from "@/models/LevelConfig";
 import Setting from "@/models/Setting";
+import "@/models/Item";
+import "@/models/Rarity";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 

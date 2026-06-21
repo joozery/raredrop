@@ -2,10 +2,20 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
+import Setting from "@/models/Setting";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import { notify } from "@/lib/notify";
 import { awardXp, getExpPerBaht } from "@/lib/xp";
+
+// รายละเอียดเพิ่มเติม: https://slip2go.com/guide — ดู "Success Code" / "Error Code"
+const SLIP_RESULT_MESSAGES: Record<string, string> = {
+  "200401": "สลิปนี้โอนเข้าบัญชีอื่น ไม่ใช่บัญชีร้านค้าของเรา",
+  "200402": "ยอดเงินในสลิปไม่ตรงกับเงื่อนไข",
+  "200403": "วันที่โอนในสลิปไม่ตรงกับเงื่อนไข",
+  "200404": "ไม่พบสลิปนี้ในระบบธนาคาร",
+  "200501": "สลิปนี้ถูกใช้งานไปแล้ว",
+};
 
 export async function POST(req: Request) {
   try {
@@ -19,38 +29,64 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "ไม่พบรูปภาพสลิป" }, { status: 400 });
     }
 
-    // TODO: นำ API KEY จาก Slip2Go หรือ SlipOK มาใส่ตรงนี้
     const SLIP2GO_API_KEY = process.env.SLIP2GO_API_KEY;
 
-    const response = await fetch("https://connect.slip2go.com/api/verify-slip/qr-base64/info", {
+    await connectToDatabase();
+
+    // บัญชีผู้รับที่ตั้งไว้ใน Admin Settings — มาจาก QR ที่ถอดรหัสอัตโนมัติ และ/หรือเบอร์พร้อมเพย์ที่กรอกไว้
+    const [qrAccountTypeSetting, qrAccountNumberSetting, promptpayNumberSetting] = await Promise.all([
+      Setting.findOne({ key: "payment_qr_account_type" }).lean(),
+      Setting.findOne({ key: "payment_qr_account_number" }).lean(),
+      Setting.findOne({ key: "promptpay_number" }).lean(),
+    ]);
+
+    const qrAccountType = (qrAccountTypeSetting as any)?.value as string;
+    const qrAccountNumber = (qrAccountNumberSetting as any)?.value as string;
+    const promptpayNumber = (promptpayNumberSetting as any)?.value as string;
+
+    const checkReceiver: Array<{ accountType?: string; accountNumber: string }> = [];
+    if (qrAccountNumber) {
+      checkReceiver.push(qrAccountType ? { accountType: qrAccountType, accountNumber: qrAccountNumber } : { accountNumber: qrAccountNumber });
+    }
+    if (promptpayNumber && promptpayNumber !== qrAccountNumber) {
+      checkReceiver.push({ accountType: "02001", accountNumber: promptpayNumber });
+    }
+
+    // slipBase64 เป็น data URI เต็มรูปแบบจาก FileReader.readAsDataURL (เช่น "data:image/jpeg;base64,...")
+    const match = String(slipBase64).match(/^data:(.+);base64,(.+)$/);
+    const mimeType = match?.[1] || "image/jpeg";
+    const rawBase64 = match ? match[2] : slipBase64;
+    const fileBuffer = Buffer.from(rawBase64, "base64");
+
+    const conditionPayload: { checkDuplicate: boolean; checkReceiver?: typeof checkReceiver } = { checkDuplicate: true };
+    if (checkReceiver.length > 0) conditionPayload.checkReceiver = checkReceiver;
+
+    const formData = new FormData();
+    formData.append("file", new Blob([fileBuffer], { type: mimeType }), "slip.jpg");
+    formData.append("payload", JSON.stringify(conditionPayload));
+
+    // Slip2Go API doc: POST /verify-slip/qr-image/info (multipart/form-data)
+    const response = await fetch("https://connect.slip2go.com/api/verify-slip/qr-image/info", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "Authorization": `Bearer ${SLIP2GO_API_KEY}`
       },
-      body: JSON.stringify({ 
-        payload: {
-          imageBase64: slipBase64,
-          checkCondition: {
-            checkDuplicate: true // ตรวจสอบสลิปซ้ำ
-          }
-        } 
-      }) 
+      body: formData,
     });
-    
+
     const data = await response.json();
-    
-    // Check if verification was successful (Slip2go usually returns code: "200" or "200000")
-    if (!response.ok || (data.code !== "200" && data.code !== "200000") || !data.data) {
+
+    // เมื่อส่ง checkCondition ไปด้วย ผลลัพธ์ที่ผ่านเงื่อนไขทั้งหมดจะได้ code "200200" (ไม่ใช่ "200000")
+    const isSuccess = data.code === "200000" || data.code === "200200";
+    if (!response.ok || !isSuccess || !data.data) {
       console.error("Slip error:", data);
-      return NextResponse.json({ error: data.message || "สลิปไม่ถูกต้อง หรือถูกใช้งานไปแล้ว" }, { status: 400 });
+      const friendlyMessage = SLIP_RESULT_MESSAGES[data.code] || data.message || "สลิปไม่ถูกต้อง หรือถูกใช้งานไปแล้ว";
+      return NextResponse.json({ error: friendlyMessage }, { status: 400 });
     }
-    
+
     // ดึงจำนวนเงินจากผลลัพธ์ของ API
     const amount = parseFloat(data.data.amount);
-    
-    await connectToDatabase();
-    
+
     // อัปเดตเงินให้ User (เก็บ transaction ไว้กันสลิปซ้ำด้วยในอนาคตแนะนำให้เช็ค ref_no)
     console.log("Target User ID:", (session.user as any)?.id);
     const user = await User.findByIdAndUpdate(
