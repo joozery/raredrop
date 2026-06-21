@@ -5,11 +5,14 @@ import { Gift, ChevronRight } from "lucide-react";
 
 export default function RedEnvelopeBanner() {
   return (
-    <Link 
-      href="/red-envelope" 
-      className="relative overflow-hidden w-full rounded-2xl bg-gradient-to-r from-red-600 to-red-500 shadow-sm border border-red-400 group block"
+    <Link
+      href="/red-envelope"
+      className="relative overflow-hidden w-full rounded-2xl bg-gradient-to-r from-red-700 via-amber-500 to-red-600 animate-gradient-shift shadow-sm border border-red-400 group block"
     >
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+      
+      {/* Shimmer Effect */}
+      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] z-0 pointer-events-none"></div>
       
       <div className="relative p-4 sm:p-5 flex items-center justify-between z-10">
         <div className="flex items-center gap-3 sm:gap-4">
