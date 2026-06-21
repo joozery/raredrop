@@ -11,7 +11,7 @@ const PUBLIC_KEYS = [
   "knowledge_hero_label", "knowledge_hero_image", "knowledge_hero_link", "knowledge_hero_title", "knowledge_hero_subtitle",
   "red_envelope_help_text", "gemcoin_icon",
   "payment_method", "payment_qr_image", "min_topup_amount",
-  "popup_enabled", "popup_image", "popup_link", "popup_dismiss_days"
+  "popup_enabled", "popup_image", "popup_link", "popup_dismiss_hours"
 ];
 
 export async function GET() {

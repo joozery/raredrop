@@ -17,7 +17,7 @@ export function PopupAd() {
         const enabled = d.popup_enabled === true || d.popup_enabled === "true";
         if (!enabled || !d.popup_image) return;
 
-        const days = Number(d.popup_dismiss_days ?? 1);
+        const hours = Number(d.popup_dismiss_hours ?? 24);
         setImage(d.popup_image);
         setLink(d.popup_link || "");
 
@@ -26,8 +26,8 @@ export function PopupAd() {
         const sameImage = dismissed?.image === d.popup_image;
 
         // ยังไม่เคยปิด หรือเปลี่ยนรูปใหม่ -> โชว์เลย
-        // ปิดรูปเดิมไปแล้ว -> โชว์ใหม่ก็ต่อเมื่อครบจำนวนวันที่กำหนด (days <= 0 = ปิดแล้วไม่โชว์อีกเลย)
-        const shouldShow = !sameImage || (days > 0 && Date.now() - dismissed.dismissedAt >= days * 86400000);
+        // ปิดรูปเดิมไปแล้ว -> โชว์ใหม่ก็ต่อเมื่อครบจำนวนชั่วโมงที่กำหนด (hours <= 0 = ปิดแล้วไม่โชว์อีกเลย)
+        const shouldShow = !sameImage || (hours > 0 && Date.now() - dismissed.dismissedAt >= hours * 3600000);
         if (shouldShow) setOpen(true);
       })
       .catch(() => {});

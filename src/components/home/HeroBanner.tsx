@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+
 import { useRouter } from 'next/navigation';
 
 export default function HeroBanner() {
@@ -71,34 +71,6 @@ export default function HeroBanner() {
         />
       ))}
       
-      {/* Content Overlay */}
-      <div className="relative z-10 w-full h-full p-6 md:p-10 flex items-center pointer-events-none">
-        <div className="max-w-lg pointer-events-auto">
-        <h1 className="text-base sm:text-xl md:text-4xl font-extrabold text-gray-900 leading-tight">
-          {settings.title1}<br/>
-          <span className="text-primary flex items-center gap-1.5 md:gap-2 mt-0.5 md:mt-2">
-            {settings.title2} <span className="text-primary text-sm md:text-2xl">{settings.icon}</span>
-          </span>
-        </h1>
-        <p className="text-gray-600 mt-1.5 md:mt-4 text-[11px] sm:text-sm md:text-base leading-snug">
-          {settings.subtitle.split('\\n').map((line, i) => (
-            <React.Fragment key={i}>
-              {line}
-              {i !== settings.subtitle.split('\\n').length - 1 && <br />}
-            </React.Fragment>
-          ))}
-        </p>
-        <div className="flex gap-2 md:gap-4 mt-3 md:mt-8">
-          <Link href="/boxes" className="bg-primary text-white font-bold text-xs md:text-base py-2 px-4 md:py-3 md:px-8 rounded-lg shadow-lg shadow-primary/30 hover:bg-primary/90 transition-transform active:scale-95">
-            {settings.button1}
-          </Link>
-          <Link href="/shop" className="bg-white text-gray-900 font-bold text-xs md:text-base py-2 px-4 md:py-3 md:px-8 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors">
-            {settings.button2}
-          </Link>
-        </div>
-        </div>
-      </div>
-
       {/* Dots Indicator */}
       {settings.carousel.length > 1 && (
         <div className="absolute bottom-4 left-0 right-0 z-20 flex items-center justify-center gap-2">
