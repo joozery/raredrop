@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, Upload, CheckCircle2, AlertCircle, QrCode, Wallet, ExternalLink, RefreshCw } from "lucide-react";
+import { X, Upload, CheckCircle2, AlertCircle, QrCode, Wallet, ExternalLink, RefreshCw, Gem, Link } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 interface TopupModalProps {
@@ -12,10 +12,17 @@ interface TopupModalProps {
 const POLL_INTERVAL_MS = 5000;
 const POLL_MAX_ATTEMPTS = 60; // ~5 นาที
 
+const NETWORK_LABELS: Record<string, string> = { eth: "ETH", bsc: "BNB", polygon: "MATIC" };
+const NETWORK_NAMES: Record<string, string> = {
+  eth: "Ethereum Mainnet",
+  bsc: "BNB Smart Chain",
+  polygon: "Polygon",
+};
+
 export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   const { update } = useSession();
-  const [method, setMethod] = useState<"promptpay" | "truemoney">("promptpay");
-  const [step, setStep] = useState<"amount" | "qrcode" | "truemoney">("amount");
+  const [method, setMethod] = useState<"promptpay" | "truemoney" | "crypto">("promptpay");
+  const [step, setStep] = useState<"amount" | "qrcode" | "truemoney" | "crypto">("amount");
   const [amount, setAmount] = useState<number | "">("");
   const [qrImage, setQrImage] = useState<string | null>(null);
 
@@ -23,6 +30,14 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   const [tmnRequestId, setTmnRequestId] = useState<string | null>(null);
   const [tmnAmount, setTmnAmount] = useState<number | null>(null);
   const [minTopup, setMinTopup] = useState(1);
+
+  // Crypto / MetaMask state
+  const [cryptoEnabled, setCryptoEnabled] = useState(false);
+  const [cryptoWalletAddress, setCryptoWalletAddress] = useState("");
+  const [cryptoNetwork, setCryptoNetwork] = useState("eth");
+  const [cryptoRatePerUnit, setCryptoRatePerUnit] = useState(1);
+  const [cryptoUserAddress, setCryptoUserAddress] = useState<string | null>(null);
+  const [cryptoTxHash, setCryptoTxHash] = useState<string | null>(null);
   const [pollTimedOut, setPollTimedOut] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,6 +62,10 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
       .then((r) => r.json())
       .then((d) => {
         if (d.min_topup_amount) setMinTopup(Number(d.min_topup_amount));
+        setCryptoEnabled(d.crypto_enabled === true || d.crypto_enabled === "true");
+        if (d.crypto_wallet_address) setCryptoWalletAddress(d.crypto_wallet_address);
+        if (d.crypto_network) setCryptoNetwork(d.crypto_network);
+        if (d.crypto_rate_per_unit) setCryptoRatePerUnit(Number(d.crypto_rate_per_unit) || 1);
       })
       .catch(() => {});
   }, []);
@@ -93,6 +112,46 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, tmnRequestId, retryKey]);
 
+  // Poll for crypto TX confirmation after user sends
+  useEffect(() => {
+    if (step !== "crypto" || !cryptoTxHash) return;
+
+    pollAttempts.current = 0;
+    setPollTimedOut(false);
+
+    const check = async () => {
+      pollAttempts.current += 1;
+      try {
+        const res = await fetch("/api/user/topup/crypto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ txHash: cryptoTxHash }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          stopPolling();
+          setStatus("success");
+          setMessage(`เติมเงินสำเร็จ! ได้รับ ${data.amount} บาท`);
+          await update();
+          setTimeout(() => {
+            handleClose();
+            window.location.reload();
+          }, 2000);
+          return;
+        }
+      } catch {}
+      if (pollAttempts.current >= POLL_MAX_ATTEMPTS) {
+        stopPolling();
+        setPollTimedOut(true);
+      }
+    };
+
+    check();
+    pollTimer.current = setInterval(check, POLL_INTERVAL_MS);
+    return () => stopPolling();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, cryptoTxHash, retryKey]);
+
   const handleRetryPolling = () => {
     setPollTimedOut(false);
     setRetryKey((k) => k + 1);
@@ -114,6 +173,66 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
     setPreview(null);
     setStatus("idle");
     setMessage("");
+    setCryptoUserAddress(null);
+    setCryptoTxHash(null);
+  };
+
+  const connectMetaMask = async () => {
+    const eth = (window as any).ethereum;
+    if (!eth?.isMetaMask) {
+      setStatus("error");
+      setMessage("ไม่พบ MetaMask — กรุณาติดตั้งส่วนเสริม MetaMask ในเบราว์เซอร์ก่อน");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      setStatus("idle");
+      const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
+      setCryptoUserAddress(accounts[0] ?? null);
+    } catch (err: any) {
+      setStatus("error");
+      if (err.code === 4001) {
+        setMessage("คุณปฏิเสธการเชื่อมต่อ MetaMask");
+      } else if (err.code === -32002) {
+        setMessage("MetaMask กำลังรอการยืนยัน — กรุณาเปิด MetaMask แล้วอนุมัติ");
+      } else {
+        setMessage("ไม่สามารถเชื่อมต่อ MetaMask: " + (err.message || "Unknown error"));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendCryptoPayment = async () => {
+    if (!cryptoUserAddress || !amount || !cryptoWalletAddress || cryptoRatePerUnit <= 0) return;
+    const eth = (window as any).ethereum;
+    if (!eth) return;
+
+    const nativeAmount = Number(amount) / cryptoRatePerUnit;
+    const weiHex = "0x" + BigInt(Math.round(nativeAmount * 1e18)).toString(16);
+
+    try {
+      setIsLoading(true);
+      setStatus("pending");
+      setMessage("กำลังรอการยืนยันจาก MetaMask...");
+
+      const txHash = (await eth.request({
+        method: "eth_sendTransaction",
+        params: [{ from: cryptoUserAddress, to: cryptoWalletAddress, value: weiHex }],
+      })) as string;
+
+      setCryptoTxHash(txHash);
+      setMessage("ส่งรายการโอนแล้ว กำลังรอยืนยันบน Blockchain...");
+    } catch (err: any) {
+      setStatus("error");
+      if (err.code === 4001) {
+        setMessage("คุณปฏิเสธรายการโอน");
+      } else {
+        setMessage("เกิดข้อผิดพลาด: " + (err.message || "Unknown error"));
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -238,7 +357,10 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden relative flex flex-col max-h-[90vh]">
         <div className="bg-gradient-to-r from-red-600 to-red-500 p-5 flex items-center justify-between shrink-0">
           <h2 className="text-white font-bold text-lg">
-            {step === "amount" ? "ระบุจำนวนเงิน" : step === "qrcode" ? "สแกนชำระเงิน" : "ชำระผ่าน TrueMoney"}
+            {step === "amount" ? "ระบุจำนวนเงิน"
+              : step === "qrcode" ? "สแกนชำระเงิน"
+              : step === "crypto" ? "ชำระผ่าน MetaMask"
+              : "ชำระผ่าน TrueMoney"}
           </h2>
           <button onClick={handleClose} className="text-white/80 hover:text-white p-1 rounded-full hover:bg-white/20 transition-colors">
             <X size={20} />
@@ -248,7 +370,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
         <div className="p-5 md:p-6 overflow-y-auto">
           {step === "amount" && (
             <div className="animate-in slide-in-from-right-4 duration-300">
-              <div className="grid grid-cols-2 gap-2 mb-5">
+              <div className={`grid gap-2 mb-5 ${cryptoEnabled ? "grid-cols-3" : "grid-cols-2"}`}>
                 <button
                   onClick={() => setMethod("promptpay")}
                   className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold border transition-all ${method === "promptpay" ? "bg-red-600 text-white border-red-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"}`}
@@ -261,13 +383,30 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
                 >
                   <Wallet size={15} /> TrueMoney
                 </button>
+                {cryptoEnabled && (
+                  <button
+                    onClick={() => setMethod("crypto")}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold border transition-all ${method === "crypto" ? "bg-red-600 text-white border-red-600" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"}`}
+                  >
+                    <Gem size={15} /> Crypto
+                  </button>
+                )}
               </div>
 
               <div className="mb-6 text-center">
                 <p className="text-sm text-slate-500 font-medium">โปรดระบุจำนวนเงินที่ต้องการเติม (ขั้นต่ำ {minTopup} บาท)</p>
                 <p className="text-xs text-slate-400 mt-1">
-                  {method === "promptpay" ? "ระบบจะสร้าง QR Code ชำระเงินให้คุณ" : "ระบบจะเปิดแอป TrueMoney ให้ชำระเงิน"}
+                  {method === "promptpay"
+                    ? "ระบบจะสร้าง QR Code ชำระเงินให้คุณ"
+                    : method === "truemoney"
+                    ? "ระบบจะเปิดแอป TrueMoney ให้ชำระเงิน"
+                    : `โอน ${NETWORK_LABELS[cryptoNetwork] ?? "Crypto"} ผ่าน MetaMask (${NETWORK_NAMES[cryptoNetwork] ?? cryptoNetwork})`}
                 </p>
+                {method === "crypto" && cryptoRatePerUnit > 0 && amount && Number(amount) >= minTopup && (
+                  <p className="text-xs text-indigo-600 font-bold mt-1">
+                    ≈ {(Number(amount) / cryptoRatePerUnit).toFixed(6)} {NETWORK_LABELS[cryptoNetwork] ?? "Crypto"}
+                  </p>
+                )}
               </div>
 
               <div className="relative mb-4">
@@ -301,25 +440,27 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
               )}
 
               <button
-                onClick={method === "promptpay" ? handleGenerateQR : handleRequestTrueMoney}
+                onClick={
+                  method === "promptpay"
+                    ? handleGenerateQR
+                    : method === "truemoney"
+                    ? handleRequestTrueMoney
+                    : () => { setStep("crypto"); if (!cryptoUserAddress) connectMetaMask(); }
+                }
                 disabled={!amount || amount < minTopup || isLoading}
                 className="w-full bg-red-600 hover:bg-red-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    {method === "promptpay" ? "กำลังสร้าง QR Code..." : "กำลังสร้างลิงก์..."}
+                    {method === "promptpay" ? "กำลังสร้าง QR Code..." : method === "truemoney" ? "กำลังสร้างลิงก์..." : "กำลังเชื่อมต่อ..."}
                   </>
                 ) : method === "promptpay" ? (
-                  <>
-                    <QrCode size={18} />
-                    สร้าง QR Code ชำระเงิน
-                  </>
+                  <><QrCode size={18} /> สร้าง QR Code ชำระเงิน</>
+                ) : method === "truemoney" ? (
+                  <><Wallet size={18} /> สร้างลิงก์ชำระผ่าน TrueMoney</>
                 ) : (
-                  <>
-                    <Wallet size={18} />
-                    สร้างลิงก์ชำระผ่าน TrueMoney
-                  </>
+                  <><Gem size={18} /> ดำเนินการชำระผ่าน MetaMask</>
                 )}
               </button>
             </div>
@@ -460,6 +601,122 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {step === "crypto" && (
+            <div className="animate-in slide-in-from-right-4 duration-300">
+
+              {/* Wallet connection */}
+              <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 shrink-0">
+                    <Link size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-500 font-medium">กระเป๋า MetaMask ของคุณ</p>
+                    {cryptoUserAddress ? (
+                      <p className="text-xs font-bold text-indigo-700 truncate">{cryptoUserAddress}</p>
+                    ) : (
+                      <p className="text-xs text-slate-400">ยังไม่ได้เชื่อมต่อ</p>
+                    )}
+                  </div>
+                  {!cryptoUserAddress && (
+                    <button
+                      onClick={connectMetaMask}
+                      disabled={isLoading}
+                      className="shrink-0 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white text-xs font-bold rounded-lg transition-colors"
+                    >
+                      {isLoading ? "..." : "เชื่อมต่อ"}
+                    </button>
+                  )}
+                </div>
+
+                {/* Transfer details */}
+                <div className="bg-white border border-slate-100 rounded-lg p-3 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">จำนวนเงิน</span>
+                    <span className="font-black text-slate-800">฿{Number(amount).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">จำนวน {NETWORK_LABELS[cryptoNetwork] ?? "Crypto"} ที่ต้องโอน</span>
+                    <span className="font-black text-indigo-700">
+                      {cryptoRatePerUnit > 0
+                        ? (Number(amount) / cryptoRatePerUnit).toFixed(6)
+                        : "–"} {NETWORK_LABELS[cryptoNetwork] ?? ""}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">เครือข่าย</span>
+                    <span className="font-bold text-slate-700">{NETWORK_NAMES[cryptoNetwork] ?? cryptoNetwork}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">ปลายทาง</span>
+                    <span className="font-mono text-[10px] text-slate-600 max-w-[140px] truncate">{cryptoWalletAddress || "ยังไม่ได้ตั้งค่า"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status messages */}
+              {status === "error" && (
+                <div className="mb-3 bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-4 py-3 rounded-lg flex items-center gap-2">
+                  <AlertCircle size={16} className="shrink-0" /> {message}
+                </div>
+              )}
+              {status === "success" && (
+                <div className="mb-3 bg-green-50 border border-green-200 text-green-700 text-sm font-bold px-4 py-3 rounded-lg flex items-center gap-2">
+                  <CheckCircle2 size={16} className="shrink-0" /> {message}
+                </div>
+              )}
+
+              {/* Confirmation polling */}
+              {cryptoTxHash && status !== "success" && status !== "error" && (
+                <div className="mb-3">
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-xs text-slate-500 font-medium flex items-center gap-2 mb-3">
+                    <span className="font-bold text-slate-700">TX:</span>
+                    <span className="font-mono truncate">{cryptoTxHash}</span>
+                  </div>
+                  {pollTimedOut ? (
+                    <>
+                      <div className="mb-3 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium px-4 py-3 rounded-lg flex items-center gap-2">
+                        <AlertCircle size={16} className="shrink-0" /> TX ยังไม่ยืนยัน — ตรวจสอบว่าโอนสำเร็จแล้วและลองอีกครั้ง
+                      </div>
+                      <button
+                        onClick={handleRetryPolling}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                      >
+                        <RefreshCw size={16} /> ตรวจสอบอีกครั้ง
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2.5 py-3 text-sm font-bold text-slate-500">
+                      <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin shrink-0" />
+                      กำลังรอยืนยันบน Blockchain...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Send button (shown only before TX is sent) */}
+              {!cryptoTxHash && status !== "success" && (
+                <button
+                  onClick={sendCryptoPayment}
+                  disabled={!cryptoUserAddress || !cryptoWalletAddress || isLoading || status === "pending"}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                >
+                  {isLoading || status === "pending" ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {status === "pending" ? "กำลังรอ MetaMask..." : "กำลังโหลด..."}
+                    </>
+                  ) : (
+                    <>
+                      <Gem size={18} />
+                      โอน {cryptoRatePerUnit > 0 ? (Number(amount) / cryptoRatePerUnit).toFixed(6) : ""} {NETWORK_LABELS[cryptoNetwork] ?? "Crypto"} ผ่าน MetaMask
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>

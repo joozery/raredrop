@@ -11,7 +11,8 @@ const PUBLIC_KEYS = [
   "knowledge_hero_label", "knowledge_hero_image", "knowledge_hero_link", "knowledge_hero_title", "knowledge_hero_subtitle",
   "red_envelope_help_text", "gemcoin_icon",
   "payment_method", "payment_qr_image", "min_topup_amount",
-  "popup_enabled", "popup_image", "popup_link", "popup_dismiss_hours"
+  "popup_enabled", "popup_image", "popup_link", "popup_dismiss_hours",
+  "crypto_enabled", "crypto_wallet_address", "crypto_network", "crypto_rate_per_unit",
 ];
 
 export async function GET() {
@@ -23,7 +24,7 @@ export async function GET() {
       result[s.key as string] = s.value as string;
     }
     return NextResponse.json(result, {
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+      headers: { "Cache-Control": "no-store" },
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

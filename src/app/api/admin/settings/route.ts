@@ -406,6 +406,47 @@ const DEFAULT_SETTINGS = [
     type: "number",
     group: "Popup หน้าแรก",
   },
+  {
+    key: "crypto_enabled",
+    value: false,
+    label: "เปิดใช้ระบบเติมเงิน Crypto (MetaMask)",
+    description: "เมื่อเปิด จะแสดงแท็บ Crypto ใน Modal เติมเงิน ให้ผู้ใช้โอน ETH/BNB ผ่าน MetaMask",
+    type: "boolean",
+    group: "Crypto / MetaMask",
+  },
+  {
+    key: "crypto_wallet_address",
+    value: "",
+    label: "ที่อยู่กระเป๋า Crypto ของร้าน (0x...)",
+    description: "ที่อยู่ Ethereum/BSC/Polygon ที่ผู้ใช้จะโอนเงินมาหา — ต้องกรอกให้ถูกต้อง",
+    type: "text",
+    group: "Crypto / MetaMask",
+  },
+  {
+    key: "crypto_network",
+    value: "eth",
+    label: "เครือข่าย Blockchain",
+    description: "eth = Ethereum Mainnet, bsc = BNB Smart Chain, polygon = Polygon",
+    type: "select",
+    options: ["eth", "bsc", "polygon"],
+    group: "Crypto / MetaMask",
+  },
+  {
+    key: "crypto_rate_per_unit",
+    value: 0,
+    label: "อัตราแลกเปลี่ยน: 1 ETH/BNB/MATIC = กี่บาท (coins)",
+    description: "เช่น ถ้า 1 BNB = 12,000 บาท ให้กรอก 12000 — ระบบจะคำนวณจำนวน Crypto ที่ต้องโอนให้อัตโนมัติ",
+    type: "number",
+    group: "Crypto / MetaMask",
+  },
+  {
+    key: "crypto_explorer_api_key",
+    value: "",
+    label: "API Key ของ Blockchain Explorer (ไม่บังคับ)",
+    description: "Etherscan / BscScan / PolygonScan API Key เพื่อตรวจสอบ TX — เว้นว่างได้ แต่อาจถูก rate-limit",
+    type: "text",
+    group: "Crypto / MetaMask",
+  },
 ];
 
 async function seedDefaultSettings() {

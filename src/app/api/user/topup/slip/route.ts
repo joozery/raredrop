@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
+import Setting from "@/models/Setting";
 import { notify } from "@/lib/notify";
 import { awardXp, getExpPerBaht } from "@/lib/xp";
 
@@ -32,13 +33,25 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
+    // โหลดบัญชีผู้รับที่ตั้งไว้ในหลังบ้าน
+    const paymentSettings = await Setting.find({
+      key: { $in: ["payment_method", "payment_qr_account_number", "promptpay_number"] },
+    }).lean();
+    const getSetting = (key: string) =>
+      (paymentSettings.find((s: any) => s.key === key) as any)?.value;
+    const paymentMethod = String(getSetting("payment_method") || "promptpay");
+    const normalize = (v: string) => String(v || "").replace(/[^0-9A-Za-z]/g, "");
+    const expectedAccount =
+      paymentMethod === "promptpay"
+        ? normalize(getSetting("promptpay_number") || "")
+        : normalize(getSetting("payment_qr_account_number") || "");
+
     // slipBase64 เป็น data URI เต็มรูปแบบจาก FileReader.readAsDataURL (เช่น "data:image/jpeg;base64,...")
     const match = String(slipBase64).match(/^data:(.+);base64,(.+)$/);
     const mimeType = match?.[1] || "image/jpeg";
     const rawBase64 = match ? match[2] : slipBase64;
     const fileBuffer = Buffer.from(rawBase64, "base64");
 
-    // ปิดการเช็ค checkReceiver ไว้ก่อน — Slip2Go ไม่มี accountType สำหรับ QR ถุงเงิน (BILLERID) ให้ตรวจสอบได้ตรง
     const conditionPayload = { checkDuplicate: true };
 
     const formData = new FormData();
@@ -62,6 +75,19 @@ export async function POST(req: Request) {
       console.error("Slip error:", JSON.stringify(data, null, 2));
       const friendlyMessage = SLIP_RESULT_MESSAGES[data.code] || data.message || "สลิปไม่ถูกต้อง หรือถูกใช้งานไปแล้ว";
       return NextResponse.json({ error: friendlyMessage }, { status: 400 });
+    }
+
+    // เช็คว่าสลิปโอนมาบัญชีร้านค้าจริง
+    // Slip2Go ส่ง receiver.account.value กลับมาสำหรับทุกประเภท QR (รวมถุงเงิน BILLERID)
+    if (expectedAccount) {
+      const receiverValue = normalize(data.data?.receiver?.account?.value || "");
+      if (!receiverValue || receiverValue !== expectedAccount) {
+        console.error("Receiver mismatch — expected:", expectedAccount, "got:", receiverValue);
+        return NextResponse.json(
+          { error: "สลิปนี้โอนเข้าบัญชีอื่น ไม่ใช่บัญชีร้านค้าของเรา" },
+          { status: 400 }
+        );
+      }
     }
 
     // ดึงจำนวนเงินจากผลลัพธ์ของ API
