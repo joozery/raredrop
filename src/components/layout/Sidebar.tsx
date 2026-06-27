@@ -40,7 +40,7 @@ export function Sidebar() {
   const [lineUrl, setLineUrl] = useState("");
   const [tiktokUrl, setTiktokUrl] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
+  const [logoUrl, setLogoUrl] = useState("");
   const [siteName, setSiteName] = useState("RareDrop");
   const [gemcoinIcon, setGemcoinIcon] = useState("");
 
@@ -48,7 +48,7 @@ export function Sidebar() {
     fetch("/api/public-settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
-        setLogoUrl(d.site_logo || "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
+        setLogoUrl(d.site_logo || "");
         setSiteName(d.site_name || "RareDrop");
         setDiscordUrl(d.discord_invite_url || "");
         setFacebookUrl(d.help_facebook_url || "");
@@ -67,18 +67,20 @@ export function Sidebar() {
   return (
     <aside className="w-72 bg-white border-r border-gray-100 flex flex-col h-full shrink-0">
       {/* Logo */}
-      <div className="h-28 flex items-center px-6 shrink-0 mt-2">
-        <Link href="/" className="flex items-center w-full justify-center">
-          <Image
-            src={logoUrl}
-            alt={`${siteName} Logo`}
-            width={400}
-            height={100}
-            className="w-full max-w-[240px] h-auto object-contain drop-shadow-sm"
-            priority
-          />
-        </Link>
-      </div>
+      {logoUrl && (
+        <div className="h-28 flex items-center px-6 shrink-0 mt-2">
+          <Link href="/" className="flex items-center w-full justify-center">
+            <Image
+              src={logoUrl}
+              alt={`${siteName} Logo`}
+              width={400}
+              height={100}
+              className="w-full max-w-[240px] h-auto object-contain drop-shadow-sm"
+              priority
+            />
+          </Link>
+        </div>
+      )}
 
       {/* Menu */}
       <div className="flex-1 overflow-y-auto px-5 flex flex-col hide-scrollbar pb-6">
