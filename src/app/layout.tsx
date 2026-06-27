@@ -21,6 +21,9 @@ const notoSansThai = Noto_Sans_Thai({
 import { connectToDatabase } from "@/lib/mongoose";
 import Setting from "@/models/Setting";
 
+// บังคับให้ Next.js อ่าน metadata จาก DB ใหม่ทุก request ไม่ cache HTML เก่าไว้
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
     await connectToDatabase();
