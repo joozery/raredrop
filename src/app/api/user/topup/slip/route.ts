@@ -95,9 +95,9 @@ export async function POST(req: Request) {
     // อัปเดตเงินให้ User (เก็บ transaction ไว้กันสลิปซ้ำด้วยในอนาคตแนะนำให้เช็ค ref_no)
     console.log("Target User ID:", (session.user as any)?.id);
     const user = await User.findByIdAndUpdate(
-      (session.user as any)?.id, 
-      { $inc: { coins: amount } }, 
-      { new: true }
+      (session.user as any)?.id,
+      { $inc: { coins: amount } },
+      { returnDocument: "after" }
     );
     console.log("Updated User Result:", user);
     
