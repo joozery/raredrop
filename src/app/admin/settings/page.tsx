@@ -50,7 +50,7 @@ export default function SettingsPage() {
   const [qrImageSaved, setQrImageSaved] = useState(false);
   const [qrDecoding, setQrDecoding] = useState(false);
   const [qrDecodeError, setQrDecodeError] = useState("");
-  const [qrDecodeResult, setQrDecodeResult] = useState<{ type: string; shopName?: string; accountType?: string; accountNumber?: string } | null>(null);
+  const [qrDecodeResult, setQrDecodeResult] = useState<{ type: string; shopName?: string; accountType?: string; accountNumber?: string; ref1?: string } | null>(null);
   const [popupImage, setPopupImage] = useState("");
   const [popupLink, setPopupLink] = useState("");
   const [popupSaving, setPopupSaving] = useState(false);
@@ -99,12 +99,14 @@ export default function SettingsPage() {
           const qrAccountType = d.find((s: SettingItem) => s.key === "payment_qr_account_type")?.value;
           const qrAccountNumber = d.find((s: SettingItem) => s.key === "payment_qr_account_number")?.value;
           const qrShopName = d.find((s: SettingItem) => s.key === "payment_qr_shop_name")?.value;
+          const qrRef1 = d.find((s: SettingItem) => s.key === "payment_qr_ref1")?.value;
           if (qrType) {
             setQrDecodeResult({
               type: String(qrType),
               accountType: qrAccountType ? String(qrAccountType) : undefined,
               accountNumber: qrAccountNumber ? String(qrAccountNumber) : undefined,
               shopName: qrShopName ? String(qrShopName) : undefined,
+              ref1: qrRef1 ? String(qrRef1) : undefined,
             });
           }
 
@@ -259,6 +261,7 @@ export default function SettingsPage() {
         fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "payment_qr_account_type", value: data.accountType || "" }) }),
         fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "payment_qr_account_number", value: data.accountNumber || "" }) }),
         fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "payment_qr_shop_name", value: data.shopName || "" }) }),
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "payment_qr_ref1", value: data.ref1 || "" }) }),
       ]);
     } catch {
       setQrDecodeError("เกิดข้อผิดพลาด กรุณาลองใหม่");
@@ -642,7 +645,8 @@ export default function SettingsPage() {
               <p className="font-bold flex items-center gap-1.5"><CheckCircle2 size={13} /> ผลถอดรหัส (ใช้เช็คบัญชีผู้รับตอนตรวจสลิป)</p>
               <p>ประเภท: {qrDecodeResult.type === "billpayment" ? "Thai QR Bill Payment (เช่น ถุงเงิน)" : "พร้อมเพย์"}</p>
               {qrDecodeResult.shopName && <p>ชื่อร้านค้า: {qrDecodeResult.shopName}</p>}
-              <p>เลขอ้างอิงบัญชีผู้รับ: {qrDecodeResult.accountNumber}</p>
+              <p>Biller ID: {qrDecodeResult.accountNumber}</p>
+              {qrDecodeResult.ref1 && <p>Ref1 (ใช้ตรวจสอบถุงเงิน): {qrDecodeResult.ref1}</p>}
             </div>
           )}
         </div>

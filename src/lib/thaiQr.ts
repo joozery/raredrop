@@ -5,9 +5,9 @@ export interface ThaiQrInfo {
   raw: string;
   type: "promptpay" | "billpayment" | "unknown";
   shopName?: string;
-  // ใช้กรอกลง checkReceiver ของ Slip2Go
   accountType?: string;
   accountNumber?: string;
+  ref1?: string; // Slip2Go แนะนำให้ใช้ ref1 ตรวจร้านค้าถุงเงิน แทน Biller ID
 }
 
 const PROMPTPAY_AID = "A000000677010111";
@@ -43,11 +43,9 @@ export function parseThaiQrPayload(raw: string): ThaiQrInfo {
     return {
       raw,
       type: "billpayment",
-      // ตาม Slip2Go API doc (Data Description > Account Type List): "03000" = merchant Biller ID
-      // (K+ Shop, แม่มณี, Be Merchant NextGen, TTB Smart Shop) ซึ่งเป็นหมวดเดียวกับ QR ถุงเงินที่ใช้ Biller ID
-      // (ค่านี้คนละชุดกับ proxy.type ที่ตอบกลับมา เช่น "BILLERID" — ห้ามใช้ค่านั้นเป็น accountType)
       accountType: "03000",
-      accountNumber: sub.get("01"), // Biller ID — รหัสบัญชีผู้รับเงินจริง (02/03 เป็น Ref 1/Ref 2 ของรายการ ไม่ใช่บัญชี)
+      accountNumber: sub.get("01"), // Biller ID
+      ref1: sub.get("02"),          // Slip2Go แนะนำให้ใช้ ref1 ตรวจสอบร้านค้าถุงเงิน — ตรงกับ data.ref1 ใน response
     };
   }
 

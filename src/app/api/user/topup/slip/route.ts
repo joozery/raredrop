@@ -35,13 +35,14 @@ export async function POST(req: Request) {
 
     // โหลดบัญชีผู้รับที่ตั้งไว้ในหลังบ้าน
     const paymentSettings = await Setting.find({
-      key: { $in: ["payment_method", "payment_qr_account_number", "promptpay_number"] },
+      key: { $in: ["payment_method", "payment_qr_account_number", "payment_qr_ref1", "promptpay_number"] },
     }).lean();
     const getSetting = (key: string) =>
       (paymentSettings.find((s: any) => s.key === key) as any)?.value;
     const paymentMethod = String(getSetting("payment_method") || "promptpay");
     const normalize = (v: string) => String(v || "").replace(/[^0-9A-Za-z]/g, "");
     const qrAccountNumber = normalize(getSetting("payment_qr_account_number") || "");
+    const qrRef1 = String(getSetting("payment_qr_ref1") || "").trim();
     const promptpayNumber = normalize(getSetting("promptpay_number") || "");
 
     // slipBase64 เป็น data URI เต็มรูปแบบจาก FileReader.readAsDataURL (เช่น "data:image/jpeg;base64,...")
@@ -75,11 +76,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: friendlyMessage }, { status: 400 });
     }
 
-    // ตรวจ receiver เอง — Slip2Go mask บัญชีไว้ ใช้ suffix 4 ตัวท้ายเทียบ
-    const expectedAccount = paymentMethod === "promptpay" ? promptpayNumber : qrAccountNumber;
-    if (expectedAccount) {
+    // ตรวจ receiver — ถุงเงิน ใช้ ref1 ตาม Slip2Go แนะนำ, พร้อมเพย์ ใช้ suffix proxy.account
+    if (paymentMethod === "qr_image") {
+      if (qrRef1) {
+        const slipRef1 = String(data.data?.ref1 || "").trim();
+        if (slipRef1 !== qrRef1) {
+          console.error("Ref1 mismatch — expected:", qrRef1, "got:", slipRef1);
+          return NextResponse.json(
+            { error: "สลิปนี้โอนเข้าบัญชีอื่น ไม่ใช่บัญชีร้านค้าของเรา" },
+            { status: 400 }
+          );
+        }
+      } else if (qrAccountNumber) {
+        // fallback: suffix check กรณียังไม่มี ref1 ใน DB (ก่อน decode QR ใหม่)
+        const proxyAccount = normalize(data.data?.receiver?.account?.proxy?.account || "");
+        const suffix = qrAccountNumber.slice(-4);
+        if (!proxyAccount || !proxyAccount.endsWith(suffix)) {
+          console.error("Receiver mismatch — expected suffix:", suffix, "got proxy:", proxyAccount);
+          return NextResponse.json(
+            { error: "สลิปนี้โอนเข้าบัญชีอื่น ไม่ใช่บัญชีร้านค้าของเรา" },
+            { status: 400 }
+          );
+        }
+      }
+    } else if (paymentMethod === "promptpay" && promptpayNumber) {
       const proxyAccount = normalize(data.data?.receiver?.account?.proxy?.account || "");
-      const suffix = expectedAccount.slice(-4);
+      const suffix = promptpayNumber.slice(-4);
       if (!proxyAccount || !proxyAccount.endsWith(suffix)) {
         console.error("Receiver mismatch — expected suffix:", suffix, "got proxy:", proxyAccount);
         return NextResponse.json(
