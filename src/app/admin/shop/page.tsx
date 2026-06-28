@@ -50,11 +50,13 @@ interface ShopListing {
   youtubeUrl?: string;
   categoryId?: string;
   isFeatured?: boolean;
+  requireUid?: boolean;
+  uidLabel?: string;
   createdAt: string;
 }
 
-type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string; categoryId: string; isFeatured: boolean };
-const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "", categoryId: "", isFeatured: false };
+type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string; categoryId: string; isFeatured: boolean; requireUid: boolean; uidLabel: string };
+const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "", categoryId: "", isFeatured: false, requireUid: false, uidLabel: "UID / ไอดีผู้เล่น" };
 
 interface ShopListingCardProps {
   l: ShopListing;
@@ -71,11 +73,16 @@ interface ShopListingCardProps {
   handleAddAccount: (id: string) => void;
   addingAccount: boolean;
   handleRemoveAccount: (listingId: string, accountId: string, sold: boolean) => void;
+  bulkMode: boolean;
+  setBulkMode: (v: boolean) => void;
+  bulkQty: string;
+  setBulkQty: (v: string) => void;
 }
 
 function ShopListingCard({
   l, categoryName, isExpanded, onToggleExpand, toggleStatus, openEdit, handleDelete,
   addingTo, setAddingTo, newAccountData, setNewAccountData, handleAddAccount, addingAccount, handleRemoveAccount,
+  bulkMode, setBulkMode, bulkQty, setBulkQty,
 }: ShopListingCardProps) {
   const dragControls = useDragControls();
   const stock = l.accounts.filter((a) => !a.sold).length;
@@ -152,7 +159,34 @@ function ShopListingCard({
 
           {/* Add account form */}
           {addingTo === l._id && (
-            <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 flex flex-col gap-2">
+            <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 flex flex-col gap-2.5">
+              {/* Bulk mode toggle */}
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={bulkMode}
+                  onChange={(e) => { setBulkMode(e.target.checked); if (!e.target.checked) setBulkQty("1"); }}
+                  className="accent-blue-600 w-3.5 h-3.5 shrink-0"
+                />
+                <span className="text-xs font-bold text-slate-600">กำหนดจำนวนสต็อก (เพิ่มหลายชุดพร้อมกัน)</span>
+              </label>
+
+              {/* Quantity input — แสดงเมื่อติ๊ก bulk mode */}
+              {bulkMode && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                  <span className="text-xs font-bold text-blue-700 shrink-0">จำนวนชุด:</span>
+                  <input
+                    type="number"
+                    value={bulkQty}
+                    onChange={(e) => setBulkQty(e.target.value)}
+                    min={1}
+                    max={500}
+                    className="w-20 bg-white border border-blue-200 rounded-lg px-2 py-1 text-sm font-black text-blue-800 outline-none focus:border-blue-400 text-center"
+                  />
+                  <span className="text-xs text-blue-600">ชุด (ใช้ข้อมูลด้านล่างซ้ำทั้งหมด)</span>
+                </div>
+              )}
+
               <label className="text-xs font-bold text-slate-600">ข้อมูล Account (วางข้อความทั้งก้อน)</label>
               <textarea
                 value={newAccountData}
@@ -162,7 +196,7 @@ function ShopListingCard({
                 className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-700 outline-none focus:border-red-400 resize-none"
               />
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setAddingTo(null)} className="text-xs font-bold text-slate-500 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">
+                <button onClick={() => { setAddingTo(null); setBulkMode(false); setBulkQty("1"); }} className="text-xs font-bold text-slate-500 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">
                   ยกเลิก
                 </button>
                 <button
@@ -171,7 +205,7 @@ function ShopListingCard({
                   className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 disabled:bg-slate-400 transition-colors"
                 >
                   {addingAccount ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                  เพิ่ม
+                  {bulkMode && Number(bulkQty) > 1 ? `เพิ่ม ${bulkQty} ชุด` : "เพิ่ม"}
                 </button>
               </div>
             </div>
@@ -230,6 +264,8 @@ export default function AdminShopPage() {
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newAccountData, setNewAccountData] = useState("");
   const [addingAccount, setAddingAccount] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkQty, setBulkQty] = useState("1");
 
   // Bulk image upload
   const bulkUploadRef = useRef<HTMLInputElement>(null);
@@ -404,6 +440,8 @@ export default function AdminShopPage() {
       youtubeUrl: l.youtubeUrl || "",
       categoryId: l.categoryId || "",
       isFeatured: !!l.isFeatured,
+      requireUid: !!l.requireUid,
+      uidLabel: l.uidLabel || "UID / ไอดีผู้เล่น",
     });
     setModal("edit");
   };
@@ -457,6 +495,8 @@ export default function AdminShopPage() {
         youtubeUrl: form.youtubeUrl.trim(),
         categoryId: form.categoryId || undefined,
         isFeatured: form.isFeatured,
+        requireUid: form.requireUid,
+        uidLabel: form.uidLabel.trim() || "UID / ไอดีผู้เล่น",
       };
       const url = modal === "edit" && editing ? `/api/admin/shop/${editing._id}` : "/api/admin/shop";
       const method = modal === "edit" ? "PUT" : "POST";
@@ -481,16 +521,19 @@ export default function AdminShopPage() {
   const handleAddAccount = async (listingId: string) => {
     if (!newAccountData.trim()) return;
     setAddingAccount(true);
+    const qty = bulkMode ? Math.max(1, Number(bulkQty) || 1) : 1;
     try {
       const res = await fetch(`/api/admin/shop/${listingId}/accounts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: newAccountData }),
+        body: JSON.stringify({ data: newAccountData, quantity: qty }),
       });
       if (res.ok) {
-        showToast("เพิ่ม Account สำเร็จ");
+        showToast(qty > 1 ? `เพิ่ม ${qty} Account สำเร็จ` : "เพิ่ม Account สำเร็จ");
         setNewAccountData("");
         setAddingTo(null);
+        setBulkMode(false);
+        setBulkQty("1");
         fetchListings();
       } else {
         const d = await res.json();
@@ -680,6 +723,10 @@ export default function AdminShopPage() {
               handleAddAccount={handleAddAccount}
               addingAccount={addingAccount}
               handleRemoveAccount={handleRemoveAccount}
+              bulkMode={bulkMode}
+              setBulkMode={setBulkMode}
+              bulkQty={bulkQty}
+              setBulkQty={setBulkQty}
             />
           ))}
         </Reorder.Group>
@@ -832,6 +879,31 @@ export default function AdminShopPage() {
                 />
                 <span className="text-sm font-bold text-slate-700">⭐ สินค้าแนะนำ (แสดงใน section พิเศษหน้าร้านค้า)</span>
               </label>
+
+              {/* Require UID toggle */}
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2.5 cursor-pointer bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={form.requireUid}
+                    onChange={(e) => setForm((f) => ({ ...f, requireUid: e.target.checked }))}
+                    className="accent-blue-600 w-4 h-4"
+                  />
+                  <span className="text-sm font-bold text-slate-700">🎮 บังคับกรอก UID / ไอดีก่อนซื้อ</span>
+                </label>
+                {form.requireUid && (
+                  <div className="flex flex-col gap-1.5 pl-1">
+                    <label className="text-xs font-bold text-slate-600">ชื่อ label ที่จะแสดงให้ผู้ซื้อเห็น</label>
+                    <input
+                      type="text"
+                      value={form.uidLabel}
+                      onChange={(e) => setForm((f) => ({ ...f, uidLabel: e.target.value }))}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                      placeholder="เช่น UID เกม, ไอดีผู้เล่น, เลขบัญชี..."
+                    />
+                  </div>
+                )}
+              </div>
 
               {/* Status */}
               <div className="flex flex-col gap-1.5">

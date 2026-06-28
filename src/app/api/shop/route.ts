@@ -20,6 +20,8 @@ export async function GET() {
       youtubeUrl: l.youtubeUrl,
       categoryId: l.categoryId ? String(l.categoryId) : null,
       isFeatured: !!l.isFeatured,
+      requireUid: !!l.requireUid,
+      uidLabel: l.uidLabel || "UID / ไอดีผู้เล่น",
       createdAt: l.createdAt,
     }));
 

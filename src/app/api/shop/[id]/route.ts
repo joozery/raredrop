@@ -9,7 +9,7 @@ import Transaction from "@/models/Transaction";
 
 // POST /api/shop/[id] — buy listing
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -18,11 +18,18 @@ export async function POST(
     if (!buyerId) return NextResponse.json({ error: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
 
     const { id } = await params;
+    const body = await req.json().catch(() => ({}));
+    const buyerUid: string = typeof body?.buyerUid === "string" ? body.buyerUid.trim() : "";
+
     await connectToDatabase();
 
     const listing = await ShopListing.findById(id);
     if (!listing || listing.status !== "active") {
       return NextResponse.json({ error: "ไม่พบสินค้า" }, { status: 404 });
+    }
+
+    if (listing.requireUid && !buyerUid) {
+      return NextResponse.json({ error: `กรุณากรอก ${listing.uidLabel || "UID"} ก่อนซื้อ` }, { status: 400 });
     }
 
     const availableAccount = listing.accounts.find((a: any) => !a.sold);
@@ -56,6 +63,7 @@ export async function POST(
       listingImage: listing.images?.[0] || "",
       pricePaid: listing.price,
       deliveredData: availableAccount.data,
+      ...(buyerUid && { buyerUid }),
     });
 
     // save transaction

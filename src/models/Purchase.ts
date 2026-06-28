@@ -7,6 +7,7 @@ export interface IPurchase extends Document {
   listingImage?: string;
   pricePaid: number;
   deliveredData: string;
+  buyerUid?: string;
   createdAt: Date;
 }
 
@@ -17,6 +18,7 @@ const PurchaseSchema: Schema = new Schema({
   listingImage: { type: String },
   pricePaid: { type: Number, required: true },
   deliveredData: { type: String, required: true },
+  buyerUid: { type: String },
 }, { timestamps: true });
 
 export default mongoose.models.Purchase || mongoose.model<IPurchase>("Purchase", PurchaseSchema);

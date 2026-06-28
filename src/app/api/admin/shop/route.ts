@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     if (!isAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { title, description, images, price, status, liveChatEnabled, youtubeUrl, categoryId, isFeatured } = body;
+    const { title, description, images, price, status, liveChatEnabled, youtubeUrl, categoryId, isFeatured, requireUid, uidLabel } = body;
 
     if (!title || price === undefined) {
       return NextResponse.json({ error: "title and price are required" }, { status: 400 });
@@ -46,6 +46,8 @@ export async function POST(req: Request) {
       youtubeUrl: youtubeUrl || undefined,
       categoryId: categoryId || undefined,
       isFeatured: !!isFeatured,
+      requireUid: !!requireUid,
+      uidLabel: uidLabel || "UID / ไอดีผู้เล่น",
     });
 
     if (listing.status === "active") {

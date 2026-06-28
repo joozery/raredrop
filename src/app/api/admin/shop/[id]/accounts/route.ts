@@ -19,13 +19,15 @@ export async function POST(
     if (!isAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
-    const { data } = await req.json();
+    const { data, quantity } = await req.json();
     if (!data?.trim()) return NextResponse.json({ error: "data is required" }, { status: 400 });
+    const qty = Math.min(Math.max(1, Number(quantity) || 1), 500);
 
     await connectToDatabase();
+    const newAccounts = Array.from({ length: qty }, () => ({ data: data.trim(), sold: false }));
     const listing = await ShopListing.findByIdAndUpdate(
       id,
-      { $push: { accounts: { data: data.trim(), sold: false } } },
+      { $push: { accounts: { $each: newAccounts } } },
       { new: true }
     );
     if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -35,7 +37,7 @@ export async function POST(
       await sendDiscordStockUpdateBroadcast({
         name: listing.title,
         newStock,
-        addedQty: 1,
+        addedQty: qty,
         image: listing.images?.[0],
         productType: "shop",
       });

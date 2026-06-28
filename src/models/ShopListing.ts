@@ -18,6 +18,8 @@ export interface IShopListing extends Document {
   youtubeUrl?: string;
   categoryId?: Types.ObjectId;
   isFeatured: boolean;
+  requireUid: boolean;
+  uidLabel: string;
   order: number;
   createdAt: Date;
   updatedAt: Date;
@@ -45,6 +47,9 @@ const ShopListingSchema: Schema = new Schema({
   categoryId: { type: Schema.Types.ObjectId, ref: "ShopCategory" },
   // สินค้าแนะนำ — แสดงใน section พิเศษหน้าร้านค้า
   isFeatured: { type: Boolean, default: false },
+  // บังคับให้ผู้ซื้อกรอก UID / ไอดีก่อนยืนยันการซื้อ
+  requireUid: { type: Boolean, default: false },
+  uidLabel: { type: String, default: "UID / ไอดีผู้เล่น" },
   // ลำดับการแสดงผล — เรียงจากน้อยไปมาก, ค่าเริ่มต้น 0 ทุกตัว (จะ tiebreak ด้วย createdAt จนกว่าแอดมินจะลากจัดเรียงจริง)
   order: { type: Number, default: 0 },
 }, { timestamps: true });

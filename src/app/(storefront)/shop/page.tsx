@@ -22,6 +22,8 @@ interface ShopItem {
   youtubeUrl?: string;
   categoryId?: string | null;
   isFeatured?: boolean;
+  requireUid?: boolean;
+  uidLabel?: string;
   createdAt: string;
 }
 
@@ -300,6 +302,7 @@ export default function ShopPage() {
   }, []);
 
   const [buyModal, setBuyModal] = useState<ShopItem | null>(null);
+  const [buyerUid, setBuyerUid] = useState("");
   const [isBuying, setIsBuying] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [successData, setSuccessData] = useState<{ purchaseId: string } | null>(null);
@@ -325,9 +328,17 @@ export default function ShopPage() {
   const handleBuy = async () => {
     if (!buyModal || isBuying) return;
     if (!session) { showToast("กรุณาเข้าสู่ระบบก่อน", false); return; }
+    if (buyModal.requireUid && !buyerUid.trim()) {
+      showToast(`กรุณากรอก ${buyModal.uidLabel || "UID"} ก่อนซื้อ`, false);
+      return;
+    }
     setIsBuying(true);
     try {
-      const res = await fetch(`/api/shop/${buyModal._id}`, { method: "POST" });
+      const res = await fetch(`/api/shop/${buyModal._id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buyerUid: buyerUid.trim() || undefined }),
+      });
       const data = await res.json();
       if (!res.ok) { showToast(data.error || "เกิดข้อผิดพลาด", false); setBuyModal(null); return; }
       
@@ -343,12 +354,13 @@ export default function ShopPage() {
 
       // Auto open live chat for the purchased item — เฉพาะสินค้าที่เปิด liveChatEnabled ไว้
       try {
+        const uidLine = buyerUid.trim() ? `\n${purchasedItem.uidLabel || "UID"}: ${buyerUid.trim()}` : "";
         const chatRes = await fetch("/api/user/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subject: `รับสินค้า: ${purchasedItem.title}`,
-            text: `สั่งซื้อสินค้า "${purchasedItem.title}" สำเร็จแล้วครับ (Ref: ${data.purchaseId}) รบกวนส่งข้อมูลให้ด้วยครับ`,
+            text: `สั่งซื้อสินค้า "${purchasedItem.title}" สำเร็จแล้วครับ (Ref: ${data.purchaseId}) รบกวนส่งข้อมูลให้ด้วยครับ${uidLine}`,
             image: purchasedItem.images?.[0],
           }),
         });
@@ -462,7 +474,7 @@ export default function ShopPage() {
           <div className="flex sm:grid gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible hide-scrollbar pb-1 sm:pb-0 snap-x snap-mandatory sm:snap-none sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4">
             {featuredItems.slice(0, 4).map((item) => (
               <div key={item._id} className="w-[calc(50%-0.375rem)] sm:w-auto shrink-0 snap-start sm:snap-align-none">
-                <ShopItemCard item={item} onBuy={setBuyModal} />
+                <ShopItemCard item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); }} />
               </div>
             ))}
           </div>
@@ -522,7 +534,7 @@ export default function ShopPage() {
       ) : (
         <div className={`grid gap-4 ${viewMode === "grid" ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"}`}>
           {filtered.map((item) => (
-            <ShopItemCard key={item._id} item={item} onBuy={setBuyModal} />
+            <ShopItemCard key={item._id} item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); }} />
           ))}
         </div>
       )}
@@ -554,6 +566,23 @@ export default function ShopPage() {
                   >
                     <Play size={15} /> ดูวิธีใช้งาน
                   </a>
+                </div>
+              )}
+
+              {/* UID input — แสดงเฉพาะสินค้าที่ต้องการ */}
+              {buyModal.requireUid && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-gray-700">
+                    {buyModal.uidLabel || "UID / ไอดีผู้เล่น"} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={buyerUid}
+                    onChange={(e) => setBuyerUid(e.target.value)}
+                    placeholder={`กรอก${buyModal.uidLabel || "UID"} ของคุณ`}
+                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-800"
+                  />
+                  <p className="text-[11px] text-gray-400">ทีมงานจะใช้ข้อมูลนี้เพื่อส่งสินค้าให้คุณ</p>
                 </div>
               )}
 
@@ -598,7 +627,11 @@ export default function ShopPage() {
                   เข้าสู่ระบบ
                 </Link>
               ) : balance >= buyModal.price ? (
-                <button onClick={handleBuy} disabled={isBuying} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-gray-400 transition-colors text-sm">
+                <button
+                  onClick={handleBuy}
+                  disabled={isBuying || (buyModal.requireUid && !buyerUid.trim())}
+                  className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-gray-400 transition-colors text-sm"
+                >
                   {isBuying ? "กำลังดำเนินการ..." : "ยืนยันซื้อ"}
                 </button>
               ) : (

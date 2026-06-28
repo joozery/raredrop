@@ -25,9 +25,7 @@ export function LiveChatWidget() {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
-  const [openCases, setOpenCases] = useState(0);
 
-  // มุมมอง: รายการเคส หรือ ในเคส
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -37,6 +35,8 @@ export function LiveChatWidget() {
   const [sending, setSending] = useState(false);
   const [pendingImage, setPendingImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [newChatText, setNewChatText] = useState("");
+  const [startingChat, setStartingChat] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,7 +56,6 @@ export function LiveChatWidget() {
       if (res.ok) {
         const data = await res.json();
         setUnread(data.unread || 0);
-        setOpenCases(data.openCases || 0);
       }
     } catch {}
   }, []);
@@ -73,7 +72,7 @@ export function LiveChatWidget() {
     } catch {}
   }, []);
 
-  // เปิด widget จากที่อื่น (popup ขอรับของจริง) — เปิดตรงเข้าเคสที่ระบุ
+  // เปิด widget จากที่อื่น (popup ขอรับของจริง)
   useEffect(() => {
     const handler = (e: Event) => {
       const cid = (e as CustomEvent).detail?.conversationId;
@@ -84,7 +83,7 @@ export function LiveChatWidget() {
     return () => window.removeEventListener("open-livechat", handler as EventListener);
   }, []);
 
-  // poll unread เมื่อปิด panel
+  // poll unread badge เมื่อปิด panel
   useEffect(() => {
     if (!session || open) return;
     loadUnread();
@@ -92,7 +91,7 @@ export function LiveChatWidget() {
     return () => clearInterval(t);
   }, [session, open, loadUnread]);
 
-  // เมื่อเปิด panel และอยู่หน้ารายการ → โหลด+poll รายการเคส
+  // poll รายการเคสเมื่ออยู่หน้า list
   useEffect(() => {
     if (!open || activeId) return;
     loadConversations();
@@ -100,7 +99,7 @@ export function LiveChatWidget() {
     return () => clearInterval(t);
   }, [open, activeId, loadConversations]);
 
-  // เมื่ออยู่ในเคส → โหลด+poll ข้อความ
+  // poll ข้อความเมื่ออยู่ในเคส
   useEffect(() => {
     if (!open || !activeId) return;
     loadMessages(activeId);
@@ -169,14 +168,37 @@ export function LiveChatWidget() {
     }
   };
 
-  const fmtTime = (iso: string) => new Date(iso).toLocaleString("th-TH", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  // เปิดแชทโดยตรง — ไม่ต้องผ่าน flow ขอรับของ
+  const startChat = async () => {
+    const text = newChatText.trim();
+    if (!text || startingChat) return;
+    setStartingChat(true);
+    try {
+      const res = await fetch("/api/user/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: "สอบถามทั่วไป", text }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNewChatText("");
+        await loadConversations();
+        setActiveId(data.conversationId);
+      }
+    } catch {} finally {
+      setStartingChat(false);
+    }
+  };
+
+  const fmtTime = (iso: string) =>
+    new Date(iso).toLocaleString("th-TH", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
   if (!session) return null;
 
   return (
     <>
-      {/* Floating button — โชว์เฉพาะเมื่อมีเคสที่ยังเปิด หรือมีข้อความที่ยังไม่อ่าน */}
-      {!open && (openCases > 0 || unread > 0) && (
+      {/* ปุ่มลอย — แสดงตลอดเวลาสำหรับ user ที่ login แล้ว */}
+      {!open && (
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-20 lg:bottom-6 right-4 lg:right-6 z-40 w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-500/30 flex items-center justify-center transition-colors"
@@ -206,7 +228,7 @@ export function LiveChatWidget() {
               )}
               <div className="min-w-0">
                 <p className="font-bold text-sm leading-tight truncate">{activeId ? (activeSubject || "แชท") : "ศูนย์ช่วยเหลือ"}</p>
-                <p className="text-[11px] text-red-100 truncate">{activeId ? (activeStatus === "closed" ? "เคสถูกปิดแล้ว" : "กำลังดำเนินการ") : "เคสทั้งหมดของคุณ"}</p>
+                <p className="text-[11px] text-red-100 truncate">{activeId ? (activeStatus === "closed" ? "เคสถูกปิดแล้ว" : "กำลังดำเนินการ") : "ติดต่อทีมงานได้เลย"}</p>
               </div>
             </div>
             <button onClick={() => { setOpen(false); setActiveId(null); }} className="p-1 rounded-full hover:bg-white/20 transition-colors shrink-0">
@@ -214,15 +236,15 @@ export function LiveChatWidget() {
             </button>
           </div>
 
-          {/* รายการเคส */}
+          {/* หน้า list เคส / เปิดแชทใหม่ */}
           {!activeId ? (
             <>
               <div className="flex-1 overflow-y-auto">
                 {conversations.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 gap-2 p-6">
                     <MessageCircle size={36} className="opacity-30" />
-                    <p className="text-sm font-medium">ยังไม่มีเคส</p>
-                    <p className="text-xs">เคสจะถูกสร้างเมื่อคุณกด “รับ item” แล้วเลือกแชทกับทีมงาน</p>
+                    <p className="text-sm font-medium text-gray-600">สวัสดี! มีอะไรให้ช่วยไหม?</p>
+                    <p className="text-xs">พิมพ์ข้อความด้านล่างเพื่อเริ่มแชทกับทีมงาน</p>
                   </div>
                 ) : (
                   conversations.map((c) => (
@@ -253,6 +275,27 @@ export function LiveChatWidget() {
                   ))
                 )}
               </div>
+
+              {/* input เปิดแชทใหม่ — แสดงเฉพาะเมื่อยังไม่มีเคส */}
+              {conversations.length === 0 && (
+                <div className="border-t border-gray-100 p-3 flex items-center gap-2 shrink-0">
+                  <input
+                    type="text"
+                    value={newChatText}
+                    onChange={(e) => setNewChatText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") startChat(); }}
+                    placeholder="พิมพ์ข้อความ..."
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-800"
+                  />
+                  <button
+                    onClick={startChat}
+                    disabled={startingChat || !newChatText.trim()}
+                    className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center hover:bg-red-700 disabled:bg-gray-300 transition-colors shrink-0"
+                  >
+                    {startingChat ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <>
