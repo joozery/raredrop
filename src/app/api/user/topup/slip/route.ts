@@ -35,14 +35,13 @@ export async function POST(req: Request) {
 
     // โหลดบัญชีผู้รับที่ตั้งไว้ในหลังบ้าน
     const paymentSettings = await Setting.find({
-      key: { $in: ["payment_method", "payment_qr_account_number", "payment_qr_account_type", "promptpay_number"] },
+      key: { $in: ["payment_method", "payment_qr_account_number", "promptpay_number"] },
     }).lean();
     const getSetting = (key: string) =>
       (paymentSettings.find((s: any) => s.key === key) as any)?.value;
     const paymentMethod = String(getSetting("payment_method") || "promptpay");
     const normalize = (v: string) => String(v || "").replace(/[^0-9A-Za-z]/g, "");
     const qrAccountNumber = normalize(getSetting("payment_qr_account_number") || "");
-    const qrAccountType = normalize(getSetting("payment_qr_account_type") || "");
     const promptpayNumber = normalize(getSetting("promptpay_number") || "");
 
     // slipBase64 เป็น data URI เต็มรูปแบบจาก FileReader.readAsDataURL (เช่น "data:image/jpeg;base64,...")
@@ -52,11 +51,6 @@ export async function POST(req: Request) {
     const fileBuffer = Buffer.from(rawBase64, "base64");
 
     const conditionPayload: Record<string, unknown> = { checkDuplicate: true };
-    if (paymentMethod === "qr_image" && qrAccountNumber && qrAccountType) {
-      conditionPayload.checkReceiver = [{ accountType: qrAccountType, accountNumber: qrAccountNumber }];
-    } else if (paymentMethod === "promptpay" && promptpayNumber) {
-      conditionPayload.checkReceiver = [{ accountNumber: promptpayNumber }];
-    }
 
     const formData = new FormData();
     formData.append("file", new Blob([fileBuffer], { type: mimeType }), "slip.jpg");
@@ -79,6 +73,20 @@ export async function POST(req: Request) {
       console.error("Slip error:", JSON.stringify(data, null, 2));
       const friendlyMessage = SLIP_RESULT_MESSAGES[data.code] || data.message || "สลิปไม่ถูกต้อง หรือถูกใช้งานไปแล้ว";
       return NextResponse.json({ error: friendlyMessage }, { status: 400 });
+    }
+
+    // ตรวจ receiver เอง — Slip2Go mask บัญชีไว้ ใช้ suffix 4 ตัวท้ายเทียบ
+    const expectedAccount = paymentMethod === "promptpay" ? promptpayNumber : qrAccountNumber;
+    if (expectedAccount) {
+      const proxyAccount = normalize(data.data?.receiver?.account?.proxy?.account || "");
+      const suffix = expectedAccount.slice(-4);
+      if (!proxyAccount || !proxyAccount.endsWith(suffix)) {
+        console.error("Receiver mismatch — expected suffix:", suffix, "got proxy:", proxyAccount);
+        return NextResponse.json(
+          { error: "สลิปนี้โอนเข้าบัญชีอื่น ไม่ใช่บัญชีร้านค้าของเรา" },
+          { status: 400 }
+        );
+      }
     }
 
     // ดึงจำนวนเงินจากผลลัพธ์ของ API
