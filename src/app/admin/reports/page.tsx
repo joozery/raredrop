@@ -281,8 +281,8 @@ export default function ReportsPage() {
                           <span className="text-xs font-bold text-slate-800 truncate max-w-[120px]">{box.name}</span>
                         </div>
                       </td>
-                      <td className="py-2 px-2 text-xs font-bold text-slate-600">{box.openCount.toLocaleString()}</td>
-                      <td className="py-2 px-2 text-xs font-black text-blue-600">฿{box.revenue.toLocaleString()}</td>
+                      <td className="py-2 px-2 text-xs font-bold text-slate-600">{(box.openCount ?? 0).toLocaleString()}</td>
+                      <td className="py-2 px-2 text-xs font-black text-blue-600">฿{(box.revenue ?? 0).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -334,7 +334,7 @@ export default function ReportsPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-2 px-2 text-xs font-black text-slate-700">{item.count.toLocaleString()}</td>
+                      <td className="py-2 px-2 text-xs font-black text-slate-700">{(item.count ?? 0).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
