@@ -22,7 +22,8 @@ export async function GET(req: Request) {
     .populate({ path: "boxId", model: Box, select: "name image price" })
     .sort({ createdAt: -1 });
 
-  return NextResponse.json(sales);
+  // กรอง record ที่ Box ถูกลบไปแล้ว (boxId = null หลัง populate)
+  return NextResponse.json(sales.filter((s: any) => s.boxId != null));
 }
 
 export async function POST(req: Request) {

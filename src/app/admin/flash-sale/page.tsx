@@ -179,7 +179,7 @@ export default function FlashSalePage() {
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-slate-100/80">
-              {sales.map((s) => {
+              {sales.filter((s) => s.boxId != null).map((s) => {
                 const disc = Math.round((1 - s.salePrice / s.boxId.price) * 100);
                 const expired = new Date(s.endsAt) <= new Date();
                 return (

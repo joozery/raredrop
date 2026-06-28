@@ -13,7 +13,7 @@ import { useBalance } from "@/contexts/BalanceContext";
 export function Header() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
+  const [logoUrl, setLogoUrl] = useState("");
   const [siteName, setSiteName] = useState("RareDrop");
   const [gemcoinIcon, setGemcoinIcon] = useState("");
   const { data: session } = useSession();
@@ -41,9 +41,11 @@ export function Header() {
       <header className="bg-white border-b border-gray-100 shrink-0 flex flex-col z-40 relative">
         {/* Mobile Top Bar */}
         <div className="flex lg:hidden w-full items-center justify-between px-4 py-3">
-          <div className="flex items-center">
-            <img src={logoUrl} alt={`${siteName} Logo`} className="h-7 w-auto object-contain" />
-          </div>
+          {logoUrl && (
+            <div className="flex items-center">
+              <img src={logoUrl} alt={siteName} className="h-7 w-auto object-contain" />
+            </div>
+          )}
           <div className="flex items-center gap-3">
             {session && (
               <div className="flex items-center gap-1.5">
