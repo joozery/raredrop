@@ -17,6 +17,7 @@ export interface IUser extends Document {
   referredBy?: Types.ObjectId;
   referralFlagged?: boolean;
   signupIp?: string;
+  hideFromLeaderboard?: boolean;
   createdAt: Date;
 }
 
@@ -38,6 +39,7 @@ const UserSchema: Schema = new Schema({
   // true = ตรวจพบ IP สมัครซ้ำกับผู้เชิญหรือคนอื่นที่ผู้เชิญคนนี้เชิญมาแล้ว — ไม่ได้รับรางวัล GemCoin
   referralFlagged: { type: Boolean, default: false },
   signupIp: { type: String },
+  hideFromLeaderboard: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

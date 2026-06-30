@@ -45,6 +45,42 @@ function formatLocalDatetime(iso: string) {
   return `${thTime.getUTCFullYear()}-${pad(thTime.getUTCMonth() + 1)}-${pad(thTime.getUTCDate())}T${pad(thTime.getUTCHours())}:${pad(thTime.getUTCMinutes())}`;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const pad = (n: number) => n.toString().padStart(2, "0");
+
+// คืน "YYYY-MM-DD" ของวันไทย + offsetDays
+function thaiDateStr(offsetDays = 0) {
+  const th = new Date(Date.now() + 7 * 60 * 60 * 1000 + offsetDays * DAY_MS);
+  return `${th.getUTCFullYear()}-${pad(th.getUTCMonth() + 1)}-${pad(th.getUTCDate())}`;
+}
+
+// คืน datetime-local string จาก วัน + เวลา "HH:MM" (เวลาไทย)
+function buildDatetimeLocal(dateStr: string, time: string) {
+  return `${dateStr}T${time}`;
+}
+
+// บวก duration นาทีกับ datetime-local string
+function addMinutes(datetimeLocal: string, minutes: number) {
+  const ms = new Date(datetimeLocal + "+07:00").getTime() + minutes * 60 * 1000;
+  const th = new Date(ms + 7 * 60 * 60 * 1000);
+  return `${th.getUTCFullYear()}-${pad(th.getUTCMonth() + 1)}-${pad(th.getUTCDate())}T${pad(th.getUTCHours())}:${pad(th.getUTCMinutes())}`;
+}
+
+const DAY_PRESETS = [
+  { label: "วันนี้", days: 0 },
+  { label: "+1 วัน", days: 1 },
+  { label: "+2 วัน", days: 2 },
+  { label: "+3 วัน", days: 3 },
+];
+const TIME_PRESETS = ["18:00", "19:00", "20:00", "21:00", "22:00"];
+const DURATION_PRESETS = [
+  { label: "30น.", minutes: 30 },
+  { label: "1ชม.", minutes: 60 },
+  { label: "2ชม.", minutes: 120 },
+  { label: "3ชม.", minutes: 180 },
+  { label: "24ชม.", minutes: 1440 },
+];
+
 type RoundForm = {
   label: string; image: string; rewardType: "cash" | "item"; totalAmount: string; itemId: string;
   conditionAmount: string; conditionLevel: string; maxPeople: string; scheduledAt: string; endsAt: string;
@@ -74,6 +110,8 @@ export default function AdminRedEnvelopePage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [needsResetConfirm, setNeedsResetConfirm] = useState(false);
+  const [presetTime, setPresetTime] = useState("20:00");
+  const [presetDuration, setPresetDuration] = useState(60);
 
   // Item catalog management (แยกจากไอเทมร้านค้า/กล่องสุ่มโดยสิ้นเชิง)
   const [itemModal, setItemModal] = useState<"create" | "edit" | null>(null);
@@ -534,27 +572,105 @@ export default function AdminRedEnvelopePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* ── ตั้งเวลาล่วงหน้า ── */}
+              <div className="flex flex-col gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p className="text-xs font-bold text-slate-600">ตั้งเวลาล่วงหน้า</p>
+
+                {/* เลือกเวลา */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-slate-600">เริ่มรับสมัคร *</label>
-                  <input
-                    type="datetime-local"
-                    value={form.scheduledAt}
-                    onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
-                  />
+                  <span className="text-[11px] text-slate-500 font-medium">เวลาเริ่ม</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {TIME_PRESETS.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setPresetTime(t)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                          presetTime === t
+                            ? "bg-red-600 text-white border-red-600"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-red-300 hover:text-red-600"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                    <input
+                      type="time"
+                      value={presetTime}
+                      onChange={(e) => setPresetTime(e.target.value)}
+                      className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-red-400"
+                    />
+                  </div>
                 </div>
+
+                {/* เลือกระยะเวลา */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-slate-600">ปิดรับ/เส้นตาย *</label>
-                  <input
-                    type="datetime-local"
-                    value={form.endsAt}
-                    onChange={(e) => setForm((f) => ({ ...f, endsAt: e.target.value }))}
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
-                  />
+                  <span className="text-[11px] text-slate-500 font-medium">ระยะเวลาแจก</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {DURATION_PRESETS.map(({ label, minutes }) => (
+                      <button
+                        key={minutes}
+                        type="button"
+                        onClick={() => setPresetDuration(minutes)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                          presetDuration === minutes
+                            ? "bg-red-600 text-white border-red-600"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-red-300 hover:text-red-600"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* เลือกวัน → กดแล้ว fill ทั้ง scheduledAt + endsAt */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] text-slate-500 font-medium">วันที่</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {DAY_PRESETS.map(({ label, days }) => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => {
+                          const start = buildDatetimeLocal(thaiDateStr(days), presetTime);
+                          const end = addMinutes(start, presetDuration);
+                          setForm((f) => ({ ...f, scheduledAt: start, endsAt: end }));
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-400 -mt-2">ถ้าครบจำนวนคนก่อน จะจับรางวัลทันที ถ้าไม่ครบจะจับรางวัลจากคนที่เข้าร่วมไว้ตอนถึงเส้นตาย</p>
+
+              {/* ช่อง datetime-local — แก้ละเอียดได้เอง */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-slate-600">ช่วงเวลาแจก *</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[11px] text-slate-400 font-medium">เริ่มรับสมัคร</span>
+                    <input
+                      type="datetime-local"
+                      value={form.scheduledAt}
+                      onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[11px] text-slate-400 font-medium">ปิดรับ / เส้นตาย</span>
+                    <input
+                      type="datetime-local"
+                      value={form.endsAt}
+                      onChange={(e) => setForm((f) => ({ ...f, endsAt: e.target.value }))}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                    />
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-400">ถ้าครบจำนวนคนก่อน จะจับรางวัลทันที · แก้เวลาในช่องด้านบนได้โดยตรง</p>
+              </div>
 
               {needsResetConfirm && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">

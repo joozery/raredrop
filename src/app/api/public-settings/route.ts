@@ -13,6 +13,7 @@ const PUBLIC_KEYS = [
   "payment_method", "payment_qr_image", "min_topup_amount",
   "popup_enabled", "popup_image", "popup_link", "popup_dismiss_hours",
   "crypto_enabled", "crypto_wallet_address", "crypto_network", "crypto_rate_per_unit",
+  "livechat_welcome_message",
 ];
 
 export async function GET() {

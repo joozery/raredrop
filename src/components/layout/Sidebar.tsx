@@ -17,7 +17,8 @@ import {
   Play,
   Coins,
   Gift,
-  Gamepad2
+  Gamepad2,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ const menuItems = [
   { name: "กล่องสุ่ม", icon: Package, href: "/boxes" },
   { name: "ร้านค้า", icon: Briefcase, href: "/shop" },
   { name: "ซองแดง", icon: Gift, href: "/red-envelope" },
+  { name: "จัดอันดับเติมเงิน", icon: Trophy, href: "/leaderboard" },
   { name: "คอลเลกชันของฉัน", icon: LibrarySquare, href: "/inventory" },
   { name: "แลก GemCoin", icon: Coins, href: "/exchange" },
   { name: "วิธีการเล่น", icon: Gamepad2, href: "/knowledge-base" },

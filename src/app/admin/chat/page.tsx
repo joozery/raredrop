@@ -36,8 +36,30 @@ export default function AdminChatPage() {
   const [search, setSearch] = useState("");
   const [pendingImage, setPendingImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [welcomeMsgInput, setWelcomeMsgInput] = useState("");
+  const [savingWelcome, setSavingWelcome] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => setWelcomeMsgInput(d.livechat_welcome_message || ""))
+      .catch(() => {});
+  }, []);
+
+  const saveWelcomeMsg = async () => {
+    setSavingWelcome(true);
+    try {
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "livechat_welcome_message", value: welcomeMsgInput.trim() }),
+      });
+    } catch {} finally {
+      setSavingWelcome(false);
+    }
+  };
 
   const loadConversations = useCallback(async () => {
     try {
@@ -181,6 +203,33 @@ export default function AdminChatPage() {
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">Live Chat (แชทกับลูกค้า)</h1>
         <p className="text-sm text-slate-500 mt-1">ตอบกลับข้อความจากลูกค้าที่ติดต่อผ่านแชทในเว็บ</p>
+      </div>
+
+      {/* Welcome message setting */}
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="shrink-0">
+            <p className="text-sm font-bold text-slate-700">ข้อความต้อนรับ Livechat</p>
+            <p className="text-xs text-slate-400 mt-0.5">แสดงเป็น bubble เมื่อ user เปิดแชทครั้งแรก</p>
+          </div>
+          <div className="flex items-center gap-2 flex-1">
+            <input
+              type="text"
+              value={welcomeMsgInput}
+              onChange={(e) => setWelcomeMsgInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") saveWelcomeMsg(); }}
+              placeholder="เช่น สวัสดีครับ มีอะไรให้ช่วยไหมครับ?"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-700"
+            />
+            <button
+              onClick={saveWelcomeMsg}
+              disabled={savingWelcome}
+              className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:bg-slate-300 transition-colors shrink-0"
+            >
+              {savingWelcome ? "กำลังบันทึก..." : "บันทึก"}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex overflow-hidden h-[calc(100vh-220px)] min-h-[480px]">

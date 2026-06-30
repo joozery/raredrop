@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, Settings, LogOut, Gamepad2 } from 'lucide-react';
+import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, Settings, LogOut, Gamepad2, EyeOff } from 'lucide-react';
 import { InviteFriendModal } from "@/components/profile/InviteFriendModal";
 import { RedeemCodeModal } from "@/components/profile/RedeemCodeModal";
 
@@ -30,6 +30,8 @@ export default function ProfilePage() {
   const [gemcoinIcon, setGemcoinIcon] = useState("");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [hideFromLeaderboard, setHideFromLeaderboard] = useState(false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,7 +84,28 @@ export default function ProfilePage() {
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setLevelInfo(d))
       .catch(() => {});
+    fetch("/api/user/settings")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setHideFromLeaderboard(!!d.hideFromLeaderboard))
+      .catch(() => {});
   }, [session]);
+
+  const handleToggleLeaderboardPrivacy = async () => {
+    const next = !hideFromLeaderboard;
+    setSavingPrivacy(true);
+    setHideFromLeaderboard(next);
+    try {
+      await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hideFromLeaderboard: next }),
+      });
+    } catch {
+      setHideFromLeaderboard(!next); // rollback
+    } finally {
+      setSavingPrivacy(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-full bg-white pb-24">
@@ -284,9 +307,36 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Privacy Settings */}
+        {session && (
+          <div className="mt-6 border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">ความเป็นส่วนตัว</p>
+            </div>
+            <button
+              onClick={handleToggleLeaderboardPrivacy}
+              disabled={savingPrivacy}
+              className="w-full flex items-center gap-3 px-4 py-4 bg-white hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                <EyeOff size={18} className="text-purple-500" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-bold text-gray-800">ซ่อนชื่อในกระดานอันดับ</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  {hideFromLeaderboard ? "ชื่อจะแสดงเป็น ju*** แทนชื่อจริง" : "ชื่อจริงของคุณจะแสดงในกระดานอันดับ"}
+                </p>
+              </div>
+              <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${hideFromLeaderboard ? "bg-purple-500" : "bg-gray-200"} ${savingPrivacy ? "opacity-50" : ""}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${hideFromLeaderboard ? "translate-x-6" : "translate-x-1"}`} />
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* Logout Button */}
         {session && (
-          <div className="mt-8 px-2">
+          <div className="mt-4 px-2">
             <button 
               onClick={() => signOut({ callbackUrl: "/" })}
               className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 font-bold rounded-xl py-3.5 flex items-center justify-center gap-2 transition-colors shadow-sm"

@@ -20,6 +20,7 @@ export async function POST(
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
     const buyerUid: string = typeof body?.buyerUid === "string" ? body.buyerUid.trim() : "";
+    const quantity: number = Math.max(1, Math.floor(Number(body?.quantity) || 1));
 
     await connectToDatabase();
 
@@ -32,54 +33,67 @@ export async function POST(
       return NextResponse.json({ error: `กรุณากรอก ${listing.uidLabel || "UID"} ก่อนซื้อ` }, { status: 400 });
     }
 
-    const availableAccount = listing.accounts.find((a: any) => !a.sold);
-    if (!availableAccount) {
+    const availableAccounts = listing.accounts.filter((a: any) => !a.sold).slice(0, quantity);
+    if (availableAccounts.length === 0) {
       return NextResponse.json({ error: "สินค้าหมดแล้ว" }, { status: 400 });
     }
+    if (availableAccounts.length < quantity) {
+      return NextResponse.json({ error: `สินค้าเหลือเพียง ${availableAccounts.length} ชิ้น` }, { status: 400 });
+    }
+
+    const totalPrice = listing.price * availableAccounts.length;
 
     const buyer = await User.findById(buyerId);
-    if (!buyer || buyer.coins < listing.price) {
+    if (!buyer || buyer.coins < totalPrice) {
       return NextResponse.json({ error: "เหรียญไม่เพียงพอ" }, { status: 400 });
     }
 
-    // mark account as sold
-    availableAccount.sold = true;
-    availableAccount.soldTo = buyerId;
-    availableAccount.soldAt = new Date();
+    // mark accounts as sold
+    const now = new Date();
+    for (const account of availableAccounts) {
+      account.sold = true;
+      account.soldTo = buyerId;
+      account.soldAt = now;
+    }
     await listing.save();
 
     // deduct coins
     const updatedBuyer = await User.findByIdAndUpdate(
       buyerId,
-      { $inc: { coins: -listing.price } },
+      { $inc: { coins: -totalPrice } },
       { new: true }
     );
 
-    // save purchase record
-    const purchase = await Purchase.create({
-      userId: buyerId,
-      shopListingId: listing._id,
-      listingTitle: listing.title,
-      listingImage: listing.images?.[0] || "",
-      pricePaid: listing.price,
-      deliveredData: availableAccount.data,
-      ...(buyerUid && { buyerUid }),
-    });
+    // save purchase records (one per item)
+    const purchases = await Purchase.insertMany(
+      availableAccounts.map((account: any) => ({
+        userId: buyerId,
+        shopListingId: listing._id,
+        listingTitle: listing.title,
+        listingImage: listing.images?.[0] || "",
+        pricePaid: listing.price,
+        deliveredData: account.data,
+        ...(buyerUid && { buyerUid }),
+      }))
+    );
 
-    // save transaction
+    // save transaction (one combined)
     await Transaction.create({
       userId: buyerId,
       type: "shop_buy",
-      amount: -listing.price,
+      amount: -totalPrice,
       balanceAfter: updatedBuyer!.coins,
-      description: `ซื้อ "${listing.title}" จากร้านค้า`,
-      referenceId: purchase._id,
+      description: availableAccounts.length > 1
+        ? `ซื้อ "${listing.title}" x${availableAccounts.length} จากร้านค้า`
+        : `ซื้อ "${listing.title}" จากร้านค้า`,
+      referenceId: purchases[0]._id,
     });
 
     return NextResponse.json({
       success: true,
       coinsLeft: updatedBuyer!.coins,
-      purchaseId: purchase._id,
+      purchaseId: purchases[0]._id,
+      quantity: availableAccounts.length,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

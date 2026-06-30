@@ -37,6 +37,8 @@ export function LiveChatWidget() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [newChatText, setNewChatText] = useState("");
   const [startingChat, setStartingChat] = useState(false);
+  const [welcomeMsg, setWelcomeMsg] = useState("");
+  const [welcomeLoaded, setWelcomeLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,6 +84,15 @@ export function LiveChatWidget() {
     window.addEventListener("open-livechat", handler as EventListener);
     return () => window.removeEventListener("open-livechat", handler as EventListener);
   }, []);
+
+  // โหลดข้อความต้อนรับครั้งแรกที่เปิด widget
+  useEffect(() => {
+    if (!open || welcomeLoaded) return;
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => { setWelcomeMsg(d.livechat_welcome_message || ""); setWelcomeLoaded(true); })
+      .catch(() => setWelcomeLoaded(true));
+  }, [open, welcomeLoaded]);
 
   // poll unread badge เมื่อปิด panel
   useEffect(() => {
@@ -241,11 +252,21 @@ export function LiveChatWidget() {
             <>
               <div className="flex-1 overflow-y-auto">
                 {conversations.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 gap-2 p-6">
-                    <MessageCircle size={36} className="opacity-30" />
-                    <p className="text-sm font-medium text-gray-600">สวัสดี! มีอะไรให้ช่วยไหม?</p>
-                    <p className="text-xs">พิมพ์ข้อความด้านล่างเพื่อเริ่มแชทกับทีมงาน</p>
-                  </div>
+                  welcomeMsg ? (
+                    <div className="p-4 flex flex-col gap-2.5">
+                      <div className="flex justify-start">
+                        <div className="max-w-[85%] px-3.5 py-2.5 rounded-2xl rounded-bl-sm text-sm font-medium bg-white text-gray-800 border border-gray-100 shadow-sm leading-relaxed">
+                          {welcomeMsg}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 gap-2 p-6">
+                      <MessageCircle size={36} className="opacity-30" />
+                      <p className="text-sm font-medium text-gray-600">สวัสดี! มีอะไรให้ช่วยไหม?</p>
+                      <p className="text-xs">พิมพ์ข้อความด้านล่างเพื่อเริ่มแชทกับทีมงาน</p>
+                    </div>
+                  )
                 ) : (
                   conversations.map((c) => (
                     <button

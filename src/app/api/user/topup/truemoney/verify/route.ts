@@ -16,6 +16,47 @@ function parseThaiTime(value: string): Date {
   return new Date(value.replace(" ", "T") + "+07:00");
 }
 
+async function processMatch(pending: any, received: any, receivedBaht: number) {
+  let updated;
+  try {
+    updated = await TrueMoneyTopup.findOneAndUpdate(
+      { _id: pending._id, status: "pending" },
+      { $set: { status: "completed", transactionId: received.transaction_id, completedAt: new Date() } },
+      { new: true }
+    );
+  } catch (err: any) {
+    if (err?.code === 11000) return; // duplicate transactionId — already processed
+    throw err;
+  }
+  if (!updated) return; // already processed by another concurrent call
+
+  const user = await User.findByIdAndUpdate(
+    pending.userId,
+    { $inc: { coins: pending.amount } },
+    { new: true }
+  );
+
+  if (user) {
+    await Transaction.create({
+      userId: user._id,
+      type: "topup",
+      amount: pending.amount,
+      balanceAfter: user.coins,
+      description: "เติมเงินผ่าน TrueMoney Wallet",
+    });
+    await notify(
+      user._id.toString(),
+      "เติมเงินสำเร็จ! 💰",
+      `ยอดเงิน ฿${pending.amount.toLocaleString()} เข้าบัญชีของคุณแล้ว (ยอดรวม ฿${user.coins.toLocaleString()})`,
+      "success"
+    );
+
+    const expRate = await getExpPerBaht();
+    const xpToAdd = Math.floor(pending.amount * expRate);
+    if (xpToAdd > 0) await awardXp(user._id.toString(), xpToAdd);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -29,6 +70,11 @@ export async function POST(req: Request) {
 
     const record = await TrueMoneyTopup.findOne({ _id: requestId, userId });
     if (!record) return NextResponse.json({ error: "ไม่พบรายการนี้" }, { status: 404 });
+
+    // ถ้า record นี้ complete แล้ว (จาก call อื่น) — return success ทันที
+    if (record.status === "completed") {
+      return NextResponse.json({ success: true, amount: record.amount });
+    }
     if (record.status !== "pending") {
       return NextResponse.json({ success: false, message: "รายการนี้ดำเนินการไปแล้ว" });
     }
@@ -46,59 +92,38 @@ export async function POST(req: Request) {
     }
 
     const received = data.data;
-    // โค้ดอ้างอิงเฉพาะตัว (ฝังไว้ใน message ตอนสร้างลิงก์) คือตัวเช็คหลัก — TrueMoney ส่งข้อความนี้กลับมาเป๊ะ
-    // เมื่อลูกค้าจ่ายผ่านลิงก์ที่เราสร้าง แม่นยำกว่าเช็คแค่ยอดเงิน/เวลา
-    const codeMatches = !!received.message && received.message.includes(record.matchCode);
-    // my-last-receive ส่ง amount เป็นสตางค์ (เช่น 516 = ฿5.16) ต่างจาก transfer-link-generator ที่รับเป็นบาท
+    // my-last-receive ส่ง amount เป็นสตางค์ (เช่น 1000 = ฿10.00)
     const receivedBaht = Number(received.amount) / 100;
-    const amountMatches = Math.abs(receivedBaht - record.amount) < 0.005;
-    const isRecent = parseThaiTime(received.received_time) >= record.createdAt;
     const receiverMatches = !truemoneyNumber || received.receiver_mobile === truemoneyNumber;
 
-    if (!codeMatches || !amountMatches || !isRecent || !receiverMatches) {
-      return NextResponse.json({ success: false, message: NOT_FOUND_MESSAGE });
-    }
+    // ตรวจว่า transactionId นี้ถูก process ไปแล้วหรือยัง
+    const alreadyDone = received.transaction_id
+      ? await TrueMoneyTopup.findOne({ transactionId: received.transaction_id })
+      : null;
 
-    let updated;
-    try {
-      updated = await TrueMoneyTopup.findOneAndUpdate(
-        { _id: requestId, status: "pending" },
-        { $set: { status: "completed", transactionId: received.transaction_id, completedAt: new Date() } },
-        { new: true }
-      );
-    } catch (err: any) {
-      if (err?.code === 11000) {
-        return NextResponse.json({ success: false, message: NOT_FOUND_MESSAGE });
+    if (!alreadyDone && received.message && receiverMatches) {
+      // หาทุก pending record ที่ matchCode ตรงกับ message ของ transaction นี้
+      // เพื่อให้ verify call จากใครก็ได้ช่วย process ของคนอื่นได้ด้วย
+      const pendingRecords = await TrueMoneyTopup.find({ status: "pending" });
+      for (const pending of pendingRecords) {
+        if (
+          received.message.includes(pending.matchCode) &&
+          Math.abs(receivedBaht - pending.amount) < 0.005 &&
+          parseThaiTime(received.received_time) >= pending.createdAt
+        ) {
+          await processMatch(pending, received, receivedBaht);
+          break; // 1 transaction ต่อ 1 record เท่านั้น
+        }
       }
-      throw err;
-    }
-    if (!updated) {
-      return NextResponse.json({ success: false, message: "รายการนี้ดำเนินการไปแล้ว" });
     }
 
-    const user = await User.findByIdAndUpdate(userId, { $inc: { coins: record.amount } }, { new: true });
-
-    if (user) {
-      await Transaction.create({
-        userId: user._id,
-        type: "topup",
-        amount: record.amount,
-        balanceAfter: user.coins,
-        description: "เติมเงินผ่าน TrueMoney Wallet",
-      });
-      await notify(
-        user._id.toString(),
-        "เติมเงินสำเร็จ! 💰",
-        `ยอดเงิน ฿${record.amount.toLocaleString()} เข้าบัญชีของคุณแล้ว (ยอดรวม ฿${user.coins.toLocaleString()})`,
-        "success"
-      );
-
-      const expRate = await getExpPerBaht();
-      const xpToAdd = Math.floor(record.amount * expRate);
-      if (xpToAdd > 0) await awardXp(user._id.toString(), xpToAdd);
+    // ดึง record ของ user นี้อีกครั้งเพื่อเช็คว่า complete แล้วหรือยัง
+    const refreshed = await TrueMoneyTopup.findById(requestId);
+    if (refreshed?.status === "completed") {
+      return NextResponse.json({ success: true, amount: refreshed.amount ?? record.amount });
     }
 
-    return NextResponse.json({ success: true, amount: record.amount });
+    return NextResponse.json({ success: false, message: NOT_FOUND_MESSAGE });
   } catch (error: any) {
     return NextResponse.json({ error: "เกิดข้อผิดพลาด: " + error.message }, { status: 500 });
   }

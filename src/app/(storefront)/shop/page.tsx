@@ -284,6 +284,7 @@ export default function ShopPage() {
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("newest");
+  const [stockFilter, setStockFilter] = useState<"all" | "available" | "sold">("all");
   const [viewMode, setViewMode] = useState("grid");
 
   const [categories, setCategories] = useState<CategoryTab[]>([]);
@@ -303,6 +304,7 @@ export default function ShopPage() {
 
   const [buyModal, setBuyModal] = useState<ShopItem | null>(null);
   const [buyerUid, setBuyerUid] = useState("");
+  const [buyQty, setBuyQty] = useState(1);
   const [isBuying, setIsBuying] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [successData, setSuccessData] = useState<{ purchaseId: string } | null>(null);
@@ -337,7 +339,7 @@ export default function ShopPage() {
       const res = await fetch(`/api/shop/${buyModal._id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ buyerUid: buyerUid.trim() || undefined }),
+        body: JSON.stringify({ buyerUid: buyerUid.trim() || undefined, quantity: buyQty }),
       });
       const data = await res.json();
       if (!res.ok) { showToast(data.error || "เกิดข้อผิดพลาด", false); setBuyModal(null); return; }
@@ -403,14 +405,21 @@ export default function ShopPage() {
     }
   };
 
+  const availableCount = items.filter((i) => !activeCategory || i.categoryId === activeCategory).filter((i) => i.stock > 0).length;
+  const soldCount = items.filter((i) => !activeCategory || i.categoryId === activeCategory).filter((i) => i.stock === 0).length;
+
   const filtered = items
     .filter((i) => {
       if (activeCategory && i.categoryId !== activeCategory) return false;
+      if (stockFilter === "available" && i.stock === 0) return false;
+      if (stockFilter === "sold" && i.stock > 0) return false;
       return true;
     })
     .sort((a, b) => {
-      if (a.stock === 0 && b.stock > 0) return 1;
-      if (a.stock > 0 && b.stock === 0) return -1;
+      if (stockFilter === "all") {
+        if (a.stock === 0 && b.stock > 0) return 1;
+        if (a.stock > 0 && b.stock === 0) return -1;
+      }
       if (sortBy === "price_asc") return a.price - b.price;
       if (sortBy === "price_desc") return b.price - a.price;
       return 0;
@@ -474,7 +483,7 @@ export default function ShopPage() {
           <div className="flex sm:grid gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible hide-scrollbar pb-1 sm:pb-0 snap-x snap-mandatory sm:snap-none sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4">
             {featuredItems.slice(0, 4).map((item) => (
               <div key={item._id} className="w-[calc(50%-0.375rem)] sm:w-auto shrink-0 snap-start sm:snap-align-none">
-                <ShopItemCard item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); }} />
+                <ShopItemCard item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); setBuyQty(1); }} />
               </div>
             ))}
           </div>
@@ -484,10 +493,11 @@ export default function ShopPage() {
 
 
       {/* Filter and Sort Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-2 mt-2">
-        <h2 className="text-lg font-black text-gray-900">สินค้าทั้งหมด</h2>
+      <div className="flex flex-col gap-3 border-b border-gray-100 pb-3 mt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-lg font-black text-gray-900">สินค้าทั้งหมด</h2>
 
-        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-gray-500">จัดเรียง:</span>
             <div className="relative">
@@ -518,6 +528,36 @@ export default function ShopPage() {
               <List size={16} />
             </button>
           </div>
+          </div>
+        </div>
+
+        {/* Stock filter tabs */}
+        <div className="flex gap-2">
+          {(["all", "available", "sold"] as const).map((f) => {
+            const label = f === "all" ? "ทั้งหมด" : f === "available" ? "พร้อมขาย" : "ขายแล้ว";
+            const count = f === "all" ? items.length : f === "available" ? availableCount : soldCount;
+            const active = stockFilter === f;
+            return (
+              <button
+                key={f}
+                onClick={() => setStockFilter(f)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                  active
+                    ? f === "available"
+                      ? "bg-emerald-600 text-white"
+                      : f === "sold"
+                      ? "bg-gray-500 text-white"
+                      : "bg-red-600 text-white"
+                    : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                {f === "available" && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />}
+                {f === "sold" && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />}
+                {label}
+                <span className={`text-[10px] font-black ${active ? "opacity-80" : "opacity-50"}`}>{count}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -534,7 +574,7 @@ export default function ShopPage() {
       ) : (
         <div className={`grid gap-4 ${viewMode === "grid" ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"}`}>
           {filtered.map((item) => (
-            <ShopItemCard key={item._id} item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); }} />
+            <ShopItemCard key={item._id} item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); setBuyQty(1); }} />
           ))}
         </div>
       )}
@@ -586,19 +626,53 @@ export default function ShopPage() {
                 </div>
               )}
 
+              {/* Quantity selector */}
+              {buyModal.stock > 0 && (
+                <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+                  <span className="text-sm font-bold text-gray-700">จำนวน</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setBuyQty((q) => Math.max(1, q - 1))}
+                      disabled={buyQty <= 1}
+                      className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-700 font-black text-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-sm"
+                    >
+                      −
+                    </button>
+                    <span className="w-6 text-center font-black text-gray-900 text-base">{buyQty}</span>
+                    <button
+                      onClick={() => setBuyQty((q) => Math.min(buyModal.stock, q + 1))}
+                      disabled={buyQty >= buyModal.stock}
+                      className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-700 font-black text-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-sm"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col gap-2.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 font-medium">ราคา</span>
-                  <span className="font-black text-gray-900">฿{buyModal.price.toLocaleString()}</span>
+                  <span className="text-gray-600 font-medium">ราคาต่อชิ้น</span>
+                  <span className="font-bold text-gray-700">฿{buyModal.price.toLocaleString()}</span>
+                </div>
+                {buyQty > 1 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 font-medium">จำนวน</span>
+                    <span className="font-bold text-gray-700">x{buyQty}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm border-t border-gray-200 pt-2.5">
+                  <span className="text-gray-600 font-medium">ราคารวม</span>
+                  <span className="font-black text-gray-900 text-base">฿{(buyModal.price * buyQty).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm border-t border-gray-200 pt-2.5">
                   <span className="text-gray-600 font-medium">ยอดเงินของฉัน</span>
-                  <span className={`font-black ${balance >= buyModal.price ? "text-emerald-600" : "text-red-600"}`}>฿{balance.toLocaleString()}</span>
+                  <span className={`font-black ${balance >= buyModal.price * buyQty ? "text-emerald-600" : "text-red-600"}`}>฿{balance.toLocaleString()}</span>
                 </div>
-                {balance >= buyModal.price && (
+                {balance >= buyModal.price * buyQty && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 font-medium">คงเหลือหลังซื้อ</span>
-                    <span className="font-black text-gray-900">฿{(balance - buyModal.price).toLocaleString()}</span>
+                    <span className="font-black text-gray-900">฿{(balance - buyModal.price * buyQty).toLocaleString()}</span>
                   </div>
                 )}
               </div>
@@ -608,12 +682,12 @@ export default function ShopPage() {
                   <AlertCircle size={16} /> กรุณาเข้าสู่ระบบก่อนซื้อ
                 </div>
               )}
-              {session && balance < buyModal.price && (
+              {session && balance < buyModal.price * buyQty && (
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3">
                   <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-bold text-red-700 text-sm">ยอดเงินไม่เพียงพอ</p>
-                    <p className="text-xs text-red-600 mt-1">ขาดอีก ฿{(buyModal.price - balance).toLocaleString()}</p>
+                    <p className="text-xs text-red-600 mt-1">ขาดอีก ฿{(buyModal.price * buyQty - balance).toLocaleString()}</p>
                   </div>
                 </div>
               )}
@@ -626,13 +700,13 @@ export default function ShopPage() {
                 <Link href="/profile" className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors text-sm text-center flex items-center justify-center">
                   เข้าสู่ระบบ
                 </Link>
-              ) : balance >= buyModal.price ? (
+              ) : balance >= buyModal.price * buyQty ? (
                 <button
                   onClick={handleBuy}
                   disabled={isBuying || (buyModal.requireUid && !buyerUid.trim())}
                   className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-gray-400 transition-colors text-sm"
                 >
-                  {isBuying ? "กำลังดำเนินการ..." : "ยืนยันซื้อ"}
+                  {isBuying ? "กำลังดำเนินการ..." : `ยืนยันซื้อ${buyQty > 1 ? ` x${buyQty}` : ""}`}
                 </button>
               ) : (
                 <button onClick={() => { setBuyModal(null); setIsTopupOpen(true); }} className="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 transition-colors text-sm text-center flex items-center justify-center">
