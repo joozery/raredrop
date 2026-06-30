@@ -69,7 +69,7 @@ export default function LeaderboardPage() {
 
   const myRank = meId ? data.findIndex((d) => d.userId === meId) + 1 : 0;
   const top3 = data.slice(0, 3);
-  const rest = data.slice(3);
+  const rest = data.slice(3, 10);
 
   return (
     <div className="p-4 lg:p-6 max-w-2xl mx-auto flex flex-col gap-5">
