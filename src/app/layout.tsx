@@ -21,57 +21,110 @@ const notoSansThai = Noto_Sans_Thai({
 import { connectToDatabase } from "@/lib/mongoose";
 import Setting from "@/models/Setting";
 
-// บังคับให้ Next.js อ่าน metadata จาก DB ใหม่ทุก request ไม่ cache HTML เก่าไว้
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata(): Promise<Metadata> {
+const BASE = "https://luxusx.com";
+
+async function getSiteSettings() {
   try {
     await connectToDatabase();
-    const siteNameSetting = await Setting.findOne({ key: "site_name" }).lean();
-    const siteDescSetting = await Setting.findOne({ key: "site_description" }).lean();
-    const siteOgSetting = await Setting.findOne({ key: "site_og_image" }).lean();
-    
-    const siteName = (siteNameSetting as any)?.value || "RareDrop";
-    const siteDesc = (siteDescSetting as any)?.value || "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก";
-    const ogImage = (siteOgSetting as any)?.value || "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png";
-    
+    const [n, d, og] = await Promise.all([
+      Setting.findOne({ key: "site_name" }).lean(),
+      Setting.findOne({ key: "site_description" }).lean(),
+      Setting.findOne({ key: "site_og_image" }).lean(),
+    ]);
     return {
-      title: `${siteName} - Premium Mystery Box`,
-      description: siteDesc,
-      verification: {
-        google: "bv74cjpKuiCRWSf5iptZ7vDVqHNUqObUBOxsoBjatV4",
-      },
-      openGraph: {
-        title: `${siteName} - Premium Mystery Box`,
-        description: siteDesc,
-        images: [{ url: ogImage }],
-        type: "website",
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: `${siteName} - Premium Mystery Box`,
-        description: siteDesc,
-        images: [ogImage],
-      }
+      siteName: (n as any)?.value || "LuxusX",
+      siteDesc: (d as any)?.value || "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท",
+      ogImage: (og as any)?.value || `${BASE}/logo.jpeg`,
     };
-  } catch (err) {
+  } catch {
     return {
-      title: "RareDrop - Premium Mystery Box",
-      description: "เปิดลุ้นของสะสมสุดพิเศษ จากทั่วโลก",
-      verification: {
-        google: "bv74cjpKuiCRWSf5iptZ7vDVqHNUqObUBOxsoBjatV4",
-      },
+      siteName: "LuxusX",
+      siteDesc: "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท",
+      ogImage: `${BASE}/logo.jpeg`,
     };
   }
 }
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName, siteDesc, ogImage } = await getSiteSettings();
+  const title = `${siteName} - กล่องสุ่มสินค้าพรีเมียม`;
+  return {
+    metadataBase: new URL(BASE),
+    title: { default: title, template: `%s | ${siteName}` },
+    description: siteDesc,
+    keywords: ["กล่องสุ่ม", "mystery box", "ลุ้นรางวัล", "สินค้าพรีเมียม", "ของสะสม", "luxusx", "loot box", "กล่องสุ่มออนไลน์"],
+    authors: [{ name: siteName, url: BASE }],
+    creator: siteName,
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+    alternates: { canonical: BASE },
+    verification: { google: "bv74cjpKuiCRWSf5iptZ7vDVqHNUqObUBOxsoBjatV4" },
+    openGraph: {
+      type: "website",
+      locale: "th_TH",
+      url: BASE,
+      siteName,
+      title,
+      description: siteDesc,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: siteDesc,
+      images: [ogImage],
+    },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { siteName, siteDesc, ogImage } = await getSiteSettings();
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${BASE}/#website`,
+        url: BASE,
+        name: siteName,
+        description: siteDesc,
+        inLanguage: "th-TH",
+        potentialAction: {
+          "@type": "SearchAction",
+          target: { "@type": "EntryPoint", urlTemplate: `${BASE}/shop?q={search_term_string}` },
+          "query-input": "required name=search_term_string",
+        },
+      },
+      {
+        "@type": "Organization",
+        "@id": `${BASE}/#organization`,
+        name: siteName,
+        url: BASE,
+        logo: { "@type": "ImageObject", url: ogImage, width: 200, height: 200 },
+        description: siteDesc,
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "customer support",
+          availableLanguage: "Thai",
+        },
+      },
+    ],
+  };
+
   return (
-    <html lang="en" className={`${inter.variable} ${notoSansThai.variable}`} suppressHydrationWarning>
+    <html lang="th" className={`${inter.variable} ${notoSansThai.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body suppressHydrationWarning className={`${notoSansThai.className} bg-[#F8F8F8] text-gray-900 flex h-screen overflow-hidden`}>
         <Providers>
           {children}

@@ -134,6 +134,7 @@ export default function ManageProbabilities() {
   );
 
   const totalProb = editingItems.reduce((sum, item) => sum + (item.probability || 0), 0);
+  const fmtProb = (n: number) => parseFloat(n.toFixed(4)).toString();
   
   // Available items to add
   const availableItems = items.filter(i => 
@@ -202,8 +203,8 @@ export default function ManageProbabilities() {
                     <Package size={16} className="text-slate-400" />
                     ไอเทมในกล่อง ({editingItems.length})
                   </h3>
-                  <div className={`text-xs font-black px-3 py-1.5 rounded-lg border ${Math.abs(totalProb - 100) < 0.01 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                    รวม {totalProb.toFixed(2)}%
+                  <div className={`text-xs font-black px-3 py-1.5 rounded-lg border ${Math.abs(totalProb - 100) < 0.0001 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                    รวม {fmtProb(totalProb)}%
                   </div>
                 </div>
 
@@ -245,12 +246,12 @@ export default function ManageProbabilities() {
                         
                         <div className="flex items-center gap-3 shrink-0">
                           <div className="relative">
-                            <input 
-                              type="number" 
-                              min="0" max="100" step="0.01"
+                            <input
+                              type="number"
+                              min="0" max="100" step="0.0001"
                               value={ei.probability.toString()}
                               onChange={(e) => handleProbChange(ei.itemId, e.target.value)}
-                              className="w-24 bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:border-red-500 font-black text-slate-800 text-right"
+                              className="w-28 bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:border-red-500 font-black text-slate-800 text-right"
                             />
                             <Percent size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
                           </div>
@@ -266,7 +267,7 @@ export default function ManageProbabilities() {
                 {Math.abs(totalProb - 100) > 0.01 && editingItems.length > 0 && (
                   <div className="p-3 m-4 mt-0 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-amber-700 shrink-0">
                     <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                    <p className="text-xs font-medium"><strong>แจ้งเตือน:</strong> อัตราดรอปรวมทั้งหมดควรมีค่าเท่ากับ 100% (ปัจจุบัน {totalProb}%) เพื่อให้การสุ่มแม่นยำ</p>
+                    <p className="text-xs font-medium"><strong>แจ้งเตือน:</strong> อัตราดรอปรวมทั้งหมดควรมีค่าเท่ากับ 100% (ปัจจุบัน {fmtProb(totalProb)}%) เพื่อให้การสุ่มแม่นยำ</p>
                   </div>
                 )}
               </div>

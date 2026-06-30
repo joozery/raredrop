@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Search, X, Coins, Crown, Star, Wallet, ArrowUpCircle } from "lucide-react";
 
+type SortKey = "newest" | "coins_desc" | "coins_asc" | "gem_desc" | "gem_asc" | "xp_desc";
+
 interface UserData {
   _id: string;
   name: string;
   email: string;
   coins: number;
+  gemCoins: number;
   vipLevel: number;
   xp: number;
   createdAt: string;
@@ -21,6 +24,9 @@ export default function ManageUsers() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,9 +41,15 @@ export default function ManageUsers() {
 
   // Delete confirm state
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [gemcoinIcon, setGemcoinIcon] = useState("");
 
+  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { setPage(1); }, [search, sort]);
   useEffect(() => {
-    fetchUsers();
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => { if (d.gemcoin_icon) setGemcoinIcon(d.gemcoin_icon); })
+      .catch(() => {});
   }, []);
 
   const fetchUsers = async () => {
@@ -144,10 +156,22 @@ export default function ManageUsers() {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name?.toLowerCase().includes(search.toLowerCase()) || 
-    u.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = users
+    .filter(u =>
+      u.name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sort === "coins_desc") return (b.coins ?? 0) - (a.coins ?? 0);
+      if (sort === "coins_asc")  return (a.coins ?? 0) - (b.coins ?? 0);
+      if (sort === "gem_desc")   return (b.gemCoins ?? 0) - (a.gemCoins ?? 0);
+      if (sort === "gem_asc")    return (a.gemCoins ?? 0) - (b.gemCoins ?? 0);
+      if (sort === "xp_desc")    return (b.xp ?? 0) - (a.xp ?? 0);
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const pagedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-6">
@@ -176,6 +200,18 @@ export default function ManageUsers() {
             />
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="bg-white border border-slate-200 text-sm font-medium text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-red-400 cursor-pointer shadow-sm"
+            >
+              <option value="newest">สมัครล่าสุด</option>
+              <option value="coins_desc">ยอดเงิน มาก → น้อย</option>
+              <option value="coins_asc">ยอดเงิน น้อย → มาก</option>
+              <option value="gem_desc">GemCoin มาก → น้อย</option>
+              <option value="gem_asc">GemCoin น้อย → มาก</option>
+              <option value="xp_desc">XP มาก → น้อย</option>
+            </select>
             <div className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm">
               ผู้เล่นทั้งหมด: <span className="text-red-600 font-black ml-1">{users.length}</span> คน
             </div>
@@ -189,7 +225,7 @@ export default function ManageUsers() {
               <tr className="border-b border-slate-100 bg-white">
                 <th className="py-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">ผู้เล่น (Player)</th>
                 <th className="py-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">การเชื่อมต่อ (Provider)</th>
-                <th className="py-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">ยอดเงินคงเหลือ</th>
+                <th className="py-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">ยอดเงิน / GemCoin</th>
                 <th className="py-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">ระดับ (Level)</th>
                 <th className="py-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">วันที่สมัคร</th>
                 <th className="py-4 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">จัดการ</th>
@@ -209,7 +245,7 @@ export default function ManageUsers() {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">ไม่พบข้อมูลผู้เล่น</td>
                 </tr>
-              ) : filteredUsers.map((user) => (
+              ) : pagedUsers.map((user) => (
                 <tr key={user._id} className="hover:bg-slate-50/80 transition-colors group">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
@@ -255,9 +291,19 @@ export default function ManageUsers() {
                     </div>
                   </td>
                   <td className="py-4 px-6 text-right">
-                    <div className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 px-2.5 py-1 rounded-lg border border-green-200/50">
-                      <Coins size={14} className="text-green-600" />
-                      <span className="font-black tracking-tight">{user.coins?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) || "0.00"}</span>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 px-2.5 py-1 rounded-lg border border-green-200/50">
+                        <Coins size={14} className="text-green-600" />
+                        <span className="font-black tracking-tight">{user.coins?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) || "0.00"}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-2.5 py-1 rounded-lg border border-purple-200/50">
+                        {gemcoinIcon ? (
+                          <img src={gemcoinIcon} alt="gem" className="w-3.5 h-3.5 object-contain" />
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        )}
+                        <span className="font-black tracking-tight text-xs">{(user.gemCoins ?? 0).toLocaleString()}</span>
+                      </div>
                     </div>
                   </td>
                   <td className="py-4 px-6">
@@ -313,6 +359,51 @@ export default function ManageUsers() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-500 font-medium">
+              แสดง {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredUsers.length)} จาก {filteredUsers.length} คน
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white hover:border border-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-bold"
+              >
+                ‹
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                .reduce<(number | "…")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && (p as number) - (arr[idx - 1] as number) > 1) acc.push("…");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === "…" ? (
+                    <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-slate-400 text-xs">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p as number)}
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${page === p ? "bg-red-600 text-white shadow-sm" : "text-slate-600 hover:bg-white hover:border border-slate-200"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white hover:border border-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-bold"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal */}
