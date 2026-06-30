@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Gift, Plus, Pencil, Trash2, X, Save, Loader2,
-  ChevronDown, ChevronUp, Coins, Package, Users, Clock, RefreshCw,
+  Plus, Pencil, Trash2, X, Save, Loader2,
+  Coins, Package, Users, Clock, RefreshCw,
 } from "lucide-react";
 import { UploadInput } from "@/components/ui/UploadInput";
 
@@ -110,8 +110,6 @@ export default function AdminRedEnvelopePage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [needsResetConfirm, setNeedsResetConfirm] = useState(false);
-  const [presetTime, setPresetTime] = useState("20:00");
-  const [presetDuration, setPresetDuration] = useState(60);
 
   // Item catalog management (แยกจากไอเทมร้านค้า/กล่องสุ่มโดยสิ้นเชิง)
   const [itemModal, setItemModal] = useState<"create" | "edit" | null>(null);
@@ -119,6 +117,7 @@ export default function AdminRedEnvelopePage() {
   const [itemForm, setItemForm] = useState<ItemForm>(EMPTY_ITEM_FORM);
   const [itemSaving, setItemSaving] = useState(false);
   const [itemDeleteConfirm, setItemDeleteConfirm] = useState<string | null>(null);
+  const [itemSearch, setItemSearch] = useState("");
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -253,6 +252,40 @@ export default function AdminRedEnvelopePage() {
     else showToast(data.error || "ลบไม่สำเร็จ", false);
   };
 
+  const handleCopyToday = async () => {
+    const todayStr = thaiDateStr(0);
+    const todayRounds = rounds.filter(r => formatLocalDatetime(r.scheduledAt).startsWith(todayStr));
+    if (todayRounds.length === 0) { showToast("ไม่มีรอบในวันนี้ที่จะคัดลอก", false); return; }
+    let created = 0;
+    for (const r of todayRounds) {
+      for (const offset of [1, 2]) {
+        const dateStr = thaiDateStr(offset);
+        const timeStr = formatLocalDatetime(r.scheduledAt).substring(11, 16);
+        const matchStr = `${dateStr}T${timeStr}`;
+        if (rounds.some(x => formatLocalDatetime(x.scheduledAt).startsWith(matchStr))) continue;
+        await fetch("/api/admin/red-envelope/rounds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label: r.label,
+            image: r.image,
+            rewardType: r.rewardType,
+            totalAmount: r.rewardType === "cash" ? r.totalAmount : undefined,
+            itemId: r.rewardType === "item" ? r.itemId?._id : undefined,
+            conditionAmount: r.conditionAmount,
+            conditionLevel: r.conditionLevel,
+            maxPeople: r.maxPeople,
+            scheduledAt: new Date(new Date(r.scheduledAt).getTime() + offset * DAY_MS).toISOString(),
+            endsAt: new Date(new Date(r.endsAt).getTime() + offset * DAY_MS).toISOString(),
+          }),
+        });
+        created++;
+      }
+    }
+    if (created > 0) { showToast(`คัดลอกสำเร็จ ${created} รอบ`); fetchRounds(); }
+    else showToast("ทุกช่วงเวลามีรอบอยู่แล้ว", false);
+  };
+
   const handleToggleActive = async (r: Round) => {
     const res = await fetch(`/api/admin/red-envelope/rounds/${r._id}`, {
       method: "PUT",
@@ -288,6 +321,8 @@ export default function AdminRedEnvelopePage() {
               <input
                 type="text"
                 placeholder="ค้นหาไอเทมรางวัล..."
+                value={itemSearch}
+                onChange={(e) => setItemSearch(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-red-400"
               />
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -297,7 +332,7 @@ export default function AdminRedEnvelopePage() {
           </div>
           
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-            {items.map((it) => (
+            {items.filter(it => it.name.toLowerCase().includes(itemSearch.toLowerCase())).map((it) => (
               <div
                 key={it._id}
                 draggable
@@ -316,6 +351,9 @@ export default function AdminRedEnvelopePage() {
                 <div className="flex flex-col items-center gap-2">
                   <button onClick={() => openEditItem(it)} className="text-slate-300 hover:text-slate-600">
                     <Pencil size={14} />
+                  </button>
+                  <button onClick={() => setItemDeleteConfirm(it._id)} className="text-slate-300 hover:text-red-500">
+                    <Trash2 size={14} />
                   </button>
                   <div className="text-slate-300 group-hover:text-slate-400 cursor-grab">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16"/></svg>
@@ -341,10 +379,10 @@ export default function AdminRedEnvelopePage() {
               <p className="text-xs text-slate-500 mt-1">กำหนดช่วงเวลาเปิดรับ - ปิดรับ - สุ่มแจก (ลากไอเทมมาวางได้เลย)</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button className="bg-white border border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 text-xs shadow-sm">
+              <button onClick={handleCopyToday} className="bg-white border border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 text-xs shadow-sm">
                 <RefreshCw size={14} /> คัดลอกจากวันนี้
               </button>
-              <button className="bg-white border border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 text-xs shadow-sm">
+              <button onClick={openCreate} className="bg-white border border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 text-xs shadow-sm">
                 <Plus size={14} /> เพิ่มรอบอิสระ
               </button>
             </div>
@@ -391,8 +429,8 @@ export default function AdminRedEnvelopePage() {
                       {[0, 1, 2].map(offset => {
                         const dateStr = thaiDateStr(offset);
                         const matchStartStr = `${dateStr}T${time}`;
-                        // Find rounds that roughly match this slot
-                        const cellRounds = rounds.filter(r => r.scheduledAt.startsWith(matchStartStr));
+                        // แปลง scheduledAt (UTC ISO) เป็นเวลาไทยก่อนเทียบ
+                        const cellRounds = rounds.filter(r => formatLocalDatetime(r.scheduledAt).startsWith(matchStartStr));
                         
                         return (
                           <div 
@@ -436,6 +474,7 @@ export default function AdminRedEnvelopePage() {
                                   <div className="flex-1 min-w-0">
                                     <p className="font-bold text-[11px] text-slate-800 truncate">{rewardLabel(r)}</p>
                                     <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5"><Users size={10}/> {r.maxPeople} คน</p>
+                                    <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 ${STATUS_CONFIG[r.status]?.cls || ""}`}>{STATUS_CONFIG[r.status]?.label || r.status}</span>
                                   </div>
                                   <button onClick={(e)=>{ e.stopPropagation(); setDeleteConfirm(r._id); }} className="text-slate-300 hover:text-red-500 p-1">
                                     <Trash2 size={12} />
@@ -455,7 +494,7 @@ export default function AdminRedEnvelopePage() {
               <div className="mt-8 pt-6 border-t border-slate-200">
                 <h3 className="font-bold text-slate-700 text-sm mb-4">รอบอื่นๆ (นอกเหนือจากตาราง)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {rounds.filter(r => !["19:00","20:00","21:00","22:00","23:00"].some(t => r.scheduledAt.includes(`T${t}`))).map(r => (
+                  {rounds.filter(r => !["19:00","20:00","21:00","22:00","23:00"].some(t => formatLocalDatetime(r.scheduledAt).includes(`T${t}`))).map(r => (
                     <div key={r._id} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3 shadow-sm">
                        <div className="w-10 h-10 rounded bg-slate-50 flex items-center justify-center shrink-0">
                         {r.rewardType === "cash" ? <Coins size={16} className="text-amber-500" /> : <Package size={16} className="text-rose-400" />}
@@ -463,9 +502,11 @@ export default function AdminRedEnvelopePage() {
                        <div className="flex-1 min-w-0">
                           <p className="font-bold text-xs text-slate-800 truncate">{r.label}</p>
                           <p className="text-[10px] text-slate-500">{new Date(r.scheduledAt).toLocaleString("th-TH")}</p>
+                          <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 ${STATUS_CONFIG[r.status]?.cls || ""}`}>{STATUS_CONFIG[r.status]?.label || r.status}</span>
                        </div>
                        <div className="flex items-center gap-1">
                           <button onClick={() => openEdit(r)} className="w-7 h-7 flex items-center justify-center rounded bg-slate-100 text-slate-500 hover:bg-slate-200"><Pencil size={12}/></button>
+                          <button onClick={() => setDeleteConfirm(r._id)} className="w-7 h-7 flex items-center justify-center rounded bg-slate-100 text-red-400 hover:bg-red-50"><Trash2 size={12}/></button>
                        </div>
                     </div>
                   ))}
@@ -706,6 +747,20 @@ export default function AdminRedEnvelopePage() {
               <div className="flex gap-3 mt-2">
                  <button onClick={() => setDeleteConfirm(null)} className="flex-1 bg-slate-100 text-slate-700 font-bold py-2.5 rounded-xl hover:bg-slate-200">ยกเลิก</button>
                  <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-xl hover:bg-red-700">ลบข้อมูล</button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {itemDeleteConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+           <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
+              <Trash2 size={48} className="text-red-500 mx-auto" />
+              <h3 className="font-bold text-slate-900 text-lg">ยืนยันการลบไอเทม?</h3>
+              <p className="text-sm text-slate-500">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+              <div className="flex gap-3 mt-2">
+                 <button onClick={() => setItemDeleteConfirm(null)} className="flex-1 bg-slate-100 text-slate-700 font-bold py-2.5 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+                 <button onClick={() => handleDeleteItem(itemDeleteConfirm)} className="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-xl hover:bg-red-700">ลบข้อมูล</button>
               </div>
            </div>
         </div>
