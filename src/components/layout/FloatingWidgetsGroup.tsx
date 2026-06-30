@@ -1,77 +1,29 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { X, GripHorizontal } from "lucide-react";
+import { motion, useDragControls } from "framer-motion";
 
 export function FloatingWidgetsGroup({ children }: { children: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(true);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const startOffset = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current) return;
-      setPos({
-        x: startOffset.current.x + (e.clientX - dragStart.current.x),
-        y: startOffset.current.y + (e.clientY - dragStart.current.y)
-      });
-    };
-    const handleMouseUp = () => {
-      isDragging.current = false;
-    };
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!isDragging.current) return;
-      // Prevent default scrolling when dragging
-      e.preventDefault();
-      const touch = e.touches[0];
-      setPos({
-        x: startOffset.current.x + (touch.clientX - dragStart.current.x),
-        y: startOffset.current.y + (touch.clientY - dragStart.current.y)
-      });
-    };
-    
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    window.addEventListener("touchmove", handleTouchMove, { passive: false });
-    window.addEventListener("touchend", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleMouseUp);
-    };
-  }, []);
+  const controls = useDragControls();
 
   if (!isVisible) return null;
 
   return (
-    <div 
-      className="fixed z-40 flex flex-col items-center gap-3 group"
-      style={{
-        bottom: '24px',
-        right: '24px',
-        transform: `translate(${pos.x}px, ${pos.y}px)`,
-        touchAction: 'none'
-      }}
+    <motion.div 
+      drag
+      dragControls={controls}
+      dragListener={false}
+      dragMomentum={false}
+      className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-40 flex flex-col items-center gap-3 group"
     >
       <div 
-        className="absolute -top-6 bg-slate-800/80 backdrop-blur text-white rounded-full px-2 py-1 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+        className="absolute -top-6 bg-white/90 backdrop-blur text-slate-500 rounded-full px-2 py-1 flex items-center gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shadow-md border border-slate-200/50"
       >
         <div 
-          className="cursor-move p-0.5 hover:bg-white/20 rounded"
-          onMouseDown={(e) => {
-            isDragging.current = true;
-            dragStart.current = { x: e.clientX, y: e.clientY };
-            startOffset.current = { ...pos };
-            e.preventDefault();
-          }}
-          onTouchStart={(e) => {
-            isDragging.current = true;
-            const touch = e.touches[0];
-            dragStart.current = { x: touch.clientX, y: touch.clientY };
-            startOffset.current = { ...pos };
-          }}
+          className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-slate-100 hover:text-slate-700 rounded transition-colors"
+          style={{ touchAction: 'none' }}
+          onPointerDown={(e) => controls.start(e)}
         >
           <GripHorizontal size={14} />
         </div>
@@ -83,6 +35,6 @@ export function FloatingWidgetsGroup({ children }: { children: React.ReactNode }
         </button>
       </div>
       {children}
-    </div>
+    </motion.div>
   );
 }
