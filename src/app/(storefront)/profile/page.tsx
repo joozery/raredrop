@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, Settings, LogOut, Gamepad2, EyeOff } from 'lucide-react';
+import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, LogOut, Gamepad2, EyeOff } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { InviteFriendModal } from "@/components/profile/InviteFriendModal";
 import { RedeemCodeModal } from "@/components/profile/RedeemCodeModal";
@@ -96,7 +96,6 @@ export default function ProfilePage() {
   }, [session]);
 
   const handleToggleLeaderboardPrivacy = async () => {
-    console.log("[privacy] clicked, current:", hideFromLeaderboard);
     const prev = hideFromLeaderboard;
     const next = !prev;
     setSavingPrivacy(true);
@@ -108,11 +107,9 @@ export default function ProfilePage() {
         body: JSON.stringify({ hideFromLeaderboard: next }),
       });
       const data = await res.json();
-      console.log("[privacy] PATCH response:", res.status, data);
       if (!res.ok) throw new Error(data.error || "failed");
       setHideFromLeaderboard(!!data.hideFromLeaderboard);
-    } catch (err) {
-      console.error("[privacy] error:", err);
+    } catch {
       setHideFromLeaderboard(prev);
     } finally {
       setSavingPrivacy(false);

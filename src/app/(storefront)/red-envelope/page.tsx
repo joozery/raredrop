@@ -135,10 +135,12 @@ export default function RedEnvelopePage() {
 
   useEffect(() => {
     if (activeTab === "today" && !activeRoundId) return;
+    setParticipants([]);
+    setParticipantsTotal(0);
     setParticipantsLoading(true);
     const url = activeTab === "today"
-      ? `/api/red-envelope/recent?day=today&roundId=${activeRoundId}`
-      : `/api/red-envelope/recent?day=yesterday`;
+      ? `/api/red-envelope/recent?day=today&roundId=${activeRoundId}&t=${Date.now()}`
+      : `/api/red-envelope/recent?day=yesterday&matchScheduledAt=${encodeURIComponent(round?.scheduledAt || "")}&t=${Date.now()}`;
     fetch(url)
       .then((r) => r.json())
       .then((d) => { setParticipants(d.entries || []); setParticipantsTotal(d.total || 0); })
@@ -177,7 +179,7 @@ export default function RedEnvelopePage() {
       // ปกติจะ pending เสมอ — รอครบคน/หมดเวลาแล้วค่อยรู้ผล ยกเว้นเป็นคนที่กดแล้วครบพอดี จะได้ผลกลับมาทันที
       setJoinResult({ ...data, roundId: round._id });
       await updateSession();
-      fetchRounds();
+      await fetchRounds();
     } catch {
       setJoinError("เกิดข้อผิดพลาดในการเชื่อมต่อ");
     } finally {
@@ -228,7 +230,7 @@ export default function RedEnvelopePage() {
                     {timeFmt(r.scheduledAt)}
                   </div>
                   <div className={`text-[12px] font-medium mt-0.5 ${active ? "text-black font-bold" : "text-white/80"}`}>
-                    {r.status === "scheduled" ? "ยังไม่เริ่ม" : "เปิดอยู่"}
+                    {r.status === "scheduled" ? "ยังไม่เริ่ม" : r.status === "open" ? "เปิดอยู่" : r.status === "resolved" ? "จบแล้ว" : "ยกเลิก"}
                   </div>
                 </button>
               );
@@ -421,6 +423,22 @@ export default function RedEnvelopePage() {
                         <Link href="/profile" className="w-full py-3.5 rounded-xl font-bold text-white text-base bg-gradient-to-b from-red-500 to-red-600 shadow-[0_3px_0_#b91c1c] text-center block">
                           เข้าสู่ระบบ
                         </Link>
+                      ) : r.status === "resolved" ? (
+                        r.myResult ? (
+                          r.rewardType === "cash" ? (
+                            <div className={`w-full py-3.5 rounded-xl font-bold text-base text-center ${(r.myResult.rewardAmount || 0) > 0 ? "bg-green-50 text-green-700 border border-green-200" : "bg-gray-100 text-gray-500"}`}>
+                              {(r.myResult.rewardAmount || 0) > 0 ? `🎉 ได้รับ ฿${(r.myResult.rewardAmount || 0).toLocaleString()}` : "ไม่ได้รับรางวัลครั้งนี้"}
+                            </div>
+                          ) : (
+                            <div className={`w-full py-3.5 rounded-xl font-bold text-base text-center ${r.myResult.isWinner ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-gray-100 text-gray-500"}`}>
+                              {r.myResult.isWinner ? "🎁 คุณได้รับของรางวัล!" : "ไม่ได้รับรางวัลครั้งนี้"}
+                            </div>
+                          )
+                        ) : (
+                          <div className="w-full py-3.5 rounded-xl font-bold text-gray-400 text-sm bg-gray-100 text-center">
+                            ปิดรับแล้ว
+                          </div>
+                        )
                       ) : r.joined ? (
                         <div className="w-full py-3.5 rounded-xl font-bold text-gray-500 text-sm bg-gray-100 text-center">
                           เข้าร่วมแล้ว · รอครบคน/หมดเวลาเพื่อจับรางวัล

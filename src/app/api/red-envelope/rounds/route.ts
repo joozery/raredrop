@@ -28,8 +28,10 @@ export async function GET() {
       .sort({ scheduledAt: 1 });
 
     rounds = await Promise.all(rounds.map((r) => ensureRoundStatus(r)));
-    // รอบที่จับรางวัลไปแล้ว (resolved) ให้หายจากหน้าเลย ไม่ต้องเงื่อนไข — รอรอบใหม่เปิดแทน
-    rounds = rounds.filter((r) => r.status !== "resolved");
+    // แสดง resolved rounds ต่อจนหมดเวลา endsAt — ให้ผู้เข้าร่วมเห็นผลรางวัล
+    // หายเองเมื่อ endsAt ผ่านไปแล้ว (query ด้านบนจะไม่ดึงมาอีก)
+    const now = new Date();
+    rounds = rounds.filter((r) => r.status !== "resolved" || r.endsAt >= now);
 
     const todaySpend = userId ? await getTodaySpend(userId) : 0;
     const myLevel = userId ? ((await User.findById(userId).select("vipLevel").lean<any>())?.vipLevel || 1) : 0;

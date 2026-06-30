@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Gift, Plus, Pencil, Trash2, X, Save, Loader2,
-  ChevronDown, ChevronUp, Coins, Package, Users, Clock,
+  ChevronDown, ChevronUp, Coins, Package, Users, Clock, RefreshCw,
 } from "lucide-react";
 import { UploadInput } from "@/components/ui/UploadInput";
 
@@ -271,195 +271,215 @@ export default function AdminRedEnvelopePage() {
   const rewardLabel = (r: Round) => r.rewardType === "cash" ? `฿${(r.totalAmount || 0).toLocaleString()}` : (r.itemId?.name || "ไอเทม");
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Gift size={22} className="text-rose-500" /> ซองแดง (Red Envelope)
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">ตั้งรอบแจกซองแดง กำหนดเงื่อนไขยอดใช้จ่ายและจำนวนคนที่ต้องครบก่อนจับรางวัล</p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center justify-center gap-2 bg-red-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-sm shrink-0"
-        >
-          <Plus size={16} /> เพิ่มรอบ
-        </button>
-      </div>
-
-      {/* Item catalog management — แยกจากไอเทมร้านค้า/กล่องสุ่มโดยสิ้นเชิง */}
-      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-            <Package size={16} className="text-slate-400" /> ไอเทมรางวัลซองแดง (แยกจากไอเทมร้านค้า/กล่องสุ่ม)
-          </h2>
-          <button
-            onClick={openCreateItem}
-            className="flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
-          >
-            <Plus size={14} /> เพิ่มไอเทม
-          </button>
-        </div>
-        {items.length === 0 ? (
-          <div className="px-5 py-6 text-center text-slate-400 text-sm">ยังไม่มีไอเทม — เพิ่มได้เลย</div>
-        ) : (
-          <div className="flex flex-wrap gap-2 p-4">
+    <div className="flex flex-col xl:flex-row gap-6 min-h-screen">
+      {/* LEFT COLUMN: Items */}
+      <div className="w-full xl:w-80 flex flex-col gap-4 shrink-0">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[calc(100vh-100px)]">
+          <div className="p-4 border-b border-slate-100">
+            <h2 className="font-black text-slate-800 text-lg">1. ไอเทมรางวัลซองแดง</h2>
+            <p className="text-xs text-slate-500 mt-1 mb-4">จัดการของรางวัลที่พร้อมให้เลือก</p>
+            <button
+              onClick={openCreateItem}
+              className="w-full bg-red-600 text-white font-bold py-2.5 rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
+            >
+              <Plus size={16} /> เพิ่มไอเทมรางวัล
+            </button>
+            <div className="relative mt-4">
+              <input
+                type="text"
+                placeholder="ค้นหาไอเทมรางวัล..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-red-400"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
             {items.map((it) => (
-              <div key={it._id} className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl pl-2 pr-1.5 py-1.5">
-                <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden flex items-center justify-center shrink-0">
-                  {it.image ? <img src={it.image} alt="" className="w-full h-full object-contain" /> : <Package size={14} className="text-slate-300" />}
+              <div
+                key={it._id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("text/plain", it._id);
+                }}
+                className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-2.5 cursor-grab active:cursor-grabbing hover:border-red-300 hover:shadow-md transition-all group"
+              >
+                <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                  {it.image ? <img src={it.image} alt="" className="w-full h-full object-contain p-1" /> : <Package size={20} className="text-slate-300" />}
                 </div>
-                <span className="text-xs font-bold text-slate-700">{it.name}</span>
-                {itemDeleteConfirm === it._id ? (
-                  <div className="flex items-center gap-1 ml-1">
-                    <button onClick={() => handleDeleteItem(it._id)} className="text-[10px] font-bold bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700">ยืนยัน</button>
-                    <button onClick={() => setItemDeleteConfirm(null)} className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded-lg hover:bg-slate-300">ยกเลิก</button>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-slate-800 truncate">{it.name}</p>
+                  <p className="text-xs text-emerald-600 font-medium mt-0.5">มีในระบบ</p>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <button onClick={() => openEditItem(it)} className="text-slate-300 hover:text-slate-600">
+                    <Pencil size={14} />
+                  </button>
+                  <div className="text-slate-300 group-hover:text-slate-400 cursor-grab">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16"/></svg>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-0.5 ml-1">
-                    <button onClick={() => openEditItem(it)} className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors">
-                      <Pencil size={12} />
-                    </button>
-                    <button onClick={() => setItemDeleteConfirm(it._id)} className="w-6 h-6 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-100 transition-colors">
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                )}
+                </div>
               </div>
             ))}
+            
+            <div className="mt-4 border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-slate-400 gap-2 bg-slate-50/50">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+              <p className="text-xs text-center font-medium leading-relaxed">ลากไอเทมรางวัล<br/>มาวางในช่วงเวลาด้านขวา</p>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
-        </div>
-      ) : rounds.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-slate-400 bg-white rounded-2xl border border-slate-100">
-          <Gift size={48} className="opacity-20" />
-          <p className="font-bold">ยังไม่มีรอบซองแดง</p>
-          <button onClick={openCreate} className="bg-red-600 text-white font-bold px-5 py-2 rounded-xl text-sm hover:bg-red-700">
-            เพิ่มรอบแรก
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {rounds.map((r) => {
-            const status = STATUS_CONFIG[r.status];
-            const isExpanded = expandedId === r._id;
-            const hasParticipants = r.participants.length > 0;
-            return (
-              <div key={r._id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${r.isActive ? "border-slate-100" : "border-slate-100 opacity-60"}`}>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <button
-                      onClick={() => handleToggleActive(r)}
-                      title={r.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${r.isActive ? "bg-emerald-500" : "bg-slate-300"}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${r.isActive ? "translate-x-6" : "translate-x-1"}`} />
-                    </button>
-                    <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 overflow-hidden">
-                      {r.image ? (
-                        <img src={r.image} alt="" className="w-full h-full object-cover" />
-                      ) : r.rewardType === "item" && r.itemId?.image ? (
-                        <img src={r.itemId.image} alt="" className="w-full h-full object-contain p-1" />
-                      ) : r.rewardType === "cash" ? (
-                        <Coins size={20} className="text-amber-500" />
-                      ) : (
-                        <Package size={20} className="text-rose-400" />
-                      )}
+      {/* RIGHT COLUMN: Matrix */}
+      <div className="flex-1 flex flex-col gap-4 min-w-0">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[calc(100vh-100px)]">
+          <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div>
+              <h2 className="font-black text-slate-800 text-lg">2. ตั้งเวลาแจกกล่องล่วงหน้า 3 วัน</h2>
+              <p className="text-xs text-slate-500 mt-1">กำหนดช่วงเวลาเปิดรับ - ปิดรับ - สุ่มแจก (ลากไอเทมมาวางได้เลย)</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button className="bg-white border border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 text-xs shadow-sm">
+                <RefreshCw size={14} /> คัดลอกจากวันนี้
+              </button>
+              <button className="bg-white border border-slate-200 text-slate-600 font-bold py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 text-xs shadow-sm">
+                <Plus size={14} /> เพิ่มรอบอิสระ
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-auto p-4 bg-slate-50/50">
+            <div className="min-w-[800px]">
+              {/* Table Header */}
+              <div className="grid grid-cols-4 gap-4 mb-4 text-center sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 py-2">
+                <div className="font-bold text-slate-500 text-sm">ช่วงเวลา</div>
+                {[0, 1, 2].map(offset => {
+                  const d = new Date(Date.now() + 7*3600000 + offset*86400000);
+                  const isToday = offset === 0;
+                  return (
+                    <div key={offset} className={`font-bold text-sm ${isToday ? "text-emerald-600" : "text-emerald-500"}`}>
+                      {d.getUTCDate()} {["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."][d.getUTCMonth()]} {d.getUTCFullYear() + 543} {isToday && "(วันนี้)"}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-bold text-slate-800 truncate">{r.label}</p>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${status.cls}`}>{status.label}</span>
-                        {!r.isActive && <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-500">ปิดใช้งาน</span>}
+                  );
+                })}
+              </div>
+              
+              {/* Table Body */}
+              <div className="flex flex-col gap-3">
+                {["19:00", "20:00", "21:00", "22:00", "23:00"].map(time => {
+                  const [h] = time.split(":");
+                  const nextHour = parseInt(h) + 1;
+                  const nextH = nextHour >= 24 ? "00:00+1" : nextHour.toString().padStart(2,"0") + ":00";
+                  const nextHForForm = nextHour >= 24 ? "23:59" : nextH;
+                  return (
+                    <div key={time} className="grid grid-cols-4 gap-4">
+                      {/* Row Header (Time) */}
+                      <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm flex flex-col justify-center">
+                        <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 mb-2">
+                          <Clock size={14} className="text-slate-400" /> {time} - {nextH}
+                        </div>
+                        <div className="text-[10px] text-slate-500 space-y-1">
+                          <p>เปิดรับ <span className="font-medium text-slate-700">{time}</span></p>
+                          <p>ปิดรับ <span className="font-medium text-slate-700">{nextH}</span></p>
+                          <p>สุ่มแจก <span className="font-medium text-slate-700">{nextH}</span></p>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        รางวัล <strong className="text-rose-600">{rewardLabel(r)}</strong>
-                        {" · "}เงื่อนไขใช้จ่าย ฿{r.conditionAmount.toLocaleString()}
-                        {r.conditionLevel > 0 && <> · ต้องเป็น Lv.{r.conditionLevel}+</>}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                        <Clock size={11} />
-                        {new Date(r.scheduledAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        {" – "}
-                        {new Date(r.endsAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        {" · "}<Users size={11} className="inline" /> {r.participants.length}/{r.maxPeople} คน
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                    {deleteConfirm === r._id ? (
-                      <>
-                        <button onClick={() => handleDelete(r._id)} className="text-xs font-bold bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">
-                          {hasParticipants ? "ยืนยันลบ (มีคนเข้าร่วมแล้ว)" : "ยืนยัน"}
-                        </button>
-                        <button onClick={() => setDeleteConfirm(null)} className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-200">ยกเลิก</button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => openEdit(r)}
-                          title={hasParticipants ? "แก้ไข (จะรีเซ็ตผู้เข้าร่วมเดิม)" : "แก้ไข"}
-                          className="w-8 h-8 rounded-lg border bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 flex items-center justify-center transition-colors"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirm(r._id)}
-                          title={hasParticipants ? "ลบ (มีคนเข้าร่วมแล้ว)" : "ลบ"}
-                          className="w-8 h-8 rounded-lg border bg-red-50 border-red-100 text-red-400 hover:bg-red-100 flex items-center justify-center transition-colors"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                        <button onClick={() => setExpandedId(isExpanded ? null : r._id)} className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
-                          {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {isExpanded && (
-                  <div className="border-t border-slate-100 p-4 bg-slate-50/50">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ผู้เข้าร่วม ({r.participants.length})</p>
-                    {r.participants.length === 0 ? (
-                      <p className="text-xs text-slate-400 py-3 text-center bg-white border border-slate-100 rounded-xl">ยังไม่มีคนเข้าร่วม</p>
-                    ) : (
-                      <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-50 max-h-72 overflow-y-auto">
-                        {r.participants.map((p, i) => (
-                          <div key={i} className="flex items-center gap-2.5 px-3 py-2 text-xs">
-                            <div className="w-6 h-6 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                              {p.userId?.avatar ? <img src={p.userId.avatar} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-slate-500">{p.userId?.name?.charAt(0) || "?"}</div>}
-                            </div>
-                            <span className="font-bold text-slate-700 flex-1 truncate">{p.userId?.name || "ผู้ใช้ถูกลบ"}</span>
-                            {r.status === "resolved" ? (
-                              r.rewardType === "cash" ? (
-                                <span className="font-bold text-rose-600">+฿{(p.rewardAmount || 0).toLocaleString()}</span>
-                              ) : (
-                                <span className={`font-bold ${p.isWinner ? "text-rose-600" : "text-slate-400"}`}>{p.isWinner ? "🎉 ผู้โชคดี" : "ไม่ได้รับ"}</span>
-                              )
+                      
+                      {/* Cells */}
+                      {[0, 1, 2].map(offset => {
+                        const dateStr = thaiDateStr(offset);
+                        const matchStartStr = `${dateStr}T${time}`;
+                        // Find rounds that roughly match this slot
+                        const cellRounds = rounds.filter(r => r.scheduledAt.startsWith(matchStartStr));
+                        
+                        return (
+                          <div 
+                            key={offset}
+                            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-red-400", "bg-red-50"); }}
+                            onDragLeave={(e) => { e.currentTarget.classList.remove("border-red-400", "bg-red-50"); }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.currentTarget.classList.remove("border-red-400", "bg-red-50");
+                              const itemId = e.dataTransfer.getData("text/plain");
+                              if(!itemId) return;
+                              const it = items.find(i => i._id === itemId);
+                              if(it) {
+                                setForm({
+                                  ...EMPTY_FORM,
+                                  label: `แจก ${it.name} รอบ ${time}`,
+                                  rewardType: "item",
+                                  itemId: it._id,
+                                  scheduledAt: `${dateStr}T${time}`,
+                                  endsAt: `${dateStr}T${nextHForForm}`,
+                                  maxPeople: "100"
+                                });
+                                setModal("create");
+                              }
+                            }}
+                            className="bg-white rounded-xl border-2 border-dashed border-slate-200 p-2 min-h-[120px] flex flex-col gap-2 transition-colors relative"
+                          >
+                            {cellRounds.length === 0 ? (
+                              <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-300 pointer-events-none">
+                                + วางรางวัลที่นี่
+                              </div>
                             ) : (
-                              <span className="text-slate-400">{new Date(p.joinedAt).toLocaleTimeString("th-TH", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" })}</span>
+                              cellRounds.map(r => (
+                                <div key={r._id} onClick={() => openEdit(r)} className="bg-white border border-slate-200 rounded-lg p-2 flex items-center gap-2 shadow-sm cursor-pointer hover:border-red-300 transition-colors relative z-10 group">
+                                  <div className="w-10 h-10 rounded bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                                    {r.image ? <img src={r.image} alt="" className="w-full h-full object-cover" /> :
+                                     r.rewardType === "item" && r.itemId?.image ? <img src={r.itemId.image} alt="" className="w-full h-full object-contain" /> :
+                                     r.rewardType === "cash" ? <Coins size={16} className="text-amber-500" /> : <Package size={16} className="text-rose-400" />
+                                    }
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-[11px] text-slate-800 truncate">{rewardLabel(r)}</p>
+                                    <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5"><Users size={10}/> {r.maxPeople} คน</p>
+                                  </div>
+                                  <button onClick={(e)=>{ e.stopPropagation(); setDeleteConfirm(r._id); }} className="text-slate-300 hover:text-red-500 p-1">
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              ))
                             )}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+              
+              {/* Other rounds that don't fit the matrix perfectly */}
+              <div className="mt-8 pt-6 border-t border-slate-200">
+                <h3 className="font-bold text-slate-700 text-sm mb-4">รอบอื่นๆ (นอกเหนือจากตาราง)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {rounds.filter(r => !["19:00","20:00","21:00","22:00","23:00"].some(t => r.scheduledAt.includes(`T${t}`))).map(r => (
+                    <div key={r._id} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3 shadow-sm">
+                       <div className="w-10 h-10 rounded bg-slate-50 flex items-center justify-center shrink-0">
+                        {r.rewardType === "cash" ? <Coins size={16} className="text-amber-500" /> : <Package size={16} className="text-rose-400" />}
+                       </div>
+                       <div className="flex-1 min-w-0">
+                          <p className="font-bold text-xs text-slate-800 truncate">{r.label}</p>
+                          <p className="text-[10px] text-slate-500">{new Date(r.scheduledAt).toLocaleString("th-TH")}</p>
+                       </div>
+                       <div className="flex items-center gap-1">
+                          <button onClick={() => openEdit(r)} className="w-7 h-7 flex items-center justify-center rounded bg-slate-100 text-slate-500 hover:bg-slate-200"><Pencil size={12}/></button>
+                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
+      {/* MODALS */}
       {/* Create/Edit Modal */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
               <h3 className="font-bold text-slate-900">{modal === "edit" ? "แก้ไขรอบซองแดง" : "เพิ่มรอบซองแดง"}</h3>
@@ -481,7 +501,7 @@ export default function AdminRedEnvelopePage() {
               </div>
 
               <UploadInput
-                label="รูปซองแดง (ไม่บังคับ — ไม่ตั้งจะใช้กราฟิกซองแดงปกติ)"
+                label="รูปซองแดง (ไม่บังคับ)"
                 value={form.image}
                 onChange={(url) => setForm((f) => ({ ...f, image: url }))}
                 folder="red-envelope-rounds"
@@ -526,7 +546,7 @@ export default function AdminRedEnvelopePage() {
                   <label className="text-xs font-bold text-slate-600">ไอเทมรางวัล *</label>
                   {items.length === 0 ? (
                     <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                      ยังไม่มีไอเทมในคลังซองแดง — เพิ่มได้ที่ section "ไอเทมรางวัลซองแดง" ด้านล่างก่อน
+                      ยังไม่มีไอเทมในคลังซองแดง
                     </p>
                   ) : (
                     <select
@@ -538,7 +558,7 @@ export default function AdminRedEnvelopePage() {
                       {items.map((it) => <option key={it._id} value={it._id}>{it.name}</option>)}
                     </select>
                   )}
-                  <p className="text-[11px] text-slate-400">สุ่มผู้โชคดี 1 คนจากผู้เข้าร่วมทั้งหมดได้รับไอเทมนี้ไป — ไอเทมชุดนี้แยกจากไอเทมร้านค้า/กล่องสุ่มโดยสิ้นเชิง</p>
+                  <p className="text-[11px] text-slate-400">สุ่มผู้โชคดี 1 คนจากผู้เข้าร่วมทั้งหมดได้รับไอเทมนี้ไป</p>
                 </div>
               )}
 
@@ -572,81 +592,6 @@ export default function AdminRedEnvelopePage() {
                 </div>
               </div>
 
-              {/* ── ตั้งเวลาล่วงหน้า ── */}
-              <div className="flex flex-col gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
-                <p className="text-xs font-bold text-slate-600">ตั้งเวลาล่วงหน้า</p>
-
-                {/* เลือกเวลา */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] text-slate-500 font-medium">เวลาเริ่ม</span>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {TIME_PRESETS.map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setPresetTime(t)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                          presetTime === t
-                            ? "bg-red-600 text-white border-red-600"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-red-300 hover:text-red-600"
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                    <input
-                      type="time"
-                      value={presetTime}
-                      onChange={(e) => setPresetTime(e.target.value)}
-                      className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-red-400"
-                    />
-                  </div>
-                </div>
-
-                {/* เลือกระยะเวลา */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] text-slate-500 font-medium">ระยะเวลาแจก</span>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {DURATION_PRESETS.map(({ label, minutes }) => (
-                      <button
-                        key={minutes}
-                        type="button"
-                        onClick={() => setPresetDuration(minutes)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                          presetDuration === minutes
-                            ? "bg-red-600 text-white border-red-600"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-red-300 hover:text-red-600"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* เลือกวัน → กดแล้ว fill ทั้ง scheduledAt + endsAt */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] text-slate-500 font-medium">วันที่</span>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {DAY_PRESETS.map(({ label, days }) => (
-                      <button
-                        key={days}
-                        type="button"
-                        onClick={() => {
-                          const start = buildDatetimeLocal(thaiDateStr(days), presetTime);
-                          const end = addMinutes(start, presetDuration);
-                          setForm((f) => ({ ...f, scheduledAt: start, endsAt: end }));
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* ช่อง datetime-local — แก้ละเอียดได้เอง */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-600">ช่วงเวลาแจก *</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -669,7 +614,6 @@ export default function AdminRedEnvelopePage() {
                     />
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-400">ถ้าครบจำนวนคนก่อน จะจับรางวัลทันที · แก้เวลาในช่องด้านบนได้โดยตรง</p>
               </div>
 
               {needsResetConfirm && (
@@ -708,7 +652,7 @@ export default function AdminRedEnvelopePage() {
 
       {/* Item Create/Edit Modal */}
       {itemModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeItemModal}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={closeItemModal}>
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
               <h3 className="font-bold text-slate-900">{itemModal === "edit" ? "แก้ไขไอเทม" : "เพิ่มไอเทมรางวัลซองแดง"}</h3>
@@ -737,16 +681,6 @@ export default function AdminRedEnvelopePage() {
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 placeholder="https://... หรืออัพโหลดรูปภาพ"
               />
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-600">รายละเอียด (ไม่บังคับ)</label>
-                <textarea
-                  value={itemForm.description}
-                  onChange={(e) => setItemForm((f) => ({ ...f, description: e.target.value }))}
-                  rows={2}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800 resize-none"
-                />
-              </div>
             </div>
 
             <div className="p-6 border-t border-slate-100 flex gap-3 shrink-0">
@@ -759,6 +693,21 @@ export default function AdminRedEnvelopePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Delete confirm dialogs */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+           <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full flex flex-col gap-4 text-center">
+              <Trash2 size={48} className="text-red-500 mx-auto" />
+              <h3 className="font-bold text-slate-900 text-lg">ยืนยันการลบ?</h3>
+              <p className="text-sm text-slate-500">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+              <div className="flex gap-3 mt-2">
+                 <button onClick={() => setDeleteConfirm(null)} className="flex-1 bg-slate-100 text-slate-700 font-bold py-2.5 rounded-xl hover:bg-slate-200">ยกเลิก</button>
+                 <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-xl hover:bg-red-700">ลบข้อมูล</button>
+              </div>
+           </div>
         </div>
       )}
 
