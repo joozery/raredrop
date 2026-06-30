@@ -50,8 +50,9 @@ export async function GET(req: Request) {
         const weekStartUtc = todayThaiMidnightUtc - 6 * 24 * 60 * 60 * 1000;
         dateFilter = { createdAt: { $gte: new Date(weekStartUtc) } };
       } else if (period === "month") {
-        // วันที่ 1 ของเดือนนี้ เที่ยงคืนเวลาไทย → แปลงกลับเป็น UTC
-        const monthStartUtc = Date.UTC(nowThai.getUTCFullYear(), nowThai.getUTCMonth(), 1) - THAI_OFFSET_MS;
+        // 30 วันย้อนหลัง (rolling window เหมือน week) ป้องกันว่างตอนต้นเดือน
+        const todayThaiMidnightUtc = Date.UTC(nowThai.getUTCFullYear(), nowThai.getUTCMonth(), nowThai.getUTCDate()) - THAI_OFFSET_MS;
+        const monthStartUtc = todayThaiMidnightUtc - 29 * 24 * 60 * 60 * 1000;
         dateFilter = { createdAt: { $gte: new Date(monthStartUtc) } };
       }
 

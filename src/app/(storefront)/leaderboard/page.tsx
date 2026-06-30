@@ -16,7 +16,7 @@ type Period = "all" | "month" | "week";
 
 const PERIOD_TABS: { value: Period; label: string }[] = [
   { value: "all", label: "ตลอดกาล" },
-  { value: "month", label: "เดือนนี้" },
+  { value: "month", label: "30 วัน" },
   { value: "week", label: "สัปดาห์นี้" },
 ];
 
