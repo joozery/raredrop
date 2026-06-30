@@ -4,14 +4,17 @@ import React, { useEffect, useState } from 'react';
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { ChevronRight, Wallet, Coins, Gift, UserPlus, LibrarySquare, HelpCircle, History, Settings, LogOut, Gamepad2, EyeOff } from 'lucide-react';
+import { useRouter } from "next/navigation";
 import { InviteFriendModal } from "@/components/profile/InviteFriendModal";
 import { RedeemCodeModal } from "@/components/profile/RedeemCodeModal";
+import { TopupModal } from "@/components/payment/TopupModal";
 
 interface LevelInfo {
   xp: number;
   level: number;
   currentLevelXp: number;
   nextLevelXp: number | null;
+  afterNextLevelXp: number | null;
   nextLevel: number | null;
   nextRewards: { itemId: { _id: string; name: string; image: string }; quantity: number }[];
   progress: number;
@@ -23,8 +26,10 @@ interface LevelInfo {
 
 export default function ProfilePage() {
   const { data: session, update: updateSession } = useSession();
+  const router = useRouter();
   const [isInviteOpen, setIsInviteOpen] = React.useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = React.useState(false);
+  const [isTopupOpen, setIsTopupOpen] = React.useState(false);
   const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
   const [discordUrl, setDiscordUrl] = useState("");
   const [gemcoinIcon, setGemcoinIcon] = useState("");
@@ -84,24 +89,31 @@ export default function ProfilePage() {
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setLevelInfo(d))
       .catch(() => {});
-    fetch("/api/user/settings")
+    fetch(`/api/user/settings?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setHideFromLeaderboard(!!d.hideFromLeaderboard))
       .catch(() => {});
   }, [session]);
 
   const handleToggleLeaderboardPrivacy = async () => {
-    const next = !hideFromLeaderboard;
+    console.log("[privacy] clicked, current:", hideFromLeaderboard);
+    const prev = hideFromLeaderboard;
+    const next = !prev;
     setSavingPrivacy(true);
     setHideFromLeaderboard(next);
     try {
-      await fetch("/api/user/settings", {
+      const res = await fetch("/api/user/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hideFromLeaderboard: next }),
       });
-    } catch {
-      setHideFromLeaderboard(!next); // rollback
+      const data = await res.json();
+      console.log("[privacy] PATCH response:", res.status, data);
+      if (!res.ok) throw new Error(data.error || "failed");
+      setHideFromLeaderboard(!!data.hideFromLeaderboard);
+    } catch (err) {
+      console.error("[privacy] error:", err);
+      setHideFromLeaderboard(prev);
     } finally {
       setSavingPrivacy(false);
     }
@@ -181,14 +193,27 @@ export default function ProfilePage() {
           <div className="relative z-10 w-full pr-14">
             <div className="flex items-end justify-between mb-2">
               <h2 className="text-xl font-black text-gray-900 tracking-tight">Lv.{levelInfo?.level ?? (session?.user as any)?.vipLevel ?? 1}</h2>
-              <p className="text-[10px] text-gray-500 font-medium flex items-center cursor-pointer hover:text-gray-700">
+              <button
+                onClick={() => router.push("/levels")}
+                className="text-[10px] text-gray-500 font-medium flex flex-col items-end gap-0.5 hover:text-gray-700 transition-colors"
+              >
                 {levelInfo
                   ? levelInfo.nextLevelXp != null
-                    ? `เหลืออีก ${levelInfo.xpToNext.toLocaleString()} XP เพื่อเลเวลอัป`
-                    : "เลเวลสูงสุดแล้ว! 🎉"
-                  : "โหลด..."}
-                {levelInfo?.nextLevelXp != null && <ChevronRight size={12} className="ml-0.5" />}
-              </p>
+                    ? <>
+                        <span className="flex items-center gap-0.5">
+                          เหลืออีก {levelInfo.xpToNext.toLocaleString()} XP เพื่อ Lv.{levelInfo.nextLevel}
+                          <ChevronRight size={12} className="ml-0.5" />
+                        </span>
+                        {levelInfo.afterNextLevelXp != null && (
+                          <span className="text-gray-400">
+                            Lv.{levelInfo.nextLevel} ต้องการ {(levelInfo.afterNextLevelXp - levelInfo.nextLevelXp!).toLocaleString()} XP
+                          </span>
+                        )}
+                      </>
+                    : <span>เลเวลสูงสุดแล้ว! ดูทั้งหมด <ChevronRight size={10} className="inline" /></span>
+                  : <span>โหลด...</span>
+                }
+              </button>
             </div>
             <div className="h-1.5 bg-gray-200/80 rounded-full w-full overflow-hidden mb-1.5">
               <div
@@ -222,17 +247,22 @@ export default function ProfilePage() {
 
       <div className="px-4 flex flex-col gap-4 mt-2">
         {/* Wallet Section */}
-        <div className="bg-[#2A2A2A] rounded-2xl p-4 text-white shadow-md">
+        <div
+          onClick={() => setIsTopupOpen(true)}
+          className="bg-[#2A2A2A] rounded-2xl p-4 text-white shadow-md cursor-pointer hover:bg-[#333333] active:scale-[0.99] transition-all"
+        >
           <div className="flex justify-between items-start mb-4">
             <div>
-              <div className="flex items-center gap-1.5 text-gray-400 text-xs font-medium mb-1 cursor-pointer hover:text-gray-300 transition-colors">
-                <Wallet size={14} /> ยอดเงินที่ใช้ได้ <ChevronRight size={14} />
+              <div className="flex items-center gap-1.5 text-gray-400 text-xs font-medium mb-1">
+                <Wallet size={14} /> ยอดเงินที่ใช้ได้
               </div>
               <div className="text-2xl font-bold tracking-tight">
                 ฿ {session ? ((session.user as any)?.coins || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) : "0.00"}
               </div>
             </div>
-
+            <div className="bg-red-600 hover:bg-red-700 transition-colors text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+              เติมเงิน
+            </div>
           </div>
         </div>
 
@@ -350,6 +380,7 @@ export default function ProfilePage() {
 
       <InviteFriendModal isOpen={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
       <RedeemCodeModal isOpen={isRedeemOpen} onClose={() => setIsRedeemOpen(false)} />
+      <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
     </div>
   );
 }

@@ -36,7 +36,7 @@ const typeBg = {
   warning: "bg-amber-50",
 };
 
-export function NotificationDropdown() {
+export function NotificationDropdown({ gemcoinIcon }: { gemcoinIcon?: string }) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const ref = useRef<HTMLDivElement>(null);
@@ -121,8 +121,14 @@ export function NotificationDropdown() {
                   <div className={`flex gap-3 px-4 py-3 transition-colors hover:bg-gray-50 ${!n.isRead ? typeBg[n.type] : ""}`}>
                     {typeIcon[n.type]}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-bold text-gray-900 leading-snug ${!n.isRead ? "text-gray-900" : "text-gray-600"}`}>
-                        {n.title}
+                      <p className={`text-xs font-bold text-gray-900 leading-snug flex items-center gap-1 ${!n.isRead ? "text-gray-900" : "text-gray-600"}`}>
+                        {n.title.replace(/💎/g, '')}
+                        {n.title.includes('💎') && gemcoinIcon && (
+                          <img src={gemcoinIcon} alt="gem" className="w-4 h-4 object-contain inline-block" />
+                        )}
+                        {n.title.includes('💎') && !gemcoinIcon && (
+                          <span>💎</span>
+                        )}
                       </p>
                       <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
                       <p className="text-[10px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>

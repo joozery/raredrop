@@ -62,7 +62,7 @@ export function Header() {
                 </div>
               </div>
             )}
-            {session && <NotificationDropdown />}
+            {session && <NotificationDropdown gemcoinIcon={gemcoinIcon} />}
             {session ? (
               <Link href="/profile" className="w-8 h-8 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100">
                 {session.user?.image ? (
@@ -117,7 +117,7 @@ export function Header() {
               </div>
             )}
             
-            {session && <NotificationDropdown />}
+            {session && <NotificationDropdown gemcoinIcon={gemcoinIcon} />}
 
             {session ? (
               <Link href="/profile" className="w-10 h-10 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100 hover:border-gray-300 transition-colors">

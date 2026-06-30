@@ -32,9 +32,13 @@ export async function GET() {
     const sortedLevels = levels as any[];
     const currentConfig = sortedLevels.filter((l) => l.xpRequired <= xp).pop() ?? null;
     const nextConfig = sortedLevels.find((l) => l.xpRequired > xp) ?? null;
+    const afterNextConfig = nextConfig
+      ? sortedLevels.find((l) => l.xpRequired > nextConfig.xpRequired) ?? null
+      : null;
 
     const currentLevelXp = currentConfig?.xpRequired ?? 0;
     const nextLevelXp = nextConfig?.xpRequired ?? null;
+    const afterNextLevelXp = afterNextConfig?.xpRequired ?? null;
     const progress = nextLevelXp != null
       ? Math.min(1, (xp - currentLevelXp) / (nextLevelXp - currentLevelXp))
       : 1;
@@ -44,6 +48,7 @@ export async function GET() {
       level: currentLevel,
       currentLevelXp,
       nextLevelXp,
+      afterNextLevelXp,
       nextLevel: nextConfig?.level ?? null,
       nextRewards: nextConfig?.rewardItems ?? [],
       progress,

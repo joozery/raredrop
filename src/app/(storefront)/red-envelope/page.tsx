@@ -134,9 +134,12 @@ export default function RedEnvelopePage() {
   const activeRoundId = rounds[activeIdx]?._id;
 
   useEffect(() => {
-    if (!activeRoundId) return;
+    if (activeTab === "today" && !activeRoundId) return;
     setParticipantsLoading(true);
-    fetch(`/api/red-envelope/recent?day=${activeTab}&roundId=${activeRoundId}`)
+    const url = activeTab === "today"
+      ? `/api/red-envelope/recent?day=today&roundId=${activeRoundId}`
+      : `/api/red-envelope/recent?day=yesterday`;
+    fetch(url)
       .then((r) => r.json())
       .then((d) => { setParticipants(d.entries || []); setParticipantsTotal(d.total || 0); })
       .catch(() => {})
