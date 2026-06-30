@@ -8,6 +8,8 @@ import { ReferralCapture } from "@/components/referral/ReferralCapture";
 import { PopupAd } from "@/components/home/PopupAd";
 import { FloatingLeaderboard } from "@/components/layout/FloatingLeaderboard";
 
+import { FloatingWidgetsGroup } from "@/components/layout/FloatingWidgetsGroup";
+
 export default function StorefrontLayout({
   children,
 }: Readonly<{
@@ -28,8 +30,10 @@ export default function StorefrontLayout({
         </main>
         <BottomNav />
       </div>
-      <LiveChatWidget />
-      <FloatingLeaderboard />
+      <FloatingWidgetsGroup>
+        <FloatingLeaderboard />
+        <LiveChatWidget />
+      </FloatingWidgetsGroup>
       <PopupAd />
     </BalanceProvider>
   );

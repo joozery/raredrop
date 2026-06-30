@@ -212,7 +212,7 @@ export function LiveChatWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 lg:bottom-6 right-4 lg:right-6 z-40 w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-500/30 flex items-center justify-center transition-colors"
+          className="relative z-40 w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-500/30 flex items-center justify-center transition-colors"
           aria-label="Live Chat"
         >
           <MessageCircle size={24} />
