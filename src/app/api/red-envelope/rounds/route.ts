@@ -17,10 +17,11 @@ export async function GET() {
 
     const todayStart = startOfTodayThai();
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const twoDaysAgo = new Date(todayStart.getTime() - 2 * 24 * 60 * 60 * 1000);
 
     let rounds = await RedEnvelopeRound.find({
       scheduledAt: { $lt: todayEnd },
-      endsAt: { $gte: todayStart },
+      endsAt: { $gte: twoDaysAgo },
       status: { $ne: "cancelled" },
       isActive: true,
     })
@@ -28,10 +29,6 @@ export async function GET() {
       .sort({ scheduledAt: 1 });
 
     rounds = await Promise.all(rounds.map((r) => ensureRoundStatus(r)));
-    // แสดง resolved rounds ต่อจนหมดเวลา endsAt — ให้ผู้เข้าร่วมเห็นผลรางวัล
-    // หายเองเมื่อ endsAt ผ่านไปแล้ว (query ด้านบนจะไม่ดึงมาอีก)
-    const now = new Date();
-    rounds = rounds.filter((r) => r.status !== "resolved" || r.endsAt >= now);
 
     const todaySpend = userId ? await getTodaySpend(userId) : 0;
     const myLevel = userId ? ((await User.findById(userId).select("vipLevel").lean<any>())?.vipLevel || 1) : 0;
