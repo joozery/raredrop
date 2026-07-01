@@ -42,3 +42,34 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !["admin", "super_admin"].includes((session.user as any)?.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { userId, itemId, status = "kept" } = body;
+
+    if (!userId || !itemId) {
+      return NextResponse.json({ error: "userId and itemId are required" }, { status: 400 });
+    }
+
+    await connectToDatabase();
+
+    const inv = await Inventory.create({ userId, itemId, status });
+    const populated = await Inventory.findById(inv._id)
+      .populate({
+        path: "itemId",
+        model: Item,
+        select: "name image price rarityId",
+        populate: { path: "rarityId", model: Rarity, select: "name color" },
+      });
+
+    return NextResponse.json(populated, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

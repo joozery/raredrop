@@ -33,10 +33,14 @@ export default function AdminChatPage() {
   const [activeStatus, setActiveStatus] = useState<"open" | "closed">("open");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const inputRef = useRef("");
   const [search, setSearch] = useState("");
   const [pendingImage, setPendingImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [welcomeMsgInput, setWelcomeMsgInput] = useState("");
+  const [caseClosedInput, setCaseClosedInput] = useState("");
+  const [caseOpenInput, setCaseOpenInput] = useState("");
+  const [contactInput, setContactInput] = useState("");
   const [savingWelcome, setSavingWelcome] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,18 +48,40 @@ export default function AdminChatPage() {
   useEffect(() => {
     fetch("/api/public-settings")
       .then((r) => r.json())
-      .then((d) => setWelcomeMsgInput(d.livechat_welcome_message || ""))
+      .then((d) => {
+        setWelcomeMsgInput(d.livechat_welcome_message || "");
+        setCaseClosedInput(d.livechat_case_closed_text || "เคสถูกปิดแล้ว");
+        setCaseOpenInput(d.livechat_case_open_text || "กำลังดำเนินการ");
+        setContactInput(d.livechat_contact_text || "ติดต่อทีมงานได้เลย");
+      })
       .catch(() => {});
   }, []);
 
   const saveWelcomeMsg = async () => {
     setSavingWelcome(true);
     try {
-      await fetch("/api/admin/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: "livechat_welcome_message", value: welcomeMsgInput.trim() }),
-      });
+      await Promise.all([
+        fetch("/api/admin/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: "livechat_welcome_message", value: welcomeMsgInput.trim() }),
+        }),
+        fetch("/api/admin/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: "livechat_case_closed_text", value: caseClosedInput.trim() }),
+        }),
+        fetch("/api/admin/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: "livechat_case_open_text", value: caseOpenInput.trim() }),
+        }),
+        fetch("/api/admin/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: "livechat_contact_text", value: contactInput.trim() }),
+        })
+      ]);
     } catch {} finally {
       setSavingWelcome(false);
     }
@@ -128,12 +154,13 @@ export default function AdminChatPage() {
   };
 
   const send = async () => {
-    const text = input.trim();
+    const text = inputRef.current.trim();
     const image = pendingImage;
     if ((!text && !image) || sending || !activeId) return;
     setSending(true);
     const optimistic: ChatMsg = { _id: `tmp-${messages.length}`, senderRole: "admin", text, imageUrl: image || undefined, createdAt: new Date().toISOString() };
     setMessages((prev) => [...prev, optimistic]);
+    inputRef.current = "";
     setInput("");
     setPendingImage("");
     try {
@@ -147,11 +174,13 @@ export default function AdminChatPage() {
         loadConversations();
       } else {
         setMessages((prev) => prev.filter((m) => m._id !== optimistic._id));
+        inputRef.current = text;
         setInput(text);
         setPendingImage(image);
       }
     } catch {
       setMessages((prev) => prev.filter((m) => m._id !== optimistic._id));
+      inputRef.current = text;
       setInput(text);
       setPendingImage(image);
     } finally {
@@ -228,6 +257,39 @@ export default function AdminChatPage() {
             >
               {savingWelcome ? "กำลังบันทึก..." : "บันทึก"}
             </button>
+          </div>
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-4 mt-4">
+          <div className="flex-1">
+            <p className="text-sm font-bold text-slate-700 mb-1.5">สถานะ: ข้อความติดต่อแชทใหม่</p>
+            <input
+              type="text"
+              value={contactInput}
+              onChange={(e) => setContactInput(e.target.value)}
+              placeholder="เช่น ติดต่อทีมงานได้เลย"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-700"
+            />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-slate-700 mb-1.5">สถานะ: กำลังดำเนินการ (Open)</p>
+            <input
+              type="text"
+              value={caseOpenInput}
+              onChange={(e) => setCaseOpenInput(e.target.value)}
+              placeholder="เช่น กำลังดำเนินการ"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-700"
+            />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-slate-700 mb-1.5">สถานะ: เคสถูกปิดแล้ว (Closed)</p>
+            <input
+              type="text"
+              value={caseClosedInput}
+              onChange={(e) => setCaseClosedInput(e.target.value)}
+              placeholder="เช่น เคสถูกปิดแล้ว"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-700"
+            />
           </div>
         </div>
       </div>
@@ -387,12 +449,24 @@ export default function AdminChatPage() {
                   >
                     {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
                   </button>
-                  <input
+                  <textarea
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                    onChange={(e) => {
+                      inputRef.current = e.target.value;
+                      setInput(e.target.value);
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        send();
+                        (e.target as HTMLTextAreaElement).style.height = "auto";
+                      }
+                    }}
                     placeholder="พิมพ์ข้อความตอบกลับ..."
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-800"
+                    rows={1}
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-800 resize-none overflow-y-auto min-h-[42px] max-h-[120px]"
                   />
                   <button
                     onClick={send}

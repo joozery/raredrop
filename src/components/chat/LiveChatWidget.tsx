@@ -38,6 +38,9 @@ export function LiveChatWidget() {
   const [newChatText, setNewChatText] = useState("");
   const [startingChat, setStartingChat] = useState(false);
   const [welcomeMsg, setWelcomeMsg] = useState("");
+  const [caseClosedText, setCaseClosedText] = useState("เคสถูกปิดแล้ว");
+  const [caseOpenText, setCaseOpenText] = useState("กำลังดำเนินการ");
+  const [contactText, setContactText] = useState("ติดต่อทีมงานได้เลย");
   const [welcomeLoaded, setWelcomeLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,7 +93,13 @@ export function LiveChatWidget() {
     if (!open || welcomeLoaded) return;
     fetch("/api/public-settings")
       .then((r) => r.json())
-      .then((d) => { setWelcomeMsg(d.livechat_welcome_message || ""); setWelcomeLoaded(true); })
+      .then((d) => { 
+        setWelcomeMsg(d.livechat_welcome_message || "");
+        if (d.livechat_case_closed_text) setCaseClosedText(d.livechat_case_closed_text);
+        if (d.livechat_case_open_text) setCaseOpenText(d.livechat_case_open_text);
+        if (d.livechat_contact_text) setContactText(d.livechat_contact_text);
+        setWelcomeLoaded(true); 
+      })
       .catch(() => setWelcomeLoaded(true));
   }, [open, welcomeLoaded]);
 
@@ -239,7 +248,7 @@ export function LiveChatWidget() {
               )}
               <div className="min-w-0">
                 <p className="font-bold text-sm leading-tight truncate">{activeId ? (activeSubject || "แชท") : "ศูนย์ช่วยเหลือ"}</p>
-                <p className="text-[11px] text-red-100 truncate">{activeId ? (activeStatus === "closed" ? "เคสถูกปิดแล้ว" : "กำลังดำเนินการ") : "ติดต่อทีมงานได้เลย"}</p>
+                <p className="text-[11px] text-red-100 truncate">{activeId ? (activeStatus === "closed" ? caseClosedText : caseOpenText) : contactText}</p>
               </div>
             </div>
             <button onClick={() => { setOpen(false); setActiveId(null); }} className="p-1 rounded-full hover:bg-white/20 transition-colors shrink-0">
@@ -300,13 +309,25 @@ export function LiveChatWidget() {
               {/* input เปิดแชทใหม่ — แสดงเฉพาะเมื่อยังไม่มีเคส */}
               {conversations.length === 0 && (
                 <div className="border-t border-gray-100 p-3 flex items-center gap-2 shrink-0">
-                  <input
-                    type="text"
+                  <textarea
                     value={newChatText}
-                    onChange={(e) => setNewChatText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") startChat(); }}
+                    onChange={(e) => {
+                      setNewChatText(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                    }}
+                    onKeyDown={(e) => { 
+                      if ((e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter" || e.keyCode === 13) && !e.shiftKey) { 
+                        e.preventDefault(); 
+                        setTimeout(() => {
+                          startChat(); 
+                          if (e.target) (e.target as any).style.height = 'auto';
+                        }, 0);
+                      } 
+                    }}
                     placeholder="พิมพ์ข้อความ..."
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-800"
+                    rows={1}
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-800 resize-none overflow-y-auto min-h-[42px] max-h-[120px]"
                   />
                   <button
                     onClick={startChat}
@@ -343,7 +364,7 @@ export function LiveChatWidget() {
               {/* Input หรือ แจ้งเคสปิด */}
               {activeStatus === "closed" ? (
                 <div className="p-3 border-t border-gray-100 shrink-0">
-                  <p className="text-xs text-center text-gray-500">เคสนี้ถูกปิดแล้ว — หากต้องการสอบถามเพิ่มเติม กรุณาขอรับไอเทมใหม่อีกครั้ง</p>
+                  <p className="text-xs text-center text-gray-500">{caseClosedText} — หากต้องการสอบถามเพิ่มเติม กรุณาขอรับไอเทมใหม่อีกครั้ง</p>
                 </div>
               ) : (
                 <div className="border-t border-gray-100 shrink-0 bg-white">
@@ -379,13 +400,25 @@ export function LiveChatWidget() {
                     >
                       {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
                     </button>
-                    <input
-                      type="text"
+                    <textarea
                       value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                      onChange={(e) => {
+                        setInput(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                      }}
+                      onKeyDown={(e) => { 
+                        if ((e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter" || e.keyCode === 13) && !e.shiftKey) { 
+                          e.preventDefault(); 
+                          setTimeout(() => {
+                            send(); 
+                            if (e.target) (e.target as any).style.height = 'auto';
+                          }, 0);
+                        } 
+                      }}
                       placeholder="พิมพ์ข้อความ..."
-                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-800"
+                      rows={1}
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-gray-800 resize-none overflow-y-auto min-h-[42px] max-h-[120px]"
                     />
                     <button
                       onClick={send}

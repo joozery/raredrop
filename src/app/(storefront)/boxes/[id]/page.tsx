@@ -452,7 +452,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   );
                 })()}
               </div>
-              {balance >= selectedDraw.price ? (
+              {balance >= box!.price * Math.max(0, selectedDraw.times - Math.min(freeCredits, selectedDraw.times)) ? (
                 <button onClick={handleConfirmOpen} disabled={isOpening} className="w-full bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 font-black py-4 rounded-xl text-sm transition-colors shadow-sm">
                   {isOpening ? "กำลังดำเนินการ..." : "ยืนยันการชำระเงิน"}
                 </button>

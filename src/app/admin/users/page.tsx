@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Search, X, Coins, Crown, Star, Wallet, ArrowUpCircle } from "lucide-react";
+import Link from "next/link";
 
 type SortKey = "newest" | "coins_desc" | "coins_asc" | "gem_desc" | "gem_asc" | "xp_desc";
 
@@ -253,7 +254,7 @@ export default function ManageUsers() {
                         <img src={user.avatar || `https://api.dicebear.com/9.x/avataaars/svg?seed=${user._id}`} alt="avatar" className="w-full h-full object-cover" />
                       </div>
                       <div>
-                        <div className="font-bold text-slate-900">{user.name}</div>
+                        <Link href={`/admin/users/${user._id}`} className="font-bold text-slate-900 hover:text-red-600 transition-colors">{user.name}</Link>
                         <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
                           ID: <span className="font-mono">{user._id.slice(-6).toUpperCase()}</span>
                         </div>
