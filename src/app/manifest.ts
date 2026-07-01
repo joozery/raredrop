@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   let siteName = "LuxusX";
   let siteDesc = "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท";
-  let logoUrl = "/logo/logo.png";
+  let logoUrl = "/logo.jpeg";
 
   try {
     await connectToDatabase();
@@ -21,9 +21,12 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     if ((l as any)?.value) logoUrl = (l as any).value;
   } catch {}
 
+  const isJpeg = logoUrl.endsWith(".jpg") || logoUrl.endsWith(".jpeg");
+  const mimeType = isJpeg ? "image/jpeg" : "image/png";
+
   const icons: MetadataRoute.Manifest["icons"] = [
-    { src: logoUrl, sizes: "192x192", type: "image/png" },
-    { src: logoUrl, sizes: "512x512", type: "image/png", purpose: "maskable" },
+    { src: logoUrl, sizes: "192x192", type: mimeType },
+    { src: logoUrl, sizes: "512x512", type: mimeType, purpose: "maskable" },
   ];
 
   return {

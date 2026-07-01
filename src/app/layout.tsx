@@ -35,14 +35,14 @@ async function getSiteSettings() {
       siteName: (n as any)?.value || "LuxusX",
       siteDesc: (d as any)?.value || "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท",
       ogImage: (og as any)?.value || `${BASE}/logo.jpeg`,
-      siteLogo: (lo as any)?.value || `${BASE}/logo/logo.png`,
+      siteLogo: (lo as any)?.value || `${BASE}/logo.jpeg`,
     };
   } catch {
     return {
       siteName: "LuxusX",
       siteDesc: "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท",
       ogImage: `${BASE}/logo.jpeg`,
-      siteLogo: `${BASE}/logo/logo.png`,
+      siteLogo: `${BASE}/logo.jpeg`,
     };
   }
 }
