@@ -1,19 +1,41 @@
 import { MetadataRoute } from "next";
+import { connectToDatabase } from "@/lib/mongoose";
+import Setting from "@/models/Setting";
 
-export default function manifest(): MetadataRoute.Manifest {
+export const dynamic = "force-dynamic";
+
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  let siteName = "LuxusX";
+  let siteDesc = "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท";
+  let logoUrl = "/logo/logo.png";
+
+  try {
+    await connectToDatabase();
+    const [n, d, l] = await Promise.all([
+      Setting.findOne({ key: "site_name" }).lean(),
+      Setting.findOne({ key: "site_description" }).lean(),
+      Setting.findOne({ key: "site_logo" }).lean(),
+    ]);
+    if ((n as any)?.value) siteName = (n as any).value;
+    if ((d as any)?.value) siteDesc = (d as any).value;
+    if ((l as any)?.value) logoUrl = (l as any).value;
+  } catch {}
+
+  const icons: MetadataRoute.Manifest["icons"] = [
+    { src: logoUrl, sizes: "192x192", type: "image/png" },
+    { src: logoUrl, sizes: "512x512", type: "image/png", purpose: "maskable" },
+  ];
+
   return {
-    name: "LuxusX - กล่องสุ่มสินค้าพรีเมียม",
-    short_name: "LuxusX",
-    description: "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท",
+    name: `${siteName} - กล่องสุ่มสินค้าพรีเมียม`,
+    short_name: siteName,
+    description: siteDesc,
     start_url: "/",
     display: "standalone",
     background_color: "#F8F8F8",
     theme_color: "#dc2626",
     lang: "th",
     categories: ["shopping", "games", "entertainment"],
-    icons: [
-      { src: "/logo/logo.png", sizes: "192x192", type: "image/png" },
-      { src: "/logo/logo.png", sizes: "512x512", type: "image/png" },
-    ],
+    icons,
   };
 }
