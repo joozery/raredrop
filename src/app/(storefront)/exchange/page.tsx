@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Coins, Package, Box as BoxIcon, CheckCircle2, AlertCircle, Loader2, ShoppingBag, Copy, Check } from "lucide-react";
+import { Coins, Package, Box as BoxIcon, CheckCircle2, AlertCircle, Loader2, ShoppingBag, Copy, Check, X, Sparkles } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { LoginModal } from "@/components/auth/LoginModal";
 
 interface RarityData { name: string; color: string }
@@ -24,11 +25,14 @@ interface GemReward {
   isActive: boolean;
 }
 
-interface RedeemResult {
-  rewardId: string;
-  success: boolean;
-  message: string;
-  accountData?: string;
+interface RedeemModal {
+  type: "box" | "item";
+  name: string;
+  image?: string;
+  boxId?: string;
+  detail: string;
+  isCoinReward?: boolean;
+  gemAmount?: number;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -47,11 +51,13 @@ function CopyButton({ text }: { text: string }) {
 
 export default function ExchangePage() {
   const { data: session, update: updateSession } = useSession();
+  const router = useRouter();
   const [rewards, setRewards] = useState<GemReward[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [toast, setToast] = useState<{ success: boolean; message: string } | null>(null);
   const [accountModal, setAccountModal] = useState<{ name: string; data: string } | null>(null);
+  const [redeemModal, setRedeemModal] = useState<RedeemModal | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const gemCoins = (session?.user as any)?.gemCoins || 0;
@@ -89,11 +95,26 @@ export default function ExchangePage() {
 
       if (data.rewardDetail?.type === "shop" && data.rewardDetail?.accountData) {
         setAccountModal({ name: reward.name, data: data.rewardDetail.accountData });
+      } else if (reward.type === "box") {
+        setRedeemModal({
+          type: "box",
+          name: reward.name,
+          image: reward.boxId?.image,
+          boxId: reward.boxId?._id,
+          detail: `ได้รับสิทธิ์เปิด "${reward.boxId?.name}" ${reward.boxOpenTimes} ครั้ง`,
+        });
       } else {
-        const msg = reward.type === "box"
-          ? `ได้รับสิทธิ์เปิด "${reward.boxId?.name}" ${reward.boxOpenTimes} ครั้ง!`
-          : `ได้รับ "${reward.itemId?.name}" เข้า inventory แล้ว!`;
-        showToast(true, msg);
+        const isCoinReward = reward.itemId?.type === "coin_reward";
+        setRedeemModal({
+          type: "item",
+          name: reward.name,
+          image: isCoinReward ? undefined : reward.itemId?.image,
+          detail: isCoinReward
+            ? `ได้รับ ${reward.itemId?.coinRewardAmount} GemCoin`
+            : `ได้รับ "${reward.itemId?.name}" เข้า Inventory แล้ว`,
+          isCoinReward,
+          gemAmount: reward.itemId?.coinRewardAmount,
+        });
       }
 
       // รีโหลด rewards เพื่ออัปเดต stock
@@ -279,6 +300,69 @@ export default function ExchangePage() {
       )}
 
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+
+      {/* Redeem Result Modal (box / item) */}
+      {redeemModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setRedeemModal(null)}
+        >
+          <div
+            className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header gradient */}
+            <div className={`px-6 py-5 flex flex-col items-center gap-1 ${redeemModal.type === "box" ? "bg-gradient-to-br from-blue-500 to-purple-600" : "bg-gradient-to-br from-purple-500 to-pink-500"}`}>
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-1">
+                <Sparkles size={32} className="text-white" />
+              </div>
+              <p className="text-white font-black text-xl">แลกสำเร็จ! 🎉</p>
+              <p className="text-white/80 text-sm font-medium text-center">{redeemModal.name}</p>
+            </div>
+
+            <div className="p-6 flex flex-col items-center gap-4">
+              {/* Image */}
+              {redeemModal.isCoinReward ? (
+                <span className="text-7xl drop-shadow-lg">💎</span>
+              ) : redeemModal.image ? (
+                <div className="w-32 h-32 rounded-2xl overflow-hidden bg-gray-100 shadow-md">
+                  <img src={redeemModal.image} alt="" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center">
+                  {redeemModal.type === "box" ? <BoxIcon size={36} className="text-blue-400" /> : <Package size={36} className="text-purple-400" />}
+                </div>
+              )}
+
+              <p className="text-center font-bold text-gray-700 text-sm leading-relaxed">{redeemModal.detail}</p>
+
+              <div className="w-full flex flex-col gap-2">
+                {redeemModal.type === "box" && redeemModal.boxId ? (
+                  <button
+                    onClick={() => { setRedeemModal(null); router.push(`/boxes/${redeemModal.boxId}`); }}
+                    className="w-full py-3 rounded-xl font-black text-white bg-gradient-to-b from-blue-500 to-blue-600 shadow-[0_3px_0_#1d4ed8] hover:from-blue-600 hover:to-blue-700 active:shadow-none active:translate-y-0.5 transition-all text-sm"
+                  >
+                    ไปเปิดกล่องเลย 🎁
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setRedeemModal(null); router.push("/profile"); }}
+                    className="w-full py-3 rounded-xl font-black text-white bg-gradient-to-b from-purple-500 to-purple-600 shadow-[0_3px_0_#6b21a8] hover:from-purple-600 hover:to-purple-700 active:shadow-none active:translate-y-0.5 transition-all text-sm"
+                  >
+                    ดู Inventory ของฉัน 📦
+                  </button>
+                )}
+                <button
+                  onClick={() => setRedeemModal(null)}
+                  className="w-full py-2.5 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors text-sm"
+                >
+                  ปิด
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
