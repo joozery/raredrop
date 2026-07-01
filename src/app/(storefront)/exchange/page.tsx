@@ -110,7 +110,6 @@ export default function ExchangePage() {
         } catch {
           showToast(true, `แลก "${reward.name}" สำเร็จ!`);
         }
-        if (reward.type === "item") router.push("/inventory");
       }
 
       // รีโหลด rewards เพื่ออัปเดต stock
