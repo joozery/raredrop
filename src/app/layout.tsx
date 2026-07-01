@@ -130,9 +130,10 @@ export default async function RootLayout({
           suppressHydrationWarning
         />
         {/* apple-touch-icon สำหรับ Safari iOS Add to Home Screen */}
-        <link rel="apple-touch-icon" href={siteLogo} />
-        <link rel="apple-touch-icon" sizes="180x180" href={siteLogo} />
-        <link rel="icon" type="image/jpeg" href={siteLogo} />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
+        <link rel="icon" type="image/png" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={siteName} />
