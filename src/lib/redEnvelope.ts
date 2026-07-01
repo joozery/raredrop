@@ -126,7 +126,7 @@ export async function ensureRoundStatus(round: RoundDoc): Promise<RoundDoc> {
   // ครบคนแล้ว หรือหมดเวลาแล้วแต่ยังไม่ถูกจับรางวัล (กันเคสตกค้าง) — จับรางวัลให้ทุกคนพร้อมกันทีเดียว
   if (round.status === "open" && (round.participants.length >= round.maxPeople || now >= round.endsAt)) {
     // allocations/winnerSlot เป็น select:false เสมอ — ต้องโหลดใหม่ให้ครบก่อนจับรางวัล ป้องกันรั่วผ่าน query อื่นที่ไม่ได้ select มา
-    const full = await RedEnvelopeRound.findById(round._id).select("+allocations +winnerSlot");
+    const full = await RedEnvelopeRound.findById(round._id).select("+allocations +winnerSlot +winnerSlots");
     if (full && full.status === "open") {
       await resolveRoundRewards(full);
       round.status = full.status;

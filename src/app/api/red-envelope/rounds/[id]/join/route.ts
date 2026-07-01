@@ -51,7 +51,7 @@ export async function POST(
       },
       { $push: { participants: { userId, joinedAt: new Date() } } },
       { new: true }
-    ).select("+allocations +winnerSlot");
+    ).select("+allocations +winnerSlot +winnerSlots");
 
     if (!updated) {
       const recheck = await RedEnvelopeRound.findById(id);
