@@ -100,8 +100,10 @@ export default function RedEnvelopePage() {
     }
   };
 
-  // รอบที่ "ยังไม่เริ่ม" (scheduled) ให้ขึ้นเป็น card แรกก่อนเสมอ ถ้าไม่มีค่อย fallback ไปรอบแรกของลิสต์
+  // เลือกรอบ open ก่อน ถ้าไม่มีค่อยไปรอบ scheduled ถ้าไม่มีอีกค่อย fallback รอบแรก
   const pickDefaultIdx = (list: RoundData[]) => {
+    const openIdx = list.findIndex((r) => r.status === "open");
+    if (openIdx >= 0) return openIdx;
     const scheduledIdx = list.findIndex((r) => r.status === "scheduled");
     return scheduledIdx >= 0 ? scheduledIdx : 0;
   };
