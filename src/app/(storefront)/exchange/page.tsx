@@ -41,7 +41,6 @@ function CopyButton({ text }: { text: string }) {
 
 export default function ExchangePage() {
   const { data: session, update: updateSession } = useSession();
-  const router = useRouter();
   const [rewards, setRewards] = useState<GemReward[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
