@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   let siteName = "LuxusX";
   let siteDesc = "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท";
-  let logoUrl = "/logo.jpeg";
+  let logoUrl = "/apple-touch-icon.png";
 
   try {
     await connectToDatabase();
