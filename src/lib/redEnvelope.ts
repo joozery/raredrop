@@ -57,15 +57,23 @@ function generateCashAllocations(totalBaht: number, n: number): number[] {
 
 // เรียกตอนสร้างรอบ — เตรียมผลลัพธ์ของทุกช่องไว้ล่วงหน้า (เก็บเป็นความลับ ไม่ส่งออก public API)
 // กดรับครั้งที่ N ก็ได้ผลช่องที่ N ทันที ไม่ต้องรอครบคน/รอใครก่อน
-export function generateAllocations(rewardType: "cash" | "item" | "gemcoin", totalAmount: number | undefined, maxPeople: number): { allocations?: number[]; winnerSlot?: number } {
+export function generateAllocations(rewardType: "cash" | "item" | "gemcoin", totalAmount: number | undefined, maxPeople: number, winnerCount = 1): { allocations?: number[]; winnerSlots?: number[] } {
   if (rewardType === "cash") {
     return { allocations: generateCashAllocations(totalAmount || 0, maxPeople) };
   }
   if (rewardType === "gemcoin") {
-    // สุ่มแจก GemCoin เหมือน cash แต่ totalAmount คือจำนวน GemCoin * 100 (ใช้ satang slot เดิม)
     return { allocations: generateCashAllocations(totalAmount || 0, maxPeople) };
   }
-  return { winnerSlot: Math.floor(Math.random() * maxPeople) };
+  // item — สุ่ม winnerCount indices ที่ไม่ซ้ำกัน
+  const count = Math.min(winnerCount, maxPeople);
+  const indices = Array.from({ length: maxPeople }, (_, i) => i);
+  const winners: number[] = [];
+  for (let i = 0; i < count; i++) {
+    const j = i + Math.floor(Math.random() * (indices.length - i));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+    winners.push(indices[i]);
+  }
+  return { winnerSlots: winners };
 }
 
 // จับรางวัลให้ "ทุกคนที่ยังไม่มีผล" พร้อมกันทีเดียว — เรียกตอนครบคนหรือหมดเวลา
@@ -91,7 +99,11 @@ export async function resolveRoundRewards(round: RoundDoc) {
       p.rewardAmount = gemAmount;
       await creditGemCoinReward(String(p.userId), gemAmount, round.label);
     } else {
-      const isWinner = i === round.winnerSlot;
+      // รองรับทั้ง winnerSlots (ใหม่) และ winnerSlot (เก่า backward compat)
+      const slots: number[] = round.winnerSlots?.length
+        ? round.winnerSlots
+        : round.winnerSlot !== undefined ? [round.winnerSlot] : [];
+      const isWinner = slots.includes(i);
       p.isWinner = isWinner;
       if (isWinner && itemDoc) {
         await creditItemReward(String(p.userId), itemDoc.name, round.label);

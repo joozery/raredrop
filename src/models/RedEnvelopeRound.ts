@@ -15,6 +15,7 @@ export interface IRedEnvelopeRound extends Document {
   totalAmount?: number;
   totalGemCoins?: number;
   itemId?: Types.ObjectId;
+  winnerCount?: number; // จำนวนผู้โชคดีสำหรับ item (default 1)
   conditionAmount: number;
   conditionLevel: number;
   maxPeople: number;
@@ -25,7 +26,8 @@ export interface IRedEnvelopeRound extends Document {
   participants: IParticipant[];
   resolvedAt?: Date;
   allocations?: number[];
-  winnerSlot?: number;
+  winnerSlots?: number[]; // รายการ index ผู้โชคดี (item) — เปลี่ยนจาก winnerSlot เดี่ยวเป็น array
+  winnerSlot?: number;   // เก็บไว้ backward compat กับ round เก่า
   createdAt: Date;
 }
 
@@ -44,6 +46,7 @@ const RedEnvelopeRoundSchema: Schema = new Schema({
   totalAmount: { type: Number },
   totalGemCoins: { type: Number },
   itemId: { type: Schema.Types.ObjectId, ref: "RedEnvelopeItem" },
+  winnerCount: { type: Number, default: 1, min: 1 },
   conditionAmount: { type: Number, default: 0 },
   conditionLevel: { type: Number, default: 0 },
   maxPeople: { type: Number, required: true, min: 1 },
@@ -54,6 +57,7 @@ const RedEnvelopeRoundSchema: Schema = new Schema({
   participants: [ParticipantSchema],
   resolvedAt: { type: Date },
   allocations: { type: [Number], select: false },
+  winnerSlots: { type: [Number], select: false },
   winnerSlot: { type: Number, select: false },
 }, { timestamps: { createdAt: true, updatedAt: false } });
 

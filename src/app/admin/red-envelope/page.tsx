@@ -83,11 +83,11 @@ const DURATION_PRESETS = [
 ];
 
 type RoundForm = {
-  label: string; image: string; rewardType: "cash" | "item" | "gemcoin"; totalAmount: string; totalGemCoins: string; itemId: string;
+  label: string; image: string; rewardType: "cash" | "item" | "gemcoin"; totalAmount: string; totalGemCoins: string; itemId: string; winnerCount: string;
   conditionAmount: string; conditionLevel: string; maxPeople: string; scheduledAt: string; endsAt: string;
 };
 const EMPTY_FORM: RoundForm = {
-  label: "", image: "", rewardType: "cash", totalAmount: "", totalGemCoins: "", itemId: "",
+  label: "", image: "", rewardType: "cash", totalAmount: "", totalGemCoins: "", itemId: "", winnerCount: "1",
   conditionAmount: "0", conditionLevel: "0", maxPeople: "20", scheduledAt: "", endsAt: "",
 };
 
@@ -200,6 +200,7 @@ export default function AdminRedEnvelopePage() {
       totalAmount: r.totalAmount ? String(r.totalAmount) : "",
       totalGemCoins: (r as any).totalGemCoins ? String((r as any).totalGemCoins) : "",
       itemId: r.itemId?._id || "",
+      winnerCount: String(r.winnerCount || 1),
       conditionAmount: String(r.conditionAmount),
       conditionLevel: String(r.conditionLevel || 0),
       maxPeople: String(r.maxPeople),
@@ -224,6 +225,7 @@ export default function AdminRedEnvelopePage() {
         totalAmount: form.rewardType === "cash" ? Number(form.totalAmount) : undefined,
         totalGemCoins: form.rewardType === "gemcoin" ? Number(form.totalGemCoins) : undefined,
         itemId: form.rewardType === "item" ? form.itemId : undefined,
+        winnerCount: form.rewardType === "item" ? Number(form.winnerCount) || 1 : undefined,
         conditionAmount: Number(form.conditionAmount) || 0,
         conditionLevel: Number(form.conditionLevel) || 0,
         maxPeople: Number(form.maxPeople) || 1,
@@ -605,23 +607,35 @@ export default function AdminRedEnvelopePage() {
                   <p className="text-[11px] text-slate-400">ระบบจะสุ่มแบ่ง GemCoin ให้ทุกคนที่เข้าร่วม รวมแล้วเท่ายอดนี้เป๊ะ</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-slate-600">ไอเทมรางวัล *</label>
-                  {items.length === 0 ? (
-                    <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                      ยังไม่มีไอเทมในคลังซองแดง
-                    </p>
-                  ) : (
-                    <select
-                      value={form.itemId}
-                      onChange={(e) => setForm((f) => ({ ...f, itemId: e.target.value }))}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
-                    >
-                      <option value="">-- เลือกไอเทม --</option>
-                      {items.map((it) => <option key={it._id} value={it._id}>{it.name}</option>)}
-                    </select>
-                  )}
-                  <p className="text-[11px] text-slate-400">สุ่มผู้โชคดี 1 คนจากผู้เข้าร่วมทั้งหมดได้รับไอเทมนี้ไป</p>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-600">ไอเทมรางวัล *</label>
+                    {items.length === 0 ? (
+                      <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                        ยังไม่มีไอเทมในคลังซองแดง
+                      </p>
+                    ) : (
+                      <select
+                        value={form.itemId}
+                        onChange={(e) => setForm((f) => ({ ...f, itemId: e.target.value }))}
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
+                      >
+                        <option value="">-- เลือกไอเทม --</option>
+                        {items.map((it) => <option key={it._id} value={it._id}>{it.name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-600">จำนวนผู้โชคดีที่ได้รับไอเทม</label>
+                    <input
+                      type="number" min="1" max={form.maxPeople}
+                      value={form.winnerCount}
+                      onChange={(e) => setForm((f) => ({ ...f, winnerCount: e.target.value }))}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-black text-red-600"
+                      placeholder="1"
+                    />
+                    <p className="text-[11px] text-slate-400">ระบบจะสุ่มเลือกผู้โชคดีจากผู้เข้าร่วมทั้งหมด (สูงสุดเท่าจำนวนคนสูงสุด)</p>
+                  </div>
                 </div>
               )}
 

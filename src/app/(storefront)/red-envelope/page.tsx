@@ -381,7 +381,7 @@ export default function RedEnvelopePage() {
                       ) : (
                         <div className="text-center mb-5">
                           <div className="font-black text-xl text-purple-600 line-clamp-1">{r.item?.name}</div>
-                          <div className="text-xs text-gray-400 mt-1">สุ่มผู้โชคดี 1 คนจากผู้เข้าร่วม</div>
+                          <div className="text-xs text-gray-400 mt-1">สุ่มผู้โชคดี {(r as any).winnerCount || 1} คนจากผู้เข้าร่วม</div>
                         </div>
                       )}
 

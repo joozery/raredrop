@@ -20,7 +20,7 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
     const {
-      label, image, rewardType, totalAmount, totalGemCoins, itemId, conditionAmount, conditionLevel,
+      label, image, rewardType, totalAmount, totalGemCoins, itemId, winnerCount, conditionAmount, conditionLevel,
       maxPeople, scheduledAt, endsAt, isActive, resetConfirm,
     } = body;
 
@@ -32,14 +32,14 @@ export async function PUT(
 
     const onlyTogglingActive =
       isActive !== undefined &&
-      [label, image, rewardType, totalAmount, totalGemCoins, itemId, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt]
+      [label, image, rewardType, totalAmount, totalGemCoins, itemId, winnerCount, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt]
         .every((v) => v === undefined);
 
     if (onlyTogglingActive) {
       const round = await RedEnvelopeRound.findByIdAndUpdate(id, { isActive: !!isActive }, { new: true });
       const safeRound = round!.toObject();
       delete safeRound.allocations;
-      delete safeRound.winnerSlot;
+      delete safeRound.winnerSlots;
       return NextResponse.json(safeRound);
     }
 
@@ -80,6 +80,8 @@ export async function PUT(
       update.itemId = it;
       update.totalAmount = null;
       update.totalGemCoins = null;
+      const wc = winnerCount !== undefined ? Math.min(Math.max(1, Number(winnerCount)), people) : (existing.winnerCount || 1);
+      update.winnerCount = wc;
     }
 
     if (conditionAmount !== undefined) update.conditionAmount = Number(conditionAmount) || 0;
@@ -94,12 +96,13 @@ export async function PUT(
       return NextResponse.json({ error: "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม" }, { status: 400 });
     }
 
+    const effectiveWinnerCount = update.winnerCount ?? existing.winnerCount ?? 1;
     const allocTotal = effectiveType === "cash" ? (update.totalAmount ?? existing.totalAmount)
       : effectiveType === "gemcoin" ? (update.totalGemCoins ?? (existing as any).totalGemCoins)
       : undefined;
-    const { allocations, winnerSlot } = generateAllocations(effectiveType, allocTotal, people);
+    const { allocations, winnerSlots } = generateAllocations(effectiveType, allocTotal, people, effectiveWinnerCount);
     update.allocations = allocations ?? null;
-    update.winnerSlot = winnerSlot ?? null;
+    update.winnerSlots = winnerSlots ?? null;
 
     if (hasParticipants && resetConfirm) {
       update.participants = [];
@@ -110,7 +113,7 @@ export async function PUT(
     const round = await RedEnvelopeRound.findByIdAndUpdate(id, update, { new: true, runValidators: true });
     const safeRound = round!.toObject();
     delete safeRound.allocations;
-    delete safeRound.winnerSlot;
+    delete safeRound.winnerSlots;
     return NextResponse.json(safeRound);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

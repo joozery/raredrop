@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     if (!isAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { label, image, rewardType, totalAmount, totalGemCoins, itemId, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt } = body;
+    const { label, image, rewardType, totalAmount, totalGemCoins, itemId, winnerCount, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt } = body;
 
     if (!label || !scheduledAt || !endsAt) {
       return NextResponse.json({ error: "กรุณากรอกชื่อรอบและช่วงเวลาให้ครบ" }, { status: 400 });
@@ -43,6 +43,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "ประเภทรางวัลไม่ถูกต้อง" }, { status: 400 });
     }
     const people = Math.max(1, Number(maxPeople) || 1);
+    const winners = rewardType === "item" ? Math.min(Math.max(1, Number(winnerCount) || 1), people) : 1;
     if (rewardType === "cash") {
       const amt = Number(totalAmount);
       if (!amt || amt < people * 0.01) {
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
     const allocTotal = rewardType === "cash" ? Number(totalAmount) : rewardType === "gemcoin" ? Number(totalGemCoins) : undefined;
-    const { allocations, winnerSlot } = generateAllocations(rewardType, allocTotal, people);
+    const { allocations, winnerSlots } = generateAllocations(rewardType, allocTotal, people, winners);
     const round = await RedEnvelopeRound.create({
       label,
       image: image || undefined,
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
       totalAmount: rewardType === "cash" ? Number(totalAmount) : undefined,
       totalGemCoins: rewardType === "gemcoin" ? Number(totalGemCoins) : undefined,
       itemId: rewardType === "item" ? itemId : undefined,
+      winnerCount: winners,
       conditionAmount: Number(conditionAmount) || 0,
       conditionLevel: Number(conditionLevel) || 0,
       maxPeople: people,
@@ -78,12 +80,12 @@ export async function POST(req: Request) {
       status: "scheduled",
       participants: [],
       allocations,
-      winnerSlot,
+      winnerSlots,
     });
 
     const safeRound = round.toObject();
     delete safeRound.allocations;
-    delete safeRound.winnerSlot;
+    delete safeRound.winnerSlots;
 
     return NextResponse.json(safeRound, { status: 201 });
   } catch (error: any) {
