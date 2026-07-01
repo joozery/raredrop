@@ -72,13 +72,22 @@ export default function RedEnvelopePage() {
   const [showHelp, setShowHelp] = useState(false);
   const [helpText, setHelpText] = useState("");
   const [toast, setToast] = useState("");
+  const [gemcoinIcon, setGemcoinIcon] = useState("");
 
   useEffect(() => {
     fetch("/api/public-settings", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => setHelpText(d.red_envelope_help_text || ""))
+      .then((d) => {
+        setHelpText(d.red_envelope_help_text || "");
+        setGemcoinIcon(d.gemcoin_icon || "");
+      })
       .catch(() => {});
   }, []);
+
+  const GemIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) =>
+    gemcoinIcon
+      ? <img src={gemcoinIcon} alt="gem" style={{ width: size, height: size }} className={`object-contain ${className}`} />
+      : <span className={className} style={{ fontSize: size }}>💎</span>;
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -333,7 +342,7 @@ export default function RedEnvelopePage() {
                         : r.rewardType === "gemcoin" ? "bg-purple-50 border-purple-100 text-purple-700"
                         : "bg-purple-50 border-purple-100 text-purple-600"
                       }`}>
-                        {r.rewardType === "cash" ? "🧧" : r.rewardType === "gemcoin" ? "💎" : "🎁"} {r.label}
+                        {r.rewardType === "cash" ? "🧧" : r.rewardType === "gemcoin" ? <GemIcon size={16} /> : "🎁"} {r.label}
                       </div>
 
                       {/* Visual */}
@@ -352,7 +361,7 @@ export default function RedEnvelopePage() {
                         </div>
                       ) : r.rewardType === "gemcoin" ? (
                         <div className="w-24 h-24 mb-4 flex items-center justify-center">
-                          <span className="text-7xl drop-shadow-lg">💎</span>
+                          <GemIcon size={80} className="drop-shadow-lg" />
                         </div>
                       ) : (
                         <div className="w-28 h-28 mb-4 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 p-1 shadow-lg">
@@ -375,7 +384,7 @@ export default function RedEnvelopePage() {
                         </div>
                       ) : r.rewardType === "gemcoin" ? (
                         <div className="text-center mb-5">
-                          <div className="font-black text-3xl text-purple-700">{(r.totalGemCoins || 0).toLocaleString()} 💎</div>
+                          <div className="font-black text-3xl text-purple-700 flex items-center gap-2">{(r.totalGemCoins || 0).toLocaleString()} <GemIcon size={28} /></div>
                           <div className="text-xs text-gray-400 mt-1">สุ่มแบ่ง GemCoin ให้ทุกคนที่เข้าร่วม</div>
                         </div>
                       ) : (
@@ -542,11 +551,11 @@ export default function RedEnvelopePage() {
                       <div className="text-[11px] text-gray-400 mt-0.5">{timeFmt(p.time)}</div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-base">{p.pending ? "⏳" : p.rewardType === "item" ? (p.isWinner ? "🎁" : "🙁") : p.rewardType === "gemcoin" ? "💎" : "🧧"}</span>
+                      <span className="text-base">{p.pending ? "⏳" : p.rewardType === "item" ? (p.isWinner ? "🎁" : "🙁") : p.rewardType === "gemcoin" ? <GemIcon size={18} /> : "🧧"}</span>
                       <span className={`font-black text-sm min-w-[70px] text-right ${
                         p.pending ? "text-gray-400" : p.rewardType === "item" ? (p.isWinner ? "text-purple-600" : "text-gray-400") : p.rewardType === "gemcoin" ? "text-purple-700" : "text-red-600"
                       }`}>
-                        {p.pending ? "รอผล" : p.rewardType === "cash" ? `฿${(p.rewardAmount || 0).toFixed(2)}` : p.rewardType === "gemcoin" ? `${p.rewardAmount || 0} 💎` : p.isWinner ? p.itemName : "ไม่ได้รางวัล"}
+                        {p.pending ? "รอผล" : p.rewardType === "cash" ? `฿${(p.rewardAmount || 0).toFixed(2)}` : p.rewardType === "gemcoin" ? <span className="flex items-center gap-1 justify-end">{p.rewardAmount || 0} <GemIcon size={14} /></span> : p.isWinner ? p.itemName : "ไม่ได้รางวัล"}
                       </span>
                     </div>
                   </div>
@@ -585,10 +594,10 @@ export default function RedEnvelopePage() {
             ) : joinResult.rewardType === "gemcoin" ? (
               <>
                 <div>
-                  <p className="font-black text-gray-900 text-xl">ยินดีด้วย! 💎</p>
+                  <p className="font-black text-gray-900 text-xl">ยินดีด้วย! 🎉</p>
                   <p className="text-gray-500 text-sm mt-1">คุณได้รับ GemCoin</p>
                 </div>
-                <p className="font-black text-purple-700 text-3xl">{(joinResult.rewardAmount || 0).toLocaleString()} 💎</p>
+                <p className="font-black text-purple-700 text-3xl flex items-center gap-2">{(joinResult.rewardAmount || 0).toLocaleString()} <GemIcon size={32} /></p>
               </>
             ) : joinResult.isWinner ? (
               <>
