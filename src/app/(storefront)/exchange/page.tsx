@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Coins, Package, Box as BoxIcon, CheckCircle2, AlertCircle, Loader2, ShoppingBag, Copy, Check } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { LoginModal } from "@/components/auth/LoginModal";
 
 interface RarityData { name: string; color: string }
@@ -41,6 +42,7 @@ function CopyButton({ text }: { text: string }) {
 
 export default function ExchangePage() {
   const { data: session, update: updateSession } = useSession();
+  const router = useRouter();
   const [rewards, setRewards] = useState<GemReward[]>([]);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
@@ -112,6 +114,13 @@ export default function ExchangePage() {
         }
       } catch {
         showToast(true, `แลก "${reward.name}" สำเร็จ!`);
+      }
+
+      // นำทางไปยังหน้าที่เกี่ยวข้อง
+      if (reward.type === "box" && reward.boxId?._id) {
+        router.push(`/boxes/${reward.boxId._id}`);
+      } else if (reward.type === "item") {
+        router.push("/inventory");
       }
 
       // รีโหลด rewards เพื่ออัปเดต stock
