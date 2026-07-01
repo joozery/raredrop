@@ -87,7 +87,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { siteName, siteDesc, ogImage } = await getSiteSettings();
+  const { siteName, siteDesc, ogImage, siteLogo } = await getSiteSettings();
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -129,6 +129,13 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           suppressHydrationWarning
         />
+        {/* apple-touch-icon สำหรับ Safari iOS Add to Home Screen */}
+        <link rel="apple-touch-icon" href={siteLogo} />
+        <link rel="apple-touch-icon" sizes="180x180" href={siteLogo} />
+        <link rel="icon" type="image/jpeg" href={siteLogo} />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content={siteName} />
       </head>
       <body suppressHydrationWarning className={`${notoSansThai.className} bg-[#F8F8F8] text-gray-900 flex h-screen overflow-hidden`}>
         <noscript>
