@@ -28,7 +28,11 @@ export async function GET() {
       .populate("itemId", "name image")
       .sort({ scheduledAt: 1 });
 
+    // เรียง: open → scheduled → resolved (จบแล้วไปอยู่ท้าย)
+    const statusOrder: Record<string, number> = { open: 0, scheduled: 1, resolved: 2, cancelled: 3 };
+
     rounds = await Promise.all(rounds.map((r) => ensureRoundStatus(r)));
+    rounds.sort((a, b) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9) || a.scheduledAt.getTime() - b.scheduledAt.getTime());
 
     const todaySpend = userId ? await getTodaySpend(userId) : 0;
     const myLevel = userId ? ((await User.findById(userId).select("vipLevel").lean<any>())?.vipLevel || 1) : 0;
