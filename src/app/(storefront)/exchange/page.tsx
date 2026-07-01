@@ -83,44 +83,34 @@ export default function ExchangePage() {
 
       await updateSession();
 
-      // สร้าง chat conversation และเปิด live chat (เหมือนร้านค้า)
-      const chatSubject = `แลก GemCoin: ${reward.name}`;
-      let chatText = `แลก GemCoin "${reward.name}" สำเร็จแล้วครับ`;
       if (reward.type === "box") {
-        chatText = `แลก GemCoin สำเร็จ ได้รับสิทธิ์เปิดกล่อง "${reward.boxId?.name}" จำนวน ${reward.boxOpenTimes} ครั้งครับ`;
-      } else if (reward.type === "item") {
-        chatText = `แลก GemCoin สำเร็จ ได้รับ "${reward.itemId?.name}" เข้า Inventory แล้วครับ`;
-      } else if (reward.type === "shop" && data.rewardDetail?.accountData) {
-        chatText = `แลก GemCoin สำเร็จ ได้รับสินค้า "${reward.name}" ข้อมูลสินค้า:\n${data.rewardDetail.accountData}`;
-      }
-
-      try {
-        const chatRes = await fetch("/api/user/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            subject: chatSubject,
-            text: chatText,
-            image: reward.type === "box" ? reward.boxId?.image
-              : reward.type === "shop" ? reward.shopListingId?.images?.[0]
-              : reward.itemId?.image,
-          }),
-        });
-        const chatData = await chatRes.json();
-        if (chatRes.ok && chatData.conversationId) {
-          window.dispatchEvent(new CustomEvent("open-livechat", { detail: { conversationId: chatData.conversationId } }));
-        } else {
+        // กล่องสุ่ม — พาไปหน้ากล่องเลย ไม่เปิด live chat
+        if (reward.boxId?._id) router.push(`/boxes/${reward.boxId._id}`);
+        else showToast(true, `ได้รับสิทธิ์เปิดกล่อง "${reward.boxId?.name}" แล้ว!`);
+      } else {
+        // item / shop — เปิด live chat
+        let chatText = `แลก GemCoin สำเร็จ ได้รับ "${reward.itemId?.name}" เข้า Inventory แล้วครับ`;
+        let chatImage: string | undefined = reward.itemId?.image;
+        if (reward.type === "shop") {
+          chatText = `แลก GemCoin สำเร็จ ได้รับสินค้า "${reward.name}" ข้อมูลสินค้า:\n${data.rewardDetail?.accountData || ""}`;
+          chatImage = reward.shopListingId?.images?.[0];
+        }
+        try {
+          const chatRes = await fetch("/api/user/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subject: `แลก GemCoin: ${reward.name}`, text: chatText, image: chatImage }),
+          });
+          const chatData = await chatRes.json();
+          if (chatRes.ok && chatData.conversationId) {
+            window.dispatchEvent(new CustomEvent("open-livechat", { detail: { conversationId: chatData.conversationId } }));
+          } else {
+            showToast(true, `แลก "${reward.name}" สำเร็จ!`);
+          }
+        } catch {
           showToast(true, `แลก "${reward.name}" สำเร็จ!`);
         }
-      } catch {
-        showToast(true, `แลก "${reward.name}" สำเร็จ!`);
-      }
-
-      // นำทางไปยังหน้าที่เกี่ยวข้อง
-      if (reward.type === "box" && reward.boxId?._id) {
-        router.push(`/boxes/${reward.boxId._id}`);
-      } else if (reward.type === "item") {
-        router.push("/inventory");
+        if (reward.type === "item") router.push("/inventory");
       }
 
       // รีโหลด rewards เพื่ออัปเดต stock
