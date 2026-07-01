@@ -44,6 +44,7 @@ export async function GET() {
         image: r.image,
         rewardType: r.rewardType,
         totalAmount: r.totalAmount,
+        totalGemCoins: r.totalGemCoins,
         item: r.itemId ? { name: r.itemId.name, image: r.itemId.image } : null,
         conditionAmount: r.conditionAmount,
         conditionLevel: r.conditionLevel,

@@ -23,8 +23,9 @@ interface Round {
   _id: string;
   label: string;
   image?: string;
-  rewardType: "cash" | "item";
+  rewardType: "cash" | "item" | "gemcoin";
   totalAmount?: number;
+  totalGemCoins?: number;
   itemId?: { _id: string; name: string; image?: string } | null;
   conditionAmount: number;
   conditionLevel: number;
@@ -82,11 +83,11 @@ const DURATION_PRESETS = [
 ];
 
 type RoundForm = {
-  label: string; image: string; rewardType: "cash" | "item"; totalAmount: string; itemId: string;
+  label: string; image: string; rewardType: "cash" | "item" | "gemcoin"; totalAmount: string; totalGemCoins: string; itemId: string;
   conditionAmount: string; conditionLevel: string; maxPeople: string; scheduledAt: string; endsAt: string;
 };
 const EMPTY_FORM: RoundForm = {
-  label: "", image: "", rewardType: "cash", totalAmount: "", itemId: "",
+  label: "", image: "", rewardType: "cash", totalAmount: "", totalGemCoins: "", itemId: "",
   conditionAmount: "0", conditionLevel: "0", maxPeople: "20", scheduledAt: "", endsAt: "",
 };
 
@@ -197,6 +198,7 @@ export default function AdminRedEnvelopePage() {
       image: r.image || "",
       rewardType: r.rewardType,
       totalAmount: r.totalAmount ? String(r.totalAmount) : "",
+      totalGemCoins: (r as any).totalGemCoins ? String((r as any).totalGemCoins) : "",
       itemId: r.itemId?._id || "",
       conditionAmount: String(r.conditionAmount),
       conditionLevel: String(r.conditionLevel || 0),
@@ -220,6 +222,7 @@ export default function AdminRedEnvelopePage() {
         image: form.image || undefined,
         rewardType: form.rewardType,
         totalAmount: form.rewardType === "cash" ? Number(form.totalAmount) : undefined,
+        totalGemCoins: form.rewardType === "gemcoin" ? Number(form.totalGemCoins) : undefined,
         itemId: form.rewardType === "item" ? form.itemId : undefined,
         conditionAmount: Number(form.conditionAmount) || 0,
         conditionLevel: Number(form.conditionLevel) || 0,
@@ -301,7 +304,7 @@ export default function AdminRedEnvelopePage() {
     }
   };
 
-  const rewardLabel = (r: Round) => r.rewardType === "cash" ? `฿${(r.totalAmount || 0).toLocaleString()}` : (r.itemId?.name || "ไอเทม");
+  const rewardLabel = (r: Round) => r.rewardType === "cash" ? `฿${(r.totalAmount || 0).toLocaleString()}` : r.rewardType === "gemcoin" ? `${((r as any).totalGemCoins || 0).toLocaleString()} 💎` : (r.itemId?.name || "ไอเทม");
 
   return (
     <div className="flex flex-col xl:flex-row gap-6 min-h-screen">
@@ -552,20 +555,27 @@ export default function AdminRedEnvelopePage() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-slate-600">ประเภทรางวัล</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, rewardType: "cash" }))}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${form.rewardType === "cash" ? "border-red-500 bg-red-50 text-red-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 text-xs font-bold transition-all ${form.rewardType === "cash" ? "border-red-500 bg-red-50 text-red-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
                   >
-                    <Coins size={15} /> เงิน (สุ่มแบ่งให้ทุกคน)
+                    <Coins size={14} /> เงิน
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, rewardType: "gemcoin" }))}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 text-xs font-bold transition-all ${form.rewardType === "gemcoin" ? "border-purple-500 bg-purple-50 text-purple-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+                  >
+                    💎 GemCoin
                   </button>
                   <button
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, rewardType: "item" }))}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${form.rewardType === "item" ? "border-red-500 bg-red-50 text-red-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 text-xs font-bold transition-all ${form.rewardType === "item" ? "border-red-500 bg-red-50 text-red-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
                   >
-                    <Package size={15} /> ไอเทม (สุ่ม 1 คน)
+                    <Package size={14} /> ไอเทม
                   </button>
                 </div>
               </div>
@@ -581,6 +591,18 @@ export default function AdminRedEnvelopePage() {
                     placeholder="เช่น 1288"
                   />
                   <p className="text-[11px] text-slate-400">ระบบจะสุ่มแบ่งยอดนี้ให้ทุกคนที่เข้าร่วม ได้ไม่เท่ากัน รวมแล้วเท่ายอดนี้เป๊ะ</p>
+                </div>
+              ) : form.rewardType === "gemcoin" ? (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-600">จำนวน GemCoin รวมที่จะแบ่ง *</label>
+                  <input
+                    type="number" min="1"
+                    value={form.totalGemCoins}
+                    onChange={(e) => setForm((f) => ({ ...f, totalGemCoins: e.target.value }))}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-purple-500 font-black text-purple-700"
+                    placeholder="เช่น 500"
+                  />
+                  <p className="text-[11px] text-slate-400">ระบบจะสุ่มแบ่ง GemCoin ให้ทุกคนที่เข้าร่วม รวมแล้วเท่ายอดนี้เป๊ะ</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">

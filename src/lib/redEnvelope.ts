@@ -57,8 +57,12 @@ function generateCashAllocations(totalBaht: number, n: number): number[] {
 
 // เรียกตอนสร้างรอบ — เตรียมผลลัพธ์ของทุกช่องไว้ล่วงหน้า (เก็บเป็นความลับ ไม่ส่งออก public API)
 // กดรับครั้งที่ N ก็ได้ผลช่องที่ N ทันที ไม่ต้องรอครบคน/รอใครก่อน
-export function generateAllocations(rewardType: "cash" | "item", totalAmount: number | undefined, maxPeople: number): { allocations?: number[]; winnerSlot?: number } {
+export function generateAllocations(rewardType: "cash" | "item" | "gemcoin", totalAmount: number | undefined, maxPeople: number): { allocations?: number[]; winnerSlot?: number } {
   if (rewardType === "cash") {
+    return { allocations: generateCashAllocations(totalAmount || 0, maxPeople) };
+  }
+  if (rewardType === "gemcoin") {
+    // สุ่มแจก GemCoin เหมือน cash แต่ totalAmount คือจำนวน GemCoin * 100 (ใช้ satang slot เดิม)
     return { allocations: generateCashAllocations(totalAmount || 0, maxPeople) };
   }
   return { winnerSlot: Math.floor(Math.random() * maxPeople) };
@@ -81,6 +85,11 @@ export async function resolveRoundRewards(round: RoundDoc) {
       const amountBaht = amountSatang / 100;
       p.rewardAmount = amountBaht;
       await creditCashReward(String(p.userId), amountBaht, round.label, round._id as any);
+    } else if (round.rewardType === "gemcoin") {
+      const amountSatang = round.allocations?.[i] ?? 0;
+      const gemAmount = Math.round(amountSatang / 100);
+      p.rewardAmount = gemAmount;
+      await creditGemCoinReward(String(p.userId), gemAmount, round.label);
     } else {
       const isWinner = i === round.winnerSlot;
       p.isWinner = isWinner;
@@ -135,4 +144,9 @@ export async function creditCashReward(userId: string, amountBaht: number, round
 // ผลรางวัลถูกบันทึกไว้ใน participants ของรอบเองอยู่แล้ว ดูได้จากประวัติการรับซองแดง
 export async function creditItemReward(userId: string, itemName: string, roundLabel: string) {
   await notify(userId, "เปิดซองแดงได้ไอเทม! 🧧", `ยินดีด้วย! คุณคือผู้โชคดีได้รับ "${itemName}" จากซองแดง "${roundLabel}"`, "success", "/red-envelope");
+}
+
+export async function creditGemCoinReward(userId: string, amount: number, roundLabel: string) {
+  await User.findByIdAndUpdate(userId, { $inc: { gemCoins: amount } });
+  await notify(userId, "เปิดซองแดงได้ GemCoin! 🧧", `ได้รับ ${amount} GemCoin จากซองแดง "${roundLabel}"`, "success", "/red-envelope");
 }

@@ -72,7 +72,7 @@ export async function POST(
     const result: any = { joined: true, rewardType: updated.rewardType, pending: me.rewardAmount === undefined && me.isWinner === undefined };
 
     if (!result.pending) {
-      if (updated.rewardType === "cash") {
+      if (updated.rewardType === "cash" || updated.rewardType === "gemcoin") {
         result.rewardAmount = me.rewardAmount;
       } else {
         result.isWinner = me.isWinner;

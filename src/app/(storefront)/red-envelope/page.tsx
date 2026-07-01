@@ -9,8 +9,9 @@ interface RoundData {
   _id: string;
   label: string;
   image?: string;
-  rewardType: "cash" | "item";
+  rewardType: "cash" | "item" | "gemcoin";
   totalAmount?: number;
+  totalGemCoins?: number;
   item?: { name: string; image: string } | null;
   conditionAmount: number;
   conditionLevel: number;
@@ -39,7 +40,7 @@ interface RecentEntry {
 
 interface JoinResult {
   roundId?: string;
-  rewardType: "cash" | "item";
+  rewardType: "cash" | "item" | "gemcoin";
   pending?: boolean;
   rewardAmount?: number;
   isWinner?: boolean;
@@ -328,9 +329,11 @@ export default function RedEnvelopePage() {
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-5 w-full flex flex-col items-center min-h-[480px]">
                       {/* Badge */}
                       <div className={`font-bold px-4 py-1.5 rounded-full text-sm mb-5 flex items-center gap-1.5 border ${
-                        r.rewardType === "cash" ? "bg-red-50 border-red-100 text-red-600" : "bg-purple-50 border-purple-100 text-purple-600"
+                        r.rewardType === "cash" ? "bg-red-50 border-red-100 text-red-600"
+                        : r.rewardType === "gemcoin" ? "bg-purple-50 border-purple-100 text-purple-700"
+                        : "bg-purple-50 border-purple-100 text-purple-600"
                       }`}>
-                        {r.rewardType === "cash" ? "🧧" : "🎁"} {r.label}
+                        {r.rewardType === "cash" ? "🧧" : r.rewardType === "gemcoin" ? "💎" : "🎁"} {r.label}
                       </div>
 
                       {/* Visual */}
@@ -346,6 +349,10 @@ export default function RedEnvelopePage() {
                               <div className="w-6 h-6 rounded-full bg-yellow-200/70" />
                             </div>
                           </div>
+                        </div>
+                      ) : r.rewardType === "gemcoin" ? (
+                        <div className="w-24 h-24 mb-4 flex items-center justify-center">
+                          <span className="text-7xl drop-shadow-lg">💎</span>
                         </div>
                       ) : (
                         <div className="w-28 h-28 mb-4 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 p-1 shadow-lg">
@@ -365,6 +372,11 @@ export default function RedEnvelopePage() {
                       {r.rewardType === "cash" ? (
                         <div className="text-red-600 font-black text-4xl tracking-tight mb-5">
                           ฿{(r.totalAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </div>
+                      ) : r.rewardType === "gemcoin" ? (
+                        <div className="text-center mb-5">
+                          <div className="font-black text-3xl text-purple-700">{(r.totalGemCoins || 0).toLocaleString()} 💎</div>
+                          <div className="text-xs text-gray-400 mt-1">สุ่มแบ่ง GemCoin ให้ทุกคนที่เข้าร่วม</div>
                         </div>
                       ) : (
                         <div className="text-center mb-5">
@@ -530,11 +542,11 @@ export default function RedEnvelopePage() {
                       <div className="text-[11px] text-gray-400 mt-0.5">{timeFmt(p.time)}</div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-base">{p.pending ? "⏳" : p.rewardType === "item" ? (p.isWinner ? "🎁" : "🙁") : "🧧"}</span>
+                      <span className="text-base">{p.pending ? "⏳" : p.rewardType === "item" ? (p.isWinner ? "🎁" : "🙁") : p.rewardType === "gemcoin" ? "💎" : "🧧"}</span>
                       <span className={`font-black text-sm min-w-[70px] text-right ${
-                        p.pending ? "text-gray-400" : p.rewardType === "item" ? (p.isWinner ? "text-purple-600" : "text-gray-400") : "text-red-600"
+                        p.pending ? "text-gray-400" : p.rewardType === "item" ? (p.isWinner ? "text-purple-600" : "text-gray-400") : p.rewardType === "gemcoin" ? "text-purple-700" : "text-red-600"
                       }`}>
-                        {p.pending ? "รอผล" : p.rewardType === "cash" ? `฿${(p.rewardAmount || 0).toFixed(2)}` : p.isWinner ? p.itemName : "ไม่ได้รางวัล"}
+                        {p.pending ? "รอผล" : p.rewardType === "cash" ? `฿${(p.rewardAmount || 0).toFixed(2)}` : p.rewardType === "gemcoin" ? `${p.rewardAmount || 0} 💎` : p.isWinner ? p.itemName : "ไม่ได้รางวัล"}
                       </span>
                     </div>
                   </div>
@@ -569,6 +581,14 @@ export default function RedEnvelopePage() {
                   <p className="text-gray-500 text-sm mt-1">คุณได้รับ</p>
                 </div>
                 <p className="font-black text-red-600 text-3xl">฿{(joinResult.rewardAmount || 0).toLocaleString()}</p>
+              </>
+            ) : joinResult.rewardType === "gemcoin" ? (
+              <>
+                <div>
+                  <p className="font-black text-gray-900 text-xl">ยินดีด้วย! 💎</p>
+                  <p className="text-gray-500 text-sm mt-1">คุณได้รับ GemCoin</p>
+                </div>
+                <p className="font-black text-purple-700 text-3xl">{(joinResult.rewardAmount || 0).toLocaleString()} 💎</p>
               </>
             ) : joinResult.isWinner ? (
               <>

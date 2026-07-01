@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import RedEnvelopeRound from "@/models/RedEnvelopeRound";
-// จำเป็นต้อง import ไว้เพื่อให้ mongoose ลงทะเบียน schema ก่อน populate "itemId" ด้านล่าง
 import "@/models/RedEnvelopeItem";
 import { generateAllocations } from "@/lib/redEnvelope";
 
@@ -35,19 +34,24 @@ export async function POST(req: Request) {
     if (!isAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { label, image, rewardType, totalAmount, itemId, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt } = body;
+    const { label, image, rewardType, totalAmount, totalGemCoins, itemId, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt } = body;
 
     if (!label || !scheduledAt || !endsAt) {
       return NextResponse.json({ error: "กรุณากรอกชื่อรอบและช่วงเวลาให้ครบ" }, { status: 400 });
     }
-    if (!["cash", "item"].includes(rewardType)) {
+    if (!["cash", "item", "gemcoin"].includes(rewardType)) {
       return NextResponse.json({ error: "ประเภทรางวัลไม่ถูกต้อง" }, { status: 400 });
     }
     const people = Math.max(1, Number(maxPeople) || 1);
     if (rewardType === "cash") {
       const amt = Number(totalAmount);
       if (!amt || amt < people * 0.01) {
-        return NextResponse.json({ error: `ยอดเงินรวมต้องมากกว่าหรือเท่ากับ ${(people * 0.01).toFixed(2)} บาท (เผื่อให้ทุกคนได้อย่างน้อยคนละ 0.01 บาท)` }, { status: 400 });
+        return NextResponse.json({ error: `ยอดเงินรวมต้องอย่างน้อย ${(people * 0.01).toFixed(2)} บาท` }, { status: 400 });
+      }
+    } else if (rewardType === "gemcoin") {
+      const gem = Number(totalGemCoins);
+      if (!gem || gem < people) {
+        return NextResponse.json({ error: `GemCoin รวมต้องอย่างน้อย ${people} (ให้ทุกคนได้อย่างน้อย 1 GEM)` }, { status: 400 });
       }
     } else if (!itemId) {
       return NextResponse.json({ error: "กรุณาเลือกไอเทมรางวัล" }, { status: 400 });
@@ -57,12 +61,14 @@ export async function POST(req: Request) {
     }
 
     await connectToDatabase();
-    const { allocations, winnerSlot } = generateAllocations(rewardType, rewardType === "cash" ? Number(totalAmount) : undefined, people);
+    const allocTotal = rewardType === "cash" ? Number(totalAmount) : rewardType === "gemcoin" ? Number(totalGemCoins) : undefined;
+    const { allocations, winnerSlot } = generateAllocations(rewardType, allocTotal, people);
     const round = await RedEnvelopeRound.create({
       label,
       image: image || undefined,
       rewardType,
       totalAmount: rewardType === "cash" ? Number(totalAmount) : undefined,
+      totalGemCoins: rewardType === "gemcoin" ? Number(totalGemCoins) : undefined,
       itemId: rewardType === "item" ? itemId : undefined,
       conditionAmount: Number(conditionAmount) || 0,
       conditionLevel: Number(conditionLevel) || 0,
@@ -75,7 +81,6 @@ export async function POST(req: Request) {
       winnerSlot,
     });
 
-    // ห้ามรั่วผลสุ่มที่เตรียมไว้ล่วงหน้าออกไปฝั่ง client (เฉลยรางวัลก่อนเวลา) — select:false ที่ schema ป้องกันได้แค่ตอน query ใหม่ ไม่ป้องกัน document ที่เพิ่ง create สดๆ
     const safeRound = round.toObject();
     delete safeRound.allocations;
     delete safeRound.winnerSlot;

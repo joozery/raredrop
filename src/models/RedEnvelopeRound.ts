@@ -5,28 +5,27 @@ interface IParticipant {
   joinedAt: Date;
   rewardAmount?: number;
   isWinner?: boolean;
-  claimConversationId?: Types.ObjectId; // เคสแชทที่เปิดไว้แล้วตอนผู้โชคดีกดขอรับไอเทม — กันเปิดเคสซ้ำซ้อนถ้ากดอีก
+  claimConversationId?: Types.ObjectId;
 }
 
 export interface IRedEnvelopeRound extends Document {
   label: string;
-  image?: string; // รูปซองแดงที่ใช้แสดงในสไลด์ — ถ้าไม่ตั้งจะใช้กราฟิกซองแดงปกติ
-  rewardType: "cash" | "item";
-  totalAmount?: number; // รวมก้อนเงินที่จะสุ่มแจกให้ทุกคนที่เข้าร่วม (เฉพาะ cash)
-  itemId?: Types.ObjectId; // รางวัลไอเทมเดียว สุ่มผู้โชคดี 1 คน (เฉพาะ item) — อ้างอิง RedEnvelopeItem แยกจากไอเทมร้านค้า/กล่องสุ่มโดยสิ้นเชิง
-  conditionAmount: number; // ยอดใช้จ่ายขั้นต่ำวันนี้ที่ต้องมีถึงจะร่วมได้
-  conditionLevel: number; // เลเวลขั้นต่ำที่ต้องมีถึงจะร่วมได้ — 0 = ไม่จำกัด
+  image?: string;
+  rewardType: "cash" | "item" | "gemcoin";
+  totalAmount?: number;
+  totalGemCoins?: number;
+  itemId?: Types.ObjectId;
+  conditionAmount: number;
+  conditionLevel: number;
   maxPeople: number;
-  scheduledAt: Date; // เริ่มเข้าร่วมได้
-  endsAt: Date; // เส้นตาย — ปิดรับไม่ว่าจะครบคนหรือไม่
-  isActive: boolean; // สวิตช์เปิด/ปิดใช้งานโดยแอดมิน — ปิดแล้วจะไม่แสดงในหน้าเว็บไม่ว่าจะอยู่ในช่วงเวลาหรือไม่
+  scheduledAt: Date;
+  endsAt: Date;
+  isActive: boolean;
   status: "scheduled" | "open" | "resolved" | "cancelled";
   participants: IParticipant[];
   resolvedAt?: Date;
-  // สุ่มเตรียมไว้ล่วงหน้าตอนสร้างรอบ (สับลำดับแล้ว) — กดรับครั้งที่ N ก็หยิบช่องที่ N ทันที ไม่ต้องรอใคร
-  // ไม่ส่งออกผ่าน public API เด็ดขาด (จะเป็นการเฉลยรางวัลล่วงหน้า)
-  allocations?: number[]; // หน่วยสตางค์ ต่อช่อง — เฉพาะ cash
-  winnerSlot?: number; // index (0-based) ของช่องที่จะได้ไอเทม — เฉพาะ item
+  allocations?: number[];
+  winnerSlot?: number;
   createdAt: Date;
 }
 
@@ -41,8 +40,9 @@ const ParticipantSchema = new Schema({
 const RedEnvelopeRoundSchema: Schema = new Schema({
   label: { type: String, required: true },
   image: { type: String },
-  rewardType: { type: String, enum: ["cash", "item"], required: true },
+  rewardType: { type: String, enum: ["cash", "item", "gemcoin"], required: true },
   totalAmount: { type: Number },
+  totalGemCoins: { type: Number },
   itemId: { type: Schema.Types.ObjectId, ref: "RedEnvelopeItem" },
   conditionAmount: { type: Number, default: 0 },
   conditionLevel: { type: Number, default: 0 },

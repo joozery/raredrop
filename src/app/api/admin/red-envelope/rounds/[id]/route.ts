@@ -20,7 +20,7 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
     const {
-      label, image, rewardType, totalAmount, itemId, conditionAmount, conditionLevel,
+      label, image, rewardType, totalAmount, totalGemCoins, itemId, conditionAmount, conditionLevel,
       maxPeople, scheduledAt, endsAt, isActive, resetConfirm,
     } = body;
 
@@ -30,10 +30,9 @@ export async function PUT(
 
     const hasParticipants = existing.participants.length > 0;
 
-    // เปิด/ปิดใช้งานอย่างเดียว (ไม่แตะฟิลด์อื่นเลย) — ทำได้เสมอแม้มีคนเข้าร่วมแล้ว ไม่ต้อง reset
     const onlyTogglingActive =
       isActive !== undefined &&
-      [label, image, rewardType, totalAmount, itemId, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt]
+      [label, image, rewardType, totalAmount, totalGemCoins, itemId, conditionAmount, conditionLevel, maxPeople, scheduledAt, endsAt]
         .every((v) => v === undefined);
 
     if (onlyTogglingActive) {
@@ -44,7 +43,6 @@ export async function PUT(
       return NextResponse.json(safeRound);
     }
 
-    // แก้ไขฟิลด์อื่นในรอบที่มีคนเข้าร่วมแล้ว = รีเซ็ตรอบใหม่ทั้งหมด (ล้างผู้เข้าร่วม/สุ่มใหม่) ต้องยืนยันก่อนเสมอ
     if (hasParticipants && !resetConfirm) {
       return NextResponse.json(
         { error: "รอบนี้มีคนเข้าร่วมแล้ว การแก้ไขจะล้างผู้เข้าร่วมเดิมทั้งหมดและสุ่มผลใหม่ กรุณายืนยันเพื่อรีเซ็ตรอบนี้", needsResetConfirm: true },
@@ -59,19 +57,31 @@ export async function PUT(
     if (isActive !== undefined) update.isActive = !!isActive;
     if (rewardType !== undefined) update.rewardType = rewardType;
     const effectiveType = rewardType !== undefined ? rewardType : existing.rewardType;
+
     if (effectiveType === "cash") {
       const amt = totalAmount !== undefined ? Number(totalAmount) : existing.totalAmount;
       if (!amt || amt < people * 0.01) {
-        return NextResponse.json({ error: `ยอดเงินรวมต้องมากกว่าหรือเท่ากับ ${(people * 0.01).toFixed(2)} บาท` }, { status: 400 });
+        return NextResponse.json({ error: `ยอดเงินรวมต้องอย่างน้อย ${(people * 0.01).toFixed(2)} บาท` }, { status: 400 });
       }
       update.totalAmount = amt;
+      update.totalGemCoins = null;
+      update.itemId = null;
+    } else if (effectiveType === "gemcoin") {
+      const gem = totalGemCoins !== undefined ? Number(totalGemCoins) : (existing as any).totalGemCoins;
+      if (!gem || gem < people) {
+        return NextResponse.json({ error: `GemCoin รวมต้องอย่างน้อย ${people}` }, { status: 400 });
+      }
+      update.totalGemCoins = gem;
+      update.totalAmount = null;
       update.itemId = null;
     } else if (effectiveType === "item") {
       const it = itemId !== undefined ? itemId : existing.itemId;
       if (!it) return NextResponse.json({ error: "กรุณาเลือกไอเทมรางวัล" }, { status: 400 });
       update.itemId = it;
       update.totalAmount = null;
+      update.totalGemCoins = null;
     }
+
     if (conditionAmount !== undefined) update.conditionAmount = Number(conditionAmount) || 0;
     if (conditionLevel !== undefined) update.conditionLevel = Number(conditionLevel) || 0;
     if (maxPeople !== undefined) update.maxPeople = people;
@@ -84,12 +94,13 @@ export async function PUT(
       return NextResponse.json({ error: "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม" }, { status: 400 });
     }
 
-    // สุ่มผลลัพธ์ใหม่ทั้งหมดให้ตรงกับ totalAmount/maxPeople/ประเภทล่าสุดเสมอ
-    const { allocations, winnerSlot } = generateAllocations(effectiveType, update.totalAmount ?? undefined, people);
+    const allocTotal = effectiveType === "cash" ? (update.totalAmount ?? existing.totalAmount)
+      : effectiveType === "gemcoin" ? (update.totalGemCoins ?? (existing as any).totalGemCoins)
+      : undefined;
+    const { allocations, winnerSlot } = generateAllocations(effectiveType, allocTotal, people);
     update.allocations = allocations ?? null;
     update.winnerSlot = winnerSlot ?? null;
 
-    // รีเซ็ตรอบ — ล้างผู้เข้าร่วมเดิมทั้งหมด กลับไปเป็นรอบใหม่ตามเวลาที่ตั้งล่าสุด
     if (hasParticipants && resetConfirm) {
       update.participants = [];
       update.resolvedAt = null;
