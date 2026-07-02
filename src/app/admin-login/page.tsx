@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useRef, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Mail, ArrowRight } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 function AdminLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<any>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/admin";
@@ -19,7 +22,28 @@ function AdminLoginForm() {
     setLoading(true);
     setError("");
 
+    if (!turnstileToken) {
+      setError("กรุณายืนยันว่าคุณไม่ใช่บอท");
+      setLoading(false);
+      return;
+    }
+
     try {
+      const verifyRes = await fetch("/api/admin/verify-turnstile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.success) {
+        setError("การยืนยันความปลอดภัยล้มเหลว กรุณาลองใหม่");
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
+        setLoading(false);
+        return;
+      }
+
       const res = await signIn("credentials", {
         email,
         password,
@@ -32,27 +56,28 @@ function AdminLoginForm() {
         } else {
           setError(res.error);
         }
+        turnstileRef.current?.reset();
+        setTurnstileToken(null);
       } else {
         router.push(callbackUrl);
       }
-    } catch (err: any) {
+    } catch {
       setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
     }
     setLoading(false);
   };
 
   return (
-    <div 
+    <div
       className="w-full min-h-screen flex items-center justify-center p-4 relative"
       style={{
         backgroundImage: 'url("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/banner/cover/4186834.jpg")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundSize: "cover",
+        backgroundPosition: "center",
       }}
     >
-      {/* White overlay to make the box stand out */}
       <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-0"></div>
-      
+
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100 z-10">
         <div className="bg-red-600 p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-10">
@@ -72,13 +97,13 @@ function AdminLoginForm() {
                 {error}
               </div>
             )}
-            
+
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">อีเมลแอดมิน</label>
               <div className="relative">
                 <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-3 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all font-medium text-slate-800"
@@ -92,8 +117,8 @@ function AdminLoginForm() {
               <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">รหัสผ่าน</label>
               <div className="relative">
                 <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-3 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all font-medium text-slate-800"
@@ -103,9 +128,19 @@ function AdminLoginForm() {
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              disabled={loading}
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !turnstileToken}
               className="w-full bg-red-600 hover:bg-red-700 text-white rounded-lg py-3 font-bold flex items-center justify-center gap-2 transition-all mt-2 shadow-sm shadow-red-500/20 disabled:opacity-50"
             >
               {loading ? "กำลังตรวจสอบ..." : "เข้าสู่ระบบ (Login)"}

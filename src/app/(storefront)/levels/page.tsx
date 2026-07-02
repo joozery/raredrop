@@ -126,9 +126,14 @@ export default function LevelsPage() {
 
       {/* ── List ── */}
       <div className="px-4 pt-4 flex flex-col gap-2">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-          ทั้งหมด {levels.length} เลเวล
-        </p>
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+            ทั้งหมด {levels.length} เลเวล
+          </p>
+          <span className="text-[11px] font-bold text-amber-500 flex items-center gap-1">
+            <Zap size={11} className="text-amber-500" /> เติม 1฿ = 1XP
+          </span>
+        </div>
 
         {loading
           ? Array.from({ length: 5 }).map((_, i) => (
@@ -196,7 +201,7 @@ export default function LevelsPage() {
 
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-gray-500">
                         <span className="font-semibold">{lv.xpRequired.toLocaleString()} XP รวม</span>
-                        {xpRange && <span className="text-gray-400">· {xpRange.toLocaleString()} XP ต่อเลเวล</span>}
+                        <span className="text-gray-400">· เติม 1฿ = 1XP</span>
                       </div>
 
                       {isCur && xpRange && (
