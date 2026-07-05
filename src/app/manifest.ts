@@ -4,31 +4,21 @@ import Setting from "@/models/Setting";
 
 export const dynamic = "force-dynamic";
 
+const APP_ICON = "/logoluxux.png";
+
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   let siteName = "LuxusX";
   let siteDesc = "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท";
-  let logoUrl = "/logoluxux.png";
 
   try {
     await connectToDatabase();
-    const [n, d, l] = await Promise.all([
+    const [n, d] = await Promise.all([
       Setting.findOne({ key: "site_name" }).lean(),
       Setting.findOne({ key: "site_description" }).lean(),
-      Setting.findOne({ key: "site_logo" }).lean(),
     ]);
     if ((n as any)?.value) siteName = (n as any).value;
     if ((d as any)?.value) siteDesc = (d as any).value;
-    if ((l as any)?.value) logoUrl = (l as any).value;
   } catch {}
-
-  const isJpeg = logoUrl.endsWith(".jpg") || logoUrl.endsWith(".jpeg");
-  const mimeType = isJpeg ? "image/jpeg" : "image/png";
-
-  const icons: MetadataRoute.Manifest["icons"] = [
-    { src: logoUrl, sizes: "192x192", type: mimeType, purpose: "any" },
-    { src: logoUrl, sizes: "512x512", type: mimeType, purpose: "any" },
-    { src: logoUrl, sizes: "512x512", type: mimeType, purpose: "maskable" },
-  ];
 
   return {
     name: `${siteName} - กล่องสุ่มสินค้าพรีเมียม`,
@@ -40,6 +30,10 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     theme_color: "#dc2626",
     lang: "th",
     categories: ["shopping", "games", "entertainment"],
-    icons,
+    icons: [
+      { src: APP_ICON, sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: APP_ICON, sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: APP_ICON, sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
   };
 }

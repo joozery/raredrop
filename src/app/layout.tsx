@@ -76,7 +76,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [ogImage],
     },
     icons: {
-      apple: siteLogo,
+      apple: "/logoluxux.png",
     },
   };
 }
@@ -132,9 +132,9 @@ export default async function RootLayout({
         <link rel="icon" type="image/png" href="/logoluxux.png" />
         <link rel="shortcut icon" href="/logoluxux.png" />
         {/* apple-touch-icon สำหรับ Safari iOS Add to Home Screen */}
-        <link rel="apple-touch-icon" href={siteLogo} />
-        <link rel="apple-touch-icon" sizes="180x180" href={siteLogo} />
-        <link rel="apple-touch-icon-precomposed" href={siteLogo} />
+        <link rel="apple-touch-icon" href="/logoluxux.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/logoluxux.png" />
+        <link rel="apple-touch-icon-precomposed" href="/logoluxux.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={siteName} />
