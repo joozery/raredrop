@@ -448,6 +448,9 @@ export default function ShopPage() {
           </button>
         </div>
       </div>
+      {/* Banner */}
+      <ShopBannerCarousel banners={banners} />
+
       {/* Category Icons */}
       {categories.length > 0 && (
         <div className="flex gap-3 overflow-x-auto hide-scrollbar py-2 -mx-1 px-1">
@@ -497,10 +500,6 @@ export default function ShopPage() {
           })}
         </div>
       )}
-
-
-      {/* Banner */}
-      <ShopBannerCarousel banners={banners} />
 
 
 
