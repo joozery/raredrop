@@ -7,6 +7,7 @@ import { UploadInput } from "@/components/ui/UploadInput";
 interface CategoryData {
   _id: string;
   name: string;
+  slug?: string;
   description?: string;
   image?: string;
   order: number;
@@ -218,13 +219,29 @@ export default function ManageCategories() {
             <div className="p-6 flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">ชื่อหมวดหมู่</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={currentCat.name || ""}
                   onChange={(e) => setCurrentCat({...currentCat, name: e.target.value})}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-medium text-slate-800"
                   placeholder="เช่น กล่องสุ่มอนิเมะ..."
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                  Slug (URL path) <span className="text-slate-400 font-normal">— ถ้าไม่กรอกจะสร้างจากชื่ออัตโนมัติ</span>
+                </label>
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:border-red-500 transition-all">
+                  <span className="px-3 text-slate-400 text-sm font-medium border-r border-slate-200 py-2 shrink-0">/boxes/</span>
+                  <input
+                    type="text"
+                    value={(currentCat as any).slug || ""}
+                    onChange={(e) => setCurrentCat({...currentCat, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")} as any)}
+                    className="flex-1 bg-transparent px-3 py-2 text-sm outline-none font-medium text-slate-800"
+                    placeholder="freefire"
+                  />
+                </div>
               </div>
 
               <div>

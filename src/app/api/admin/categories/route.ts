@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, description, image, order, isActive } = body;
+    const { name, slug, description, image, order, isActive } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     await connectToDatabase();
     const newCategory = await Category.create({
       name,
+      slug: slug?.trim() || undefined,
       description,
       image,
       order: Number(order) || 0,

@@ -25,7 +25,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const mimeType = isJpeg ? "image/jpeg" : "image/png";
 
   const icons: MetadataRoute.Manifest["icons"] = [
-    { src: logoUrl, sizes: "192x192", type: mimeType },
+    { src: logoUrl, sizes: "192x192", type: mimeType, purpose: "any" },
+    { src: logoUrl, sizes: "512x512", type: mimeType, purpose: "any" },
     { src: logoUrl, sizes: "512x512", type: mimeType, purpose: "maskable" },
   ];
 

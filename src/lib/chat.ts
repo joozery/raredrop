@@ -7,7 +7,6 @@ import { HydratedDocument } from "mongoose";
 export async function getOrCreateConversation(userId: string, subject: string): Promise<HydratedDocument<IChatConversation>> {
   const existing = await ChatConversation.findOne({ userId }).sort({ lastMessageAt: -1 });
   if (existing) {
-    existing.subject = subject;
     if (existing.status === "closed") existing.status = "open";
     await existing.save();
     return existing;

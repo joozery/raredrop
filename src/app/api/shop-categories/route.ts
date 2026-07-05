@@ -6,9 +6,15 @@ export async function GET() {
   try {
     await connectToDatabase();
     const categories = await ShopCategory.find({ isActive: { $ne: false } })
-      .select("name image order")
+      .select("name slug image order")
       .sort({ order: 1, createdAt: -1 });
-    return NextResponse.json(categories);
+
+    const result = categories.map((c) => ({
+      ...c.toObject(),
+      slug: c.slug || c.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+    }));
+
+    return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

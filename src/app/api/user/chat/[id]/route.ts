@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import ChatConversation from "@/models/ChatConversation";
 import ChatMessage from "@/models/ChatMessage";
+import { notifyDiscordChat } from "@/lib/discordNotify";
 
 // GET — ข้อความในเคส (เฉพาะเจ้าของ) + reset unread ฝั่ง user
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -71,6 +72,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     convo.lastMessageAt = new Date();
     convo.unreadByAdmin += 1;
     await convo.save();
+
+    const user = session.user as any;
+    notifyDiscordChat({
+      userName: user.name,
+      userEmail: user.email,
+      conversationId: id,
+      text: trimmed || undefined,
+      imageUrl,
+      isNew: false,
+    });
 
     return NextResponse.json({ success: true, message });
   } catch (error: any) {

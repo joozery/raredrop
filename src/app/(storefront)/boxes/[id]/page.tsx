@@ -5,18 +5,170 @@ import Link from "next/link";
 import {
   ChevronLeft, ChevronRight, Zap, History, Flame, CheckCircle2, Ticket,
   ShieldCheck, Wallet, HelpCircle, Headphones, Share, Package, Coins, Sparkles,
+  Search,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { TopupModal } from "@/components/payment/TopupModal";
 
+// ---- หน้า category slug (เช่น /boxes/freefire) ----
+function CategoryBoxesPage({ slug }: { slug: string }) {
+  const [boxes, setBoxes] = useState<any[]>([]);
+  const [catName, setCatName] = useState("");
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/boxes?slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setBoxes(d);
+          if (d.length === 0) setNotFound(true);
+          else setCatName(d[0]?.categoryId?.name || slug);
+        } else {
+          setNotFound(true);
+        }
+      })
+      .finally(() => setLoading(false));
+
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setCategories(d);
+          const found = d.find((c: any) => c.slug === slug);
+          if (found) setCatName(found.name);
+        }
+      })
+      .catch(() => {});
+  }, [slug]);
+
+  const filtered = boxes.filter((b) => b.name.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="p-4 lg:p-6 pb-24 lg:pb-6 max-w-7xl mx-auto">
+      <div className="flex items-center gap-3 mb-4">
+        <Link href="/boxes" className="text-gray-500 hover:text-gray-800 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+          <ChevronLeft size={22} />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-black text-gray-900">{catName || slug}</h1>
+          <p className="text-sm text-gray-500">กล่องในหมวดนี้ทั้งหมด</p>
+        </div>
+      </div>
+
+      {/* Category Tabs */}
+      <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-3 mb-4">
+        <Link href="/boxes" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 bg-white border border-gray-200 text-gray-600 hover:border-red-500 hover:text-red-600">
+          ทั้งหมด
+        </Link>
+        {categories.map((cat: any) => {
+          const catSlug = cat.slug || cat.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+          const isActive = catSlug === slug;
+          return (
+            <Link
+              key={cat._id}
+              href={`/boxes/${catSlug}`}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 ${isActive ? "bg-red-600 text-white shadow-sm" : "bg-white border border-gray-200 text-gray-600 hover:border-red-500 hover:text-red-600"}`}
+            >
+              {cat.image && <img src={cat.image} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />}
+              {cat.name}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="relative mb-6">
+        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          placeholder="ค้นหากล่องสุ่ม..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all font-medium"
+        />
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl p-4 animate-pulse border border-gray-100">
+              <div className="aspect-square rounded-xl bg-gray-100 mb-3" />
+              <div className="h-3 bg-gray-100 rounded w-3/4 mb-2" />
+              <div className="h-8 bg-gray-100 rounded-xl mt-3" />
+            </div>
+          ))}
+        </div>
+      ) : notFound ? (
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+          <Package size={48} className="mb-4 opacity-30" />
+          <p className="font-bold text-lg">ไม่พบหมวดหมู่นี้</p>
+          <Link href="/boxes" className="mt-4 bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-red-700 transition-colors">
+            ดูกล่องทั้งหมด
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {filtered.map((box) => (
+            <Link
+              key={box._id}
+              href={`/boxes/${box._id}`}
+              className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group relative flex flex-col"
+            >
+              {box.isOutOfStock ? (
+                <span className="absolute top-3 left-3 z-10 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">หมดแล้ว</span>
+              ) : box.flashSale ? (
+                <span className="absolute top-3 left-3 z-10 bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">⚡ SALE</span>
+              ) : box.isFeatured ? (
+                <span className="absolute top-3 left-3 z-10 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-0.5">
+                  <Flame size={9} className="fill-white" /> ฮิต
+                </span>
+              ) : null}
+              <div className={`aspect-square rounded-xl bg-gray-50 overflow-hidden mb-3 ${box.isOutOfStock ? "grayscale opacity-60" : ""}`}>
+                <img
+                  src={box.image}
+                  alt={box.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
+                />
+              </div>
+              <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{box.name}</h3>
+              <p className="text-xs mb-3 text-center">
+                {box.flashSale ? (
+                  <>
+                    <span className="line-through text-gray-400 mr-1">฿{box.price.toLocaleString()}</span>
+                    <span className="text-orange-500 font-black text-sm">฿{box.flashSale.salePrice.toLocaleString()}</span>
+                  </>
+                ) : (
+                  <><span className="text-gray-500">เริ่มต้น </span><span className="text-red-600 font-black text-sm">฿{box.price.toLocaleString()}</span></>
+                )}
+              </p>
+              <button
+                className={`mt-auto w-full font-bold py-2.5 rounded-xl text-xs shadow-sm ${box.isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-colors"}`}
+                disabled={box.isOutOfStock}
+              >
+                {box.isOutOfStock ? "สินค้าหมด" : "เปิดกล่อง"}
+              </button>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface RarityData { name: string; color: string; order: number; backgroundImage?: string }
 interface ItemData { _id: string; name: string; image: string; price: number; rarityId: RarityData }
 interface BoxItem { itemId: ItemData; probability: number }
+interface FlashSaleData { salePrice: number; endsAt: string }
 interface BoxData {
   _id: string; name: string; description?: string; image: string; titleImage?: string; animation?: string;
   price: number; items: BoxItem[]; pityCount: number; pityThreshold: number; freeCredits: number;
+  flashSale?: FlashSaleData | null;
 }
 interface DrawResult {
   itemId: string; name: string; image: string; price: number; rarity: RarityData;
@@ -25,6 +177,11 @@ interface DrawResult {
 
 export default function BoxDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+
+  // ถ้าไม่ใช่ MongoDB ObjectID (24 hex) → render หน้า category slug
+  if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+    return <CategoryBoxesPage slug={id} />;
+  }
   const { data: session, update: updateSession } = useSession();
   const router = useRouter();
   const balance = (session?.user as any)?.coins || 0;
@@ -45,6 +202,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   const [freeCredits, setFreeCredits] = useState(0);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [gemcoinIcon, setGemcoinIcon] = useState("");
+  const [flashCountdown, setFlashCountdown] = useState("");
 
   useEffect(() => {
     fetch("/api/public-settings", { cache: "no-store" })
@@ -52,6 +210,23 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       .then((d) => setGemcoinIcon(d.gemcoin_icon || ""))
       .catch(() => {});
   }, []);
+
+  const effectivePrice = box?.flashSale ? box.flashSale.salePrice : (box?.price ?? 0);
+
+  useEffect(() => {
+    if (!box?.flashSale?.endsAt) return;
+    const tick = () => {
+      const diff = new Date(box.flashSale!.endsAt).getTime() - Date.now();
+      if (diff <= 0) { setFlashCountdown("หมดเวลา"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setFlashCountdown(`${h > 0 ? `${h}ชม. ` : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`);
+    };
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, [box?.flashSale?.endsAt]);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -86,7 +261,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   const handleDrawClick = (times: number) => {
     if (!session) { setIsLoginOpen(true); return; }
     if (!box) return;
-    setSelectedDraw({ times, price: box.price * times });
+    setSelectedDraw({ times, price: effectivePrice * times });
     setIsPaymentModalOpen(true);
   };
 
@@ -247,6 +422,31 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           
         </div>
 
+        {/* Flash Sale Banner */}
+        {box.flashSale && (
+          <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-4 flex items-center gap-4 shadow-md">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+              <Zap size={24} className="text-white fill-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-black text-base leading-tight flex items-center gap-2">
+                ⚡ Flash Sale!
+                <span className="bg-white/20 text-white text-xs font-black px-2 py-0.5 rounded-full">
+                  -{Math.round((1 - box.flashSale.salePrice / box.price) * 100)}%
+                </span>
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-orange-100 text-sm line-through">฿{box.price.toLocaleString()}</span>
+                <span className="text-white font-black text-lg">฿{box.flashSale.salePrice.toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-orange-100 text-[10px] font-bold">หมดใน</p>
+              <p className="text-white font-black text-base tabular-nums">{flashCountdown}</p>
+            </div>
+          </div>
+        )}
+
         {/* Free Credits Banner */}
         {freeCredits > 0 && (
           <div className="bg-gradient-to-r from-purple-600 to-purple-500 rounded-2xl p-4 flex items-center gap-4 shadow-md">
@@ -352,7 +552,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <span className="font-black text-lg leading-none text-gray-900">x{opt.times}</span>
                 <span className="text-[9px] font-bold text-gray-400 mb-1">DRAW</span>
                 <span className="font-black text-sm flex items-center gap-1 text-red-600">
-                  <span className="font-sans">฿</span> {(box.price * opt.times).toLocaleString()}
+                  <span className="font-sans">฿</span> {(effectivePrice * opt.times).toLocaleString()}
                 </span>
               </button>
             ))}
@@ -452,7 +652,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                   );
                 })()}
               </div>
-              {balance >= box!.price * Math.max(0, selectedDraw.times - Math.min(freeCredits, selectedDraw.times)) ? (
+              {balance >= effectivePrice * Math.max(0, selectedDraw.times - Math.min(freeCredits, selectedDraw.times)) ? (
                 <button onClick={handleConfirmOpen} disabled={isOpening} className="w-full bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 font-black py-4 rounded-xl text-sm transition-colors shadow-sm">
                   {isOpening ? "กำลังดำเนินการ..." : "ยืนยันการชำระเงิน"}
                 </button>

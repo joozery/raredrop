@@ -30,6 +30,7 @@ interface ShopItem {
 interface CategoryTab {
   _id: string;
   name: string;
+  slug?: string;
   image?: string;
 }
 
@@ -357,12 +358,14 @@ export default function ShopPage() {
       // Auto open live chat for the purchased item — เฉพาะสินค้าที่เปิด liveChatEnabled ไว้
       try {
         const uidLine = buyerUid.trim() ? `\n${purchasedItem.uidLabel || "UID"}: ${buyerUid.trim()}` : "";
+        const qty: number = data.quantity || 1;
+        const qtyLine = qty > 1 ? ` จำนวน ${qty} ชิ้น` : "";
         const chatRes = await fetch("/api/user/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subject: `รับสินค้า: ${purchasedItem.title}`,
-            text: `สั่งซื้อสินค้า "${purchasedItem.title}" สำเร็จแล้วครับ (Ref: ${data.purchaseId}) รบกวนส่งข้อมูลให้ด้วยครับ${uidLine}`,
+            text: `สั่งซื้อสินค้า "${purchasedItem.title}"${qtyLine} สำเร็จแล้วครับ รบกวนส่งข้อมูลให้ด้วยครับ${uidLine}`,
             image: purchasedItem.images?.[0],
           }),
         });
@@ -449,21 +452,21 @@ export default function ShopPage() {
       {/* Category Tabs (All screens) */}
       {categories.length > 0 && (
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-          <button
-            onClick={() => setActiveCategory("")}
-            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === "" ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+          <Link
+            href="/shop"
+            className="shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap bg-red-600 text-white"
           >
             ทั้งหมด
-          </button>
+          </Link>
           {categories.map((c) => (
-            <button
+            <Link
               key={c._id}
-              onClick={() => setActiveCategory(c._id)}
-              className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap ${activeCategory === c._id ? "bg-red-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+              href={c.slug ? `/shop/${c.slug}` : `/shop?cat=${c._id}`}
+              className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
             >
               {c.image && <img src={c.image} alt="" className="w-5 h-5 rounded-full object-cover" />}
               {c.name}
-            </button>
+            </Link>
           ))}
         </div>
       )}

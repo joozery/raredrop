@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Package, Flame, Filter } from "lucide-react";
+import { Search, Package, Flame } from "lucide-react";
 
 interface Box {
   _id: string;
@@ -13,22 +13,21 @@ interface Box {
   isFeatured: boolean;
   categoryId?: { _id: string; name: string };
   isOutOfStock?: boolean;
+  flashSale?: { salePrice: number; endsAt: string } | null;
 }
 
 interface CategoryOption {
   _id: string;
   name: string;
+  slug?: string;
   image?: string;
 }
-
-const ALL_CAT = "ทั้งหมด";
 
 export default function BoxesPage() {
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedCat, setSelectedCat] = useState(ALL_CAT);
 
   useEffect(() => {
     fetch("/api/boxes")
@@ -42,11 +41,9 @@ export default function BoxesPage() {
       .catch(() => setCategories([]));
   }, []);
 
-  const filtered = boxes.filter((b) => {
-    const matchCat = selectedCat === ALL_CAT || b.categoryId?._id === selectedCat;
-    const matchSearch = b.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  const filtered = boxes.filter((b) =>
+    b.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="p-4 lg:p-6 pb-24 lg:pb-6 max-w-7xl mx-auto">
@@ -73,23 +70,25 @@ export default function BoxesPage() {
         />
       </div>
 
-      {/* Category Tabs */}
+      {/* Category Tabs — Link-based navigation */}
       <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-3 mb-6">
-        {[{ _id: ALL_CAT, name: ALL_CAT, image: undefined }, ...categories].map((cat) => (
-          <button
+        <Link
+          href="/boxes"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 bg-primary text-white shadow-sm shadow-red-500/30"
+        >
+          ทั้งหมด
+        </Link>
+        {categories.map((cat) => (
+          <Link
             key={cat._id}
-            onClick={() => setSelectedCat(cat._id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 ${
-              selectedCat === cat._id
-                ? "bg-primary text-white shadow-sm shadow-red-500/30"
-                : "bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary"
-            }`}
+            href={cat.slug ? `/boxes/${cat.slug}` : `/boxes?cat=${cat._id}`}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary"
           >
             {cat.image && (
               <img src={cat.image} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
             )}
             {cat.name}
-          </button>
+          </Link>
         ))}
       </div>
 
@@ -127,8 +126,12 @@ export default function BoxesPage() {
               className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group relative flex flex-col"
             >
               {box.isOutOfStock ? (
-                <span className="absolute top-3 left-3 z-10 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                <span className="absolute top-3 left-3 z-10 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                   หมดแล้ว
+                </span>
+              ) : box.flashSale ? (
+                <span className="absolute top-3 left-3 z-10 bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                  ⚡ SALE
                 </span>
               ) : box.isFeatured ? (
                 <span className="absolute top-3 left-3 z-10 bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
@@ -147,10 +150,20 @@ export default function BoxesPage() {
                 <span className="text-[10px] font-bold text-gray-400 mb-1">{box.categoryId.name}</span>
               )}
               <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{box.name}</h3>
-              <p className="text-gray-500 text-xs mb-3 text-center">
-                เริ่มต้น <span className="text-primary font-black text-sm">฿{box.price.toLocaleString()}</span>
+              <p className="text-xs mb-3 text-center">
+                {box.flashSale ? (
+                  <>
+                    <span className="line-through text-gray-400 mr-1">฿{box.price.toLocaleString()}</span>
+                    <span className="text-orange-500 font-black text-sm">฿{box.flashSale.salePrice.toLocaleString()}</span>
+                  </>
+                ) : (
+                  <><span className="text-gray-500">เริ่มต้น </span><span className="text-primary font-black text-sm">฿{box.price.toLocaleString()}</span></>
+                )}
               </p>
-              <button className={`mt-auto w-full font-bold py-2.5 rounded-xl text-xs transition-colors shadow-sm ${box.isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-primary text-white hover:bg-red-700 active:scale-95"}`} disabled={box.isOutOfStock}>
+              <button
+                className={`mt-auto w-full font-bold py-2.5 rounded-xl text-xs transition-colors shadow-sm ${box.isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-primary text-white hover:bg-red-700 active:scale-95"}`}
+                disabled={box.isOutOfStock}
+              >
                 {box.isOutOfStock ? "สินค้าหมด" : "เปิดกล่อง"}
               </button>
             </Link>

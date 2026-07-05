@@ -93,6 +93,7 @@ export async function POST(
       success: true,
       coinsLeft: updatedBuyer!.coins,
       purchaseId: purchases[0]._id,
+      purchaseIds: purchases.map((p: any) => String(p._id)),
       quantity: availableAccounts.length,
     });
   } catch (error: any) {

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import ChatConversation from "@/models/ChatConversation";
 import { getOrCreateConversation, appendUserMessage } from "@/lib/chat";
+import { notifyDiscordChat } from "@/lib/discordNotify";
 
 // GET — รายการเคสของฉัน
 // ?countOnly=1 — คืนแค่จำนวนข้อความที่ยังไม่อ่านรวมทุกเคส (สำหรับ badge ปุ่มลอย)
@@ -54,6 +55,16 @@ export async function POST(req: Request) {
     if (firstText) {
       await appendUserMessage(convo, firstText, imageUrl);
     }
+
+    const user = session.user as any;
+    notifyDiscordChat({
+      userName: user.name,
+      userEmail: user.email,
+      conversationId: String(convo._id),
+      text: firstText || undefined,
+      imageUrl,
+      isNew: true,
+    });
 
     return NextResponse.json({ success: true, conversationId: String(convo._id) });
   } catch (error: any) {

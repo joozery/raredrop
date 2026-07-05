@@ -12,6 +12,7 @@ interface Box {
   isFeatured: boolean;
   categoryId?: { _id: string; name: string };
   isOutOfStock?: boolean;
+  flashSale?: { salePrice: number; endsAt: string } | null;
 }
 
 interface CategoryOption {
@@ -123,6 +124,10 @@ export default function TrendingBoxes() {
                   <span className="absolute top-2 left-2 z-10 bg-gray-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                     หมดแล้ว
                   </span>
+                ) : box.flashSale ? (
+                  <span className="absolute top-2 left-2 z-10 bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-0.5">
+                    ⚡ SALE
+                  </span>
                 ) : tag ? (
                   <span className="absolute top-2 left-2 z-10 bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                     {tag}
@@ -138,7 +143,14 @@ export default function TrendingBoxes() {
                 </div>
                 <h3 className="font-bold text-gray-900 text-[13px] text-center leading-tight mb-1">{box.name}</h3>
                 <p className="text-gray-500 text-[11px] mb-3 text-center">
-                  เริ่มต้น <span className="text-primary font-bold text-sm">฿{box.price.toLocaleString()}</span>
+                  {box.flashSale ? (
+                    <>
+                      <span className="line-through text-gray-400 mr-1">฿{box.price.toLocaleString()}</span>
+                      <span className="text-orange-500 font-bold text-sm">฿{box.flashSale.salePrice.toLocaleString()}</span>
+                    </>
+                  ) : (
+                    <>เริ่มต้น <span className="text-primary font-bold text-sm">฿{box.price.toLocaleString()}</span></>
+                  )}
                 </p>
                 <button className={`mt-auto w-full font-bold py-2 rounded-lg text-xs transition-transform shadow-sm ${box.isOutOfStock ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-primary text-white active:scale-95"}`} disabled={box.isOutOfStock}>
                   {box.isOutOfStock ? "สินค้าหมด" : "เปิดกล่อง"}

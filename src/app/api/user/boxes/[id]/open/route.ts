@@ -10,6 +10,7 @@ import Inventory from "@/models/Inventory";
 import Transaction from "@/models/Transaction";
 import PityCounter from "@/models/PityCounter";
 import BoxCredit from "@/models/BoxCredit";
+import FlashSale from "@/models/FlashSale";
 import { notify } from "@/lib/notify";
 
 const PITY_MIN_RARITY_ORDER = 3; // rarity.order >= 3 ถือว่า "rare"
@@ -68,12 +69,17 @@ export async function POST(
     const user = await User.findById(userId);
     if (!user) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
 
+    // เช็ค flash sale ที่ active อยู่
+    const nowFs = new Date();
+    const activeFlashSale = await FlashSale.findOne({ boxId, isActive: true, endsAt: { $gt: nowFs } });
+    const effectivePrice = activeFlashSale ? activeFlashSale.salePrice : box.price;
+
     // เช็ค BoxCredit (สิทธิ์เปิดฟรีจากการแลก GemCoin) — เช็คความสามารถจ่ายล่วงหน้าด้วย worst-case (ขอเท่าไหร่คิดเท่านั้น)
     // ค่าใช้จ่ายจริงจะคิดอีกทีหลังสุ่ม ตามจำนวนที่ได้ของจริง (actualRolls) เผื่อของหมดกลางอากาศได้น้อยกว่าที่ขอ
     const boxCredit = await BoxCredit.findOne({ userId, boxId });
     const worstCaseFreeOpens = boxCredit ? Math.min(boxCredit.credits, times) : 0;
     const worstCasePaidOpens = times - worstCaseFreeOpens;
-    const worstCaseCost = box.price * worstCasePaidOpens;
+    const worstCaseCost = effectivePrice * worstCasePaidOpens;
 
     if (user.coins < worstCaseCost) {
       return NextResponse.json({ error: "เหรียญไม่เพียงพอ กรุณาเติมเงิน" }, { status: 400 });
@@ -171,7 +177,7 @@ export async function POST(
     // คิดเงิน/สิทธิ์ฟรีตามจำนวนที่สุ่มได้จริง (อาจน้อยกว่าที่ขอ ถ้าของหมดกลางอากาศ) ไม่เก็บเกินกว่าที่ได้ของจริง
     const actualFreeOpens = boxCredit ? Math.min(boxCredit.credits, actualRolls) : 0;
     const actualPaidOpens = actualRolls - actualFreeOpens;
-    const actualTotalCost = box.price * actualPaidOpens;
+    const actualTotalCost = effectivePrice * actualPaidOpens;
 
     // หักเหรียญ + เพิ่ม gemCoins + XP
     await User.findByIdAndUpdate(userId, {

@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import PityCounter from "@/models/PityCounter";
 import BoxCredit from "@/models/BoxCredit";
+import FlashSale from "@/models/FlashSale";
 
 export async function GET(
   _req: Request,
@@ -45,7 +46,13 @@ export async function GET(
       }
     } catch {}
 
-    return NextResponse.json({ ...box.toObject(), pityCount, freeCredits });
+    const now = new Date();
+    const flashSale = await FlashSale.findOne({ boxId: id, isActive: true, endsAt: { $gt: now } });
+    const flashSaleData = flashSale
+      ? { salePrice: flashSale.salePrice, endsAt: flashSale.endsAt }
+      : null;
+
+    return NextResponse.json({ ...box.toObject(), pityCount, freeCredits, flashSale: flashSaleData });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

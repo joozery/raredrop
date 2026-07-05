@@ -12,6 +12,7 @@ import Box from "@/models/Box";
 import { getOrCreateConversation, appendUserMessage } from "@/lib/chat";
 import { notify } from "@/lib/notify";
 import { createDeliveryTicket } from "@/lib/discordBot";
+import { notifyDiscordChat } from "@/lib/discordNotify";
 
 // action: "sell" | "deliver" | "market" | "unlist"
 export async function PATCH(
@@ -138,6 +139,15 @@ export async function PATCH(
         const convo = await getOrCreateConversation(userId, `รับของจริง: ${item.name}`);
         await appendUserMessage(convo, ticketSummary, item.image);
         conversationId = String(convo._id);
+
+        notifyDiscordChat({
+          userName: user?.name,
+          userEmail: user?.email,
+          conversationId,
+          text: ticketSummary,
+          imageUrl: item.image,
+          isNew: true,
+        });
       }
 
       await inv.save();
