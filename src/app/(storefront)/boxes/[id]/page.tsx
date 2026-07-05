@@ -630,7 +630,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 {(() => {
                   const free = Math.min(freeCredits, selectedDraw.times);
                   const paid = selectedDraw.times - free;
-                  const actualPrice = box!.price * paid;
+                  const actualPrice = effectivePrice * paid;
                   return (
                     <>
                       {free > 0 && (
