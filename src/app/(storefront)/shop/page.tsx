@@ -419,18 +419,21 @@ export default function ShopPage() {
       return true;
     })
     .sort((a, b) => {
-      if (sortBy === "featured") {
-        if (a.isFeatured && !b.isFeatured) return -1;
-        if (!a.isFeatured && b.isFeatured) return 1;
-        return 0;
-      }
-      if (stockFilter === "all") {
+      // สินค้าหมดไปท้ายเสมอ (ยกเว้น filter "sold")
+      if (stockFilter !== "sold") {
         if (a.stock === 0 && b.stock > 0) return 1;
         if (a.stock > 0 && b.stock === 0) return -1;
       }
+      if (sortBy === "featured") {
+        if (a.isFeatured && !b.isFeatured) return -1;
+        if (!a.isFeatured && b.isFeatured) return 1;
+        // ภายในกลุ่มเดียวกัน เรียงใหม่สุดก่อน
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
       if (sortBy === "price_asc") return a.price - b.price;
       if (sortBy === "price_desc") return b.price - a.price;
-      return 0;
+      // newest (default)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
   return (
