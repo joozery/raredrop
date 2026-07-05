@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mail, Headset, ChevronDown, X, ArrowLeft, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { signIn } from "next-auth/react";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<any>(null);
   
   // OTP State
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -121,6 +124,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         onClick={() => {
           setStep("email");
           setErrorMsg("");
+          setTurnstileToken(null);
+          turnstileRef.current?.reset();
           onClose();
         }}
       />
@@ -161,18 +166,51 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 )}
               </div>
 
+              {/* Turnstile */}
+              <div className="flex justify-center">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onExpire={() => setTurnstileToken(null)}
+                  onError={() => setTurnstileToken(null)}
+                />
+              </div>
+
               {/* Continue Button */}
-              <button 
-                onClick={() => {
-                  if (email) {
+              <button
+                disabled={!email || !turnstileToken || isLoading}
+                onClick={async () => {
+                  if (!email || !turnstileToken) return;
+                  setIsLoading(true);
+                  setErrorMsg("");
+                  try {
+                    const res = await fetch("/api/admin/verify-turnstile", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ token: turnstileToken }),
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                      setErrorMsg("กรุณายืนยัน CAPTCHA ใหม่อีกครั้ง");
+                      turnstileRef.current?.reset();
+                      setTurnstileToken(null);
+                      return;
+                    }
                     setStep("password");
                     setErrorMsg("");
+                  } catch {
+                    setErrorMsg("เกิดข้อผิดพลาด กรุณาลองใหม่");
+                  } finally {
+                    setIsLoading(false);
                   }
                 }}
-                className={`w-full text-white font-bold rounded-xl py-3.5 transition-colors mt-1 shadow-sm ${email ? "bg-black hover:bg-gray-900" : "bg-black/50 cursor-not-allowed"}`}
+                className={`w-full text-white font-bold rounded-xl py-3.5 transition-colors mt-1 shadow-sm ${email && turnstileToken && !isLoading ? "bg-black hover:bg-gray-900" : "bg-black/50 cursor-not-allowed"}`}
               >
-                ต่อ
+                {isLoading ? "กำลังตรวจสอบ..." : "ต่อ"}
               </button>
+
+              {errorMsg && <p className="text-red-500 text-xs text-center">{errorMsg}</p>}
 
               {/* Divider */}
               <div className="flex items-center gap-4 my-2">
