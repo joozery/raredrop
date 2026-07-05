@@ -285,7 +285,7 @@ export default function ShopPage() {
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("newest");
-  const [stockFilter, setStockFilter] = useState<"all" | "available" | "sold" | "featured">("all");
+  const [stockFilter, setStockFilter] = useState<"all" | "available" | "sold">("all");
   const [viewMode, setViewMode] = useState("grid");
 
   const [categories, setCategories] = useState<CategoryTab[]>([]);
@@ -416,10 +416,14 @@ export default function ShopPage() {
       if (activeCategory && i.categoryId !== activeCategory) return false;
       if (stockFilter === "available" && i.stock === 0) return false;
       if (stockFilter === "sold" && i.stock > 0) return false;
-      if (stockFilter === "featured" && !i.isFeatured) return false;
       return true;
     })
     .sort((a, b) => {
+      if (sortBy === "featured") {
+        if (a.isFeatured && !b.isFeatured) return -1;
+        if (!a.isFeatured && b.isFeatured) return 1;
+        return 0;
+      }
       if (stockFilter === "all") {
         if (a.stock === 0 && b.stock > 0) return 1;
         if (a.stock > 0 && b.stock === 0) return -1;
@@ -519,6 +523,7 @@ export default function ShopPage() {
                 className="appearance-none bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-xl pl-4 pr-9 py-2 outline-none focus:border-red-400 hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
               >
                 <option value="newest">ใหม่ล่าสุด</option>
+                <option value="featured">แนะนำ</option>
                 <option value="price_asc">ราคาต่ำ-สูง</option>
                 <option value="price_desc">ราคาสูง-ต่ำ</option>
               </select>
@@ -545,9 +550,9 @@ export default function ShopPage() {
 
         {/* Stock filter tabs */}
         <div className="flex gap-2 flex-wrap">
-          {(["all", "featured", "available", "sold"] as const).map((f) => {
-            const label = f === "all" ? "ทั้งหมด" : f === "featured" ? "แนะนำ" : f === "available" ? "พร้อมขาย" : "ขายแล้ว";
-            const count = f === "all" ? items.length : f === "featured" ? items.filter((i) => i.isFeatured).length : f === "available" ? availableCount : soldCount;
+          {(["all", "available", "sold"] as const).map((f) => {
+            const label = f === "all" ? "ทั้งหมด" : f === "available" ? "พร้อมขาย" : "ขายแล้ว";
+            const count = f === "all" ? items.length : f === "available" ? availableCount : soldCount;
             const active = stockFilter === f;
             return (
               <button
@@ -559,13 +564,10 @@ export default function ShopPage() {
                       ? "bg-emerald-600 text-white"
                       : f === "sold"
                       ? "bg-gray-500 text-white"
-                      : f === "featured"
-                      ? "bg-orange-500 text-white"
                       : "bg-red-600 text-white"
                     : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
                 }`}
               >
-                {f === "featured" && <Flame size={11} className={active ? "fill-white" : "text-orange-400"} />}
                 {f === "available" && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />}
                 {f === "sold" && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />}
                 {label}
