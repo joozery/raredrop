@@ -5,7 +5,7 @@ import { Reorder, useDragControls } from "framer-motion";
 import {
   ShoppingBag, Plus, Pencil, Trash2, X, Save, Loader2,
   Eye, EyeOff, Package, ChevronDown, ChevronUp, PlusCircle,
-  AlertCircle, Upload, GripVertical, Image as ImageIcon,
+  AlertCircle, Upload, GripVertical, Image as ImageIcon, Search,
 } from "lucide-react";
 import { UploadInput } from "@/components/ui/UploadInput";
 
@@ -253,6 +253,7 @@ export default function AdminShopPage() {
   const [listings, setListings] = useState<ShopListing[]>([]);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [editing, setEditing] = useState<ShopListing | null>(null);
   const [form, setForm] = useState<ShopForm>(EMPTY_FORM);
@@ -693,6 +694,18 @@ export default function AdminShopPage() {
       </div>
 
       {/* Listings */}
+      {!loading && listings.length > 0 && (
+        <div className="relative">
+          <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="ค้นหาสินค้า..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all font-medium text-slate-800 shadow-sm"
+          />
+        </div>
+      )}
       {loading ? (
         <div className="flex justify-center py-20">
           <div className="w-8 h-8 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
@@ -707,7 +720,7 @@ export default function AdminShopPage() {
         </div>
       ) : (
         <Reorder.Group as="div" axis="y" values={listings} onReorder={handleReorder} className="flex flex-col gap-4">
-          {listings.map((l) => (
+          {listings.filter((l) => !search || l.title.toLowerCase().includes(search.toLowerCase())).map((l) => (
             <ShopListingCard
               key={l._id}
               l={l}
