@@ -285,7 +285,7 @@ export default function ShopPage() {
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("newest");
-  const [stockFilter, setStockFilter] = useState<"all" | "available" | "sold">("all");
+  const [stockFilter, setStockFilter] = useState<"all" | "available" | "sold" | "featured">("all");
   const [viewMode, setViewMode] = useState("grid");
 
   const [categories, setCategories] = useState<CategoryTab[]>([]);
@@ -416,6 +416,7 @@ export default function ShopPage() {
       if (activeCategory && i.categoryId !== activeCategory) return false;
       if (stockFilter === "available" && i.stock === 0) return false;
       if (stockFilter === "sold" && i.stock > 0) return false;
+      if (stockFilter === "featured" && !i.isFeatured) return false;
       return true;
     })
     .sort((a, b) => {
@@ -427,8 +428,6 @@ export default function ShopPage() {
       if (sortBy === "price_desc") return b.price - a.price;
       return 0;
     });
-
-  const featuredItems = items.filter((i) => i.isFeatured && i.stock > 0);
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-7xl mx-auto">
@@ -503,24 +502,6 @@ export default function ShopPage() {
       {/* Banner */}
       <ShopBannerCarousel banners={banners} />
 
-      {/* Featured Products */}
-      {!loading && featuredItems.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-black text-gray-900 flex items-center gap-2">
-            <div className="bg-orange-100 p-1 rounded-lg text-orange-600">
-              <Flame size={18} className="fill-orange-500" />
-            </div>
-            สินค้าแนะนำ
-          </h2>
-          <div className="flex sm:grid gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible hide-scrollbar pb-1 sm:pb-0 snap-x snap-mandatory sm:snap-none sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4">
-            {featuredItems.slice(0, 4).map((item) => (
-              <div key={item._id} className="w-[calc(50%-0.375rem)] sm:w-auto shrink-0 snap-start sm:snap-align-none">
-                <ShopItemCard item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); setBuyQty(1); }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
 
 
@@ -564,10 +545,10 @@ export default function ShopPage() {
         </div>
 
         {/* Stock filter tabs */}
-        <div className="flex gap-2">
-          {(["all", "available", "sold"] as const).map((f) => {
-            const label = f === "all" ? "ทั้งหมด" : f === "available" ? "พร้อมขาย" : "ขายแล้ว";
-            const count = f === "all" ? items.length : f === "available" ? availableCount : soldCount;
+        <div className="flex gap-2 flex-wrap">
+          {(["all", "featured", "available", "sold"] as const).map((f) => {
+            const label = f === "all" ? "ทั้งหมด" : f === "featured" ? "แนะนำ" : f === "available" ? "พร้อมขาย" : "ขายแล้ว";
+            const count = f === "all" ? items.length : f === "featured" ? items.filter((i) => i.isFeatured).length : f === "available" ? availableCount : soldCount;
             const active = stockFilter === f;
             return (
               <button
@@ -579,10 +560,13 @@ export default function ShopPage() {
                       ? "bg-emerald-600 text-white"
                       : f === "sold"
                       ? "bg-gray-500 text-white"
+                      : f === "featured"
+                      ? "bg-orange-500 text-white"
                       : "bg-red-600 text-white"
                     : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
                 }`}
               >
+                {f === "featured" && <Flame size={11} className={active ? "fill-white" : "text-orange-400"} />}
                 {f === "available" && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />}
                 {f === "sold" && <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60" />}
                 {label}
