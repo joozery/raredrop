@@ -198,11 +198,19 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
         </div>
       </div>
 
-      {/* Category Tabs */}
+      {/* Category Icons */}
       {categories.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-          <Link href="/shop" className="shrink-0 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap bg-white border border-gray-200 text-gray-600 hover:border-red-500 hover:text-red-600 transition-colors">
-            ทั้งหมด
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar py-2 -mx-1 px-1">
+          <Link href="/shop" className="flex flex-col items-center gap-1.5 shrink-0">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 ring-1 ring-gray-200 hover:ring-gray-300 transition-all overflow-hidden">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-semibold text-gray-600 text-center leading-tight">ทั้งหมด</span>
           </Link>
           {categories.map((c: any) => {
             const catSlug = c.slug || c.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -211,10 +219,16 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
               <Link
                 key={c._id}
                 href={`/shop/${catSlug}`}
-                className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors ${isActive ? "bg-red-600 text-white shadow-sm" : "bg-white border border-gray-200 text-gray-600 hover:border-red-500 hover:text-red-600"}`}
+                className="flex flex-col items-center gap-1.5 shrink-0"
               >
-                {c.image && <img src={c.image} alt="" className="w-5 h-5 rounded-full object-cover" />}
-                {c.name}
+                <div className={`w-14 h-14 rounded-xl overflow-hidden transition-all bg-gray-100 ${isActive ? "ring-2 ring-[#DC2626] ring-offset-1 shadow-md" : "ring-1 ring-gray-200 hover:ring-gray-300"}`}>
+                  {c.image ? (
+                    <img src={c.image} alt={c.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }} />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-400 text-xs font-bold">{c.name.charAt(0)}</div>
+                  )}
+                </div>
+                <span className={`text-[10px] font-semibold text-center leading-tight max-w-[56px] truncate ${isActive ? "text-[#DC2626]" : "text-gray-600"}`}>{c.name}</span>
               </Link>
             );
           })}

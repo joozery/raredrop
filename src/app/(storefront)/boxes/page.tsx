@@ -70,26 +70,52 @@ export default function BoxesPage() {
         />
       </div>
 
-      {/* Category Tabs — Link-based navigation */}
-      <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-3 mb-6">
+      {/* Category Icons */}
+      <div className="flex gap-3 overflow-x-auto hide-scrollbar py-2 -mx-1 px-1 mb-4">
+        {/* ทั้งหมด */}
         <Link
           href="/boxes"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 bg-primary text-white shadow-sm shadow-red-500/30"
+          className="flex flex-col items-center gap-1.5 shrink-0"
         >
-          ทั้งหมด
+          <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 ring-2 ring-[#DC2626] ring-offset-1 shadow-md overflow-hidden">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          </div>
+          <span className="text-[10px] font-semibold text-[#DC2626] text-center leading-tight">ทั้งหมด</span>
+          <span className="text-[9px] text-gray-400">({boxes.length})</span>
         </Link>
-        {categories.map((cat) => (
-          <Link
-            key={cat._id}
-            href={cat.slug ? `/boxes/${cat.slug}` : `/boxes?cat=${cat._id}`}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 bg-white border border-gray-200 text-gray-600 hover:border-primary hover:text-primary"
-          >
-            {cat.image && (
-              <img src={cat.image} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
-            )}
-            {cat.name}
-          </Link>
-        ))}
+
+        {categories.map((cat) => {
+          const count = boxes.filter((b) => b.categoryId?._id === cat._id).length;
+          return (
+            <Link
+              key={cat._id}
+              href={cat.slug ? `/boxes/${cat.slug}` : `/boxes?cat=${cat._id}`}
+              className="flex flex-col items-center gap-1.5 shrink-0"
+            >
+              <div className="w-14 h-14 rounded-xl overflow-hidden ring-1 ring-gray-200 hover:ring-gray-300 transition-all bg-gray-100">
+                {cat.image ? (
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-400 text-xs font-bold">
+                    {cat.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <span className="text-[10px] font-semibold text-gray-600 text-center leading-tight max-w-[56px] truncate">{cat.name}</span>
+              <span className="text-[9px] text-gray-400">({count})</span>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Count */}

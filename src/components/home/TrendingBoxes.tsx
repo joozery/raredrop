@@ -58,43 +58,76 @@ export default function TrendingBoxes() {
     <section>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold flex items-center gap-2">
-          กล่องสุดฮิต <Flame className="text-orange-500 fill-orange-500" size={20} />
+          เลือกหมวดหมู่ <Flame className="text-orange-500 fill-orange-500" size={20} />
         </h2>
+        <button className="text-xs text-gray-400 hover:text-primary transition-colors font-medium">
+          ดูทั้งหมด →
+        </button>
       </div>
 
-      <div className="relative group">
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-3 pr-8 -mx-2 px-2">
-          <button
-            onClick={() => setSelectedCat(null)}
-            className={`text-[11px] font-bold px-4 py-1.5 rounded-lg whitespace-nowrap shadow-sm shrink-0 transition-colors ${
-              !selectedCat ? "bg-[#DC2626] text-white" : "bg-white text-gray-800 border border-gray-200/80 hover:bg-gray-50"
-            }`}
+      {/* Category icon grid */}
+      <div className="flex gap-3 overflow-x-auto hide-scrollbar py-2 -mx-2 px-2 mb-4">
+        {/* ทั้งหมด */}
+        <button
+          onClick={() => setSelectedCat(null)}
+          className="flex flex-col items-center gap-1.5 shrink-0 group"
+        >
+          <div
+            className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all ${
+              !selectedCat
+                ? "ring-2 ring-[#DC2626] ring-offset-1 shadow-md"
+                : "ring-1 ring-gray-200 hover:ring-gray-300"
+            } bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden`}
           >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={!selectedCat ? "#DC2626" : "#9CA3AF"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          </div>
+          <span className={`text-[10px] font-semibold text-center leading-tight ${!selectedCat ? "text-[#DC2626]" : "text-gray-600"}`}>
             ทั้งหมด
-          </button>
-          {categories.map((cat) => (
+          </span>
+          <span className="text-[9px] text-gray-400">({boxes.length})</span>
+        </button>
+
+        {categories.map((cat) => {
+          const count = boxes.filter((b) => b.categoryId?._id === cat._id).length;
+          const isSelected = selectedCat === cat._id;
+          return (
             <button
               key={cat._id}
-              onClick={() => setSelectedCat(selectedCat === cat._id ? null : cat._id)}
-              className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.02)] ${
-                selectedCat === cat._id
-                  ? "bg-[#DC2626] text-white border border-[#DC2626]"
-                  : "bg-white text-gray-800 border border-gray-200/80 hover:bg-gray-50"
-              }`}
+              onClick={() => setSelectedCat(isSelected ? null : cat._id)}
+              className="flex flex-col items-center gap-1.5 shrink-0 group"
             >
-              {cat.image && (
-                <img src={cat.image} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
-              )}
-              {cat.name}
+              <div
+                className={`w-14 h-14 rounded-xl overflow-hidden transition-all ${
+                  isSelected
+                    ? "ring-2 ring-[#DC2626] ring-offset-1 shadow-md"
+                    : "ring-1 ring-gray-200 hover:ring-gray-300"
+                } bg-gray-100`}
+              >
+                {cat.image ? (
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-400 text-xs font-bold">
+                    {cat.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <span className={`text-[10px] font-semibold text-center leading-tight max-w-[56px] truncate ${isSelected ? "text-[#DC2626]" : "text-gray-600"}`}>
+                {cat.name}
+              </span>
+              <span className="text-[9px] text-gray-400">({count})</span>
             </button>
-          ))}
-        </div>
-
-        <div className="absolute right-0 top-0 bottom-3 w-16 bg-gradient-to-l from-[#F8F8F8] via-[#F8F8F8]/80 to-transparent pointer-events-none flex items-center justify-end pr-1">
-          <div className="w-7 h-7 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-sm text-gray-500">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
       {loading ? (

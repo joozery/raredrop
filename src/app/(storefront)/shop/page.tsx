@@ -449,27 +449,56 @@ export default function ShopPage() {
           </button>
         </div>
       </div>
-      {/* Category Tabs (All screens) */}
+      {/* Category Icons */}
       {categories.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar py-2 -mx-1 px-1">
+          {/* ทั้งหมด */}
           <Link
             href="/shop"
-            className="shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap bg-red-600 text-white"
+            className="flex flex-col items-center gap-1.5 shrink-0"
           >
-            ทั้งหมด
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 ring-2 ring-[#DC2626] ring-offset-1 shadow-md overflow-hidden">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-semibold text-[#DC2626] text-center leading-tight">ทั้งหมด</span>
+            <span className="text-[9px] text-gray-400">({items.length})</span>
           </Link>
-          {categories.map((c) => (
-            <Link
-              key={c._id}
-              href={c.slug ? `/shop/${c.slug}` : `/shop?cat=${c._id}`}
-              className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-            >
-              {c.image && <img src={c.image} alt="" className="w-5 h-5 rounded-full object-cover" />}
-              {c.name}
-            </Link>
-          ))}
+
+          {categories.map((c) => {
+            const count = items.filter((i) => i.categoryId === c._id).length;
+            return (
+              <Link
+                key={c._id}
+                href={c.slug ? `/shop/${c.slug}` : `/shop?cat=${c._id}`}
+                className="flex flex-col items-center gap-1.5 shrink-0"
+              >
+                <div className="w-14 h-14 rounded-xl overflow-hidden ring-1 ring-gray-200 hover:ring-gray-300 transition-all bg-gray-100">
+                  {c.image ? (
+                    <img
+                      src={c.image}
+                      alt={c.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-400 text-xs font-bold">
+                      {c.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] font-semibold text-gray-600 text-center leading-tight max-w-[56px] truncate">{c.name}</span>
+                <span className="text-[9px] text-gray-400">({count})</span>
+              </Link>
+            );
+          })}
         </div>
       )}
+
 
       {/* Banner */}
       <ShopBannerCarousel banners={banners} />
