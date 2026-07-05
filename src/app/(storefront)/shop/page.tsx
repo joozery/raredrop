@@ -284,7 +284,7 @@ export default function ShopPage() {
 
   const [items, setItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState("featured");
   const [stockFilter, setStockFilter] = useState<"all" | "available" | "sold">("all");
   const [viewMode, setViewMode] = useState("grid");
 
