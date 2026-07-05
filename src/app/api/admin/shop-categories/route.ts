@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     if (!isAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { name, image, order, isActive } = body;
+    const { name, slug, image, order, isActive } = body;
 
     if (!name) {
       return NextResponse.json({ error: "กรุณากรอกชื่อหมวดหมู่" }, { status: 400 });
@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     await connectToDatabase();
     const category = await ShopCategory.create({
       name,
+      slug: slug?.trim() || undefined,
       image: image || undefined,
       order: Number(order) || 0,
       isActive: isActive !== undefined ? isActive : true,

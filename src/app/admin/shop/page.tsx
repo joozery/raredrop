@@ -24,8 +24,8 @@ interface CategoryOption {
   isActive: boolean;
 }
 
-type CategoryForm = { name: string; image: string; order: string; isActive: boolean };
-const EMPTY_CATEGORY_FORM: CategoryForm = { name: "", image: "", order: "0", isActive: true };
+type CategoryForm = { name: string; slug: string; image: string; order: string; isActive: boolean };
+const EMPTY_CATEGORY_FORM: CategoryForm = { name: "", slug: "", image: "", order: "0", isActive: true };
 
 interface BannerItem {
   _id: string;
@@ -378,7 +378,7 @@ export default function AdminShopPage() {
 
   const openEditCategory = (c: CategoryOption) => {
     setEditingCategory(c);
-    setCategoryForm({ name: c.name, image: c.image || "", order: String(c.order), isActive: c.isActive });
+    setCategoryForm({ name: c.name, slug: (c as any).slug || "", image: c.image || "", order: String(c.order), isActive: c.isActive });
     setCategoryModal("edit");
   };
 
@@ -390,6 +390,7 @@ export default function AdminShopPage() {
     try {
       const body = {
         name: categoryForm.name.trim(),
+        slug: categoryForm.slug.trim() || undefined,
         image: categoryForm.image || undefined,
         order: Number(categoryForm.order) || 0,
         isActive: categoryForm.isActive,
@@ -957,6 +958,22 @@ export default function AdminShopPage() {
                   className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
                   placeholder="เช่น Free Fire, Roblox, มือถือ..."
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">
+                  Slug (URL) <span className="text-slate-400 font-normal">— ถ้าว่างจะสร้างจากชื่อ (ควรกรอกถ้าชื่อเป็นภาษาไทย)</span>
+                </label>
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-red-500 transition-all">
+                  <span className="px-3 text-slate-400 text-sm font-medium border-r border-slate-200 py-2.5 shrink-0">/shop/</span>
+                  <input
+                    type="text"
+                    value={categoryForm.slug}
+                    onChange={(e) => setCategoryForm((f) => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))}
+                    className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none font-medium text-slate-800"
+                    placeholder="freefire, roblox, mobile..."
+                  />
+                </div>
               </div>
 
               <UploadInput

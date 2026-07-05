@@ -18,10 +18,11 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { name, image, order, isActive } = body;
+    const { name, slug, image, order, isActive } = body;
 
     const update: any = {};
     if (name !== undefined) update.name = name;
+    if (slug !== undefined) update.slug = slug?.trim() || undefined;
     if (image !== undefined) update.image = image || "";
     if (order !== undefined) update.order = Number(order) || 0;
     if (isActive !== undefined) update.isActive = !!isActive;
