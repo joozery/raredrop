@@ -172,7 +172,18 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
     }
   };
 
-  const filtered = items.filter((i) => i.name?.toLowerCase().includes(search.toLowerCase()) || i.title?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = items
+    .filter((i) => i.title?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      // สินค้าหมดไปท้ายเสมอ
+      if (a.stock === 0 && b.stock > 0) return 1;
+      if (a.stock > 0 && b.stock === 0) return -1;
+      // สินค้าแนะนำขึ้นก่อน
+      if (a.isFeatured && !b.isFeatured) return -1;
+      if (!a.isFeatured && b.isFeatured) return 1;
+      // ภายในกลุ่มเดียวกัน เรียงใหม่สุดก่อน
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   return (
     <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-7xl mx-auto">
