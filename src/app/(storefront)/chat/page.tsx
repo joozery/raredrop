@@ -12,6 +12,34 @@ interface ChatMsg {
   imageUrl?: string;
   createdAt: string;
 }
+
+// แปลง URL ในข้อความเป็นลิงก์คลิกได้ (รองรับ http/https และ www.) — สีตามตัวอักษรของ bubble
+// จับเฉพาะอักขระ URL จริง เพื่อไม่กลืนข้อความไทยที่พิมพ์ติดท้ายลิงก์โดยไม่เว้นวรรค
+const URL_CHARS = "[A-Za-z0-9\\-._~:/?#\\[\\]@!$&'()*+,;=%]";
+const URL_REGEX = new RegExp(`(https?://${URL_CHARS}+|www\\.${URL_CHARS}+)`, "gi");
+
+function renderWithLinks(text: string) {
+  return text.split(URL_REGEX).map((part, i) => {
+    if (!/^(https?:\/\/|www\.)/i.test(part)) return part;
+    // ตัดวรรคตอนท้ายลิงก์ที่มักติดมากับประโยค เช่น "ดูที่ https://a.com/x, นะครับ"
+    const match = part.match(/^(.*?)([.,!?;:)"']*)$/)!;
+    const url = match[1];
+    const trailing = match[2];
+    return (
+      <span key={i}>
+        <a
+          href={url.toLowerCase().startsWith("www.") ? `https://${url}` : url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline break-all hover:opacity-80"
+        >
+          {url}
+        </a>
+        {trailing}
+      </span>
+    );
+  });
+}
 interface Conversation {
   _id: string;
   subject: string;
@@ -215,7 +243,7 @@ export default function ChatPage() {
                 <div className="p-4 flex flex-col gap-2.5">
                   <div className="flex justify-start">
                     <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm text-sm font-medium bg-white text-gray-800 border border-gray-100 shadow-sm leading-relaxed">
-                      {welcomeMsg}
+                      {renderWithLinks(welcomeMsg)}
                     </div>
                   </div>
                 </div>
@@ -303,7 +331,7 @@ export default function ChatPage() {
                   {m.imageUrl && (
                     <img src={m.imageUrl} alt="" className="max-w-[200px] md:max-w-xs h-auto object-cover rounded-xl mb-2" />
                   )}
-                  {m.text}
+                  {renderWithLinks(m.text)}
                 </div>
               </div>
             ))}
