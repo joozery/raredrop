@@ -177,7 +177,7 @@ function CategoryBoxesPage({ slug }: { slug: string }) {
 
 interface RarityData { name: string; color: string; order: number; backgroundImage?: string }
 interface ItemData { _id: string; name: string; image: string; price: number; rarityId: RarityData }
-interface BoxItem { itemId: ItemData; probability: number }
+interface BoxItem { itemId: ItemData; probability: number; isLocked?: boolean }
 interface FlashSaleData { salePrice: number; endsAt: string }
 interface BoxData {
   _id: string; name: string; description?: string; image: string; titleImage?: string; animation?: string;
@@ -316,10 +316,10 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
     }
   };
 
-  // Group items by rarity for drop rate display
+  // Group items by rarity for drop rate display — ไอเทมที่พักชั่วคราว (isLocked) ไม่ร่วมการสุ่ม จึงไม่นับใน % ที่โชว์
   const rarityGroups = box?.items.reduce((acc: Record<string, { prob: number; color: string; order: number }>, bi) => {
     const r = bi.itemId?.rarityId;
-    if (!r) return acc;
+    if (!r || bi.isLocked) return acc;
     if (!acc[r.name]) acc[r.name] = { prob: 0, color: r.color, order: r.order };
     acc[r.name].prob += bi.probability;
     return acc;
@@ -342,7 +342,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
   const isOutOfStock = box?.items.some((bi: any) => {
     const item = bi.itemId;
-    return item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
+    return !bi.isLocked && item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
   });
 
   if (loading) {
@@ -494,8 +494,14 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 const item = bi.itemId;
                 const rarity = item?.rarityId;
                 return (
-                  <div key={i} className={`rounded-xl sm:rounded-2xl flex flex-col relative hover:-translate-y-1 hover:shadow-xl transition-all cursor-pointer group overflow-hidden ${!rarity?.backgroundImage ? 'bg-white border-2' : 'border border-white/10'}`} style={{ borderColor: !rarity?.backgroundImage ? (rarity?.color ? `${rarity.color}60` : "#e2e8f0") : undefined }}>
-                    
+                  <div key={i} className={`rounded-xl sm:rounded-2xl flex flex-col relative hover:-translate-y-1 hover:shadow-xl transition-all cursor-pointer group overflow-hidden ${!rarity?.backgroundImage ? 'bg-white border-2' : 'border border-white/10'} ${bi.isLocked ? 'opacity-60 grayscale' : ''}`} style={{ borderColor: !rarity?.backgroundImage ? (rarity?.color ? `${rarity.color}60` : "#e2e8f0") : undefined }}>
+
+                    {bi.isLocked && (
+                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-30 bg-gray-800/90 text-white text-[8px] sm:text-[10px] font-black px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full uppercase tracking-wider shadow-sm">
+                        หมดชั่วคราว
+                      </div>
+                    )}
+
                     {rarity?.backgroundImage && (
                       <div className="absolute inset-0 z-0 bg-[#0a0a14]">
                         <img src={rarity.backgroundImage} alt="bg" className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700 ease-out" />

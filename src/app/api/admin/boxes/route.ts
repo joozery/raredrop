@@ -4,6 +4,7 @@ import Box from "@/models/Box";
 import Category from "@/models/Category";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { validateBoxItems } from "@/lib/validateBoxItems";
 
 export async function GET(req: Request) {
   try {
@@ -42,6 +43,11 @@ export async function POST(req: Request) {
 
     if (!name || !image || price === undefined) {
       return NextResponse.json({ error: "Name, image, and price are required" }, { status: 400 });
+    }
+
+    const itemsError = validateBoxItems(items);
+    if (itemsError) {
+      return NextResponse.json({ error: itemsError }, { status: 400 });
     }
 
     await connectToDatabase();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Package, Search, Percent, Settings, Plus, X, Trash2, Box as BoxIcon, AlertTriangle } from "lucide-react";
+import { Package, Search, Percent, Settings, Plus, X, Trash2, Box as BoxIcon, AlertTriangle, Lock, LockOpen, HelpCircle, ChevronDown } from "lucide-react";
 
 interface RarityData {
   _id: string;
@@ -39,10 +39,11 @@ export default function ManageProbabilities() {
   
   const [selectedBox, setSelectedBox] = useState<BoxData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItems, setEditingItems] = useState<{ itemId: string, probability: number }[]>([]);
+  const [editingItems, setEditingItems] = useState<{ itemId: string, probability: number, isLocked: boolean }[]>([]);
   const [itemSearch, setItemSearch] = useState("");
   
   const [isSaving, setIsSaving] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -76,7 +77,8 @@ export default function ManageProbabilities() {
             .filter((i: any) => i.itemId)
             .map((i: any) => ({
               itemId: i.itemId._id,
-              probability: i.probability
+              probability: i.probability,
+              isLocked: !!i.isLocked
             }))
         );
         setIsModalOpen(true);
@@ -94,7 +96,11 @@ export default function ManageProbabilities() {
 
   const handleAddItem = (item: ItemData) => {
     if (editingItems.find(i => i.itemId === item._id)) return; // Already added
-    setEditingItems([...editingItems, { itemId: item._id, probability: 0 }]);
+    setEditingItems([...editingItems, { itemId: item._id, probability: 0, isLocked: false }]);
+  };
+
+  const handleToggleLock = (itemId: string) => {
+    setEditingItems(editingItems.map(i => i.itemId === itemId ? { ...i, isLocked: !i.isLocked } : i));
   };
 
   const handleRemoveItem = (itemId: string) => {
@@ -108,7 +114,17 @@ export default function ManageProbabilities() {
 
   const handleSave = async () => {
     if (!selectedBox) return;
-    
+
+    if (editingItems.length > 0 && editingItems.every(i => i.isLocked)) {
+      alert("ไม่สามารถบันทึกได้: ต้องมีไอเทมที่ไม่ถูกพักอย่างน้อย 1 ชิ้น ไม่เช่นนั้นกล่องจะสุ่มไม่ได้");
+      return;
+    }
+
+    if (editingItems.length > 0 && Math.abs(totalProb - 100) > 0.00005) {
+      alert(`ไม่สามารถบันทึกได้: อัตราดรอปรวมของไอเทมที่ไม่ถูกพักต้องเท่ากับ 100% (ปัจจุบัน ${fmtProb(totalProb)}%)`);
+      return;
+    }
+
     setIsSaving(true);
     try {
       const res = await fetch(`/api/admin/boxes/${selectedBox._id}`, {
@@ -133,7 +149,9 @@ export default function ManageProbabilities() {
     box.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalProb = editingItems.reduce((sum, item) => sum + (item.probability || 0), 0);
+  // นับเฉพาะไอเทมที่ไม่ถูกพัก (ล็อก) — ตัวที่พักไม่ออกจากการสุ่มจึงไม่นับใน 100%
+  const totalProb = editingItems.reduce((sum, item) => sum + (item.isLocked ? 0 : (item.probability || 0)), 0);
+  const lockedCount = editingItems.filter(i => i.isLocked).length;
   const fmtProb = (n: number) => parseFloat(n.toFixed(4)).toString();
   
   // Available items to add
@@ -147,6 +165,58 @@ export default function ManageProbabilities() {
       <div>
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">อัตราดรอป (Drop Rates)</h1>
         <p className="text-sm text-slate-500 mt-1">ตั้งค่าไอเทมในกล่องสุ่มและกำหนดโอกาสออก (Probability)</p>
+      </div>
+
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-slate-50 transition-colors"
+        >
+          <span className="flex items-center gap-2 text-sm font-bold text-slate-700">
+            <HelpCircle size={16} className="text-blue-500" />
+            คำอธิบาย: เปอร์เซ็นต์ดรอป และการพักรางวัล (ล็อก) ทำงานอย่างไร
+          </span>
+          <ChevronDown size={16} className={`text-slate-400 transition-transform ${showHelp ? "rotate-180" : ""}`} />
+        </button>
+
+        {showHelp && (
+          <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-[13px] text-slate-600 leading-relaxed">
+            <div className="bg-slate-50 rounded-xl p-4">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 mb-2">
+                <Percent size={14} className="text-red-500" /> เปอร์เซ็นต์ดรอป
+              </div>
+              <ul className="space-y-1.5 list-disc pl-4">
+                <li>ตัวเลข % ของแต่ละไอเทม = โอกาสออกต่อการเปิด 1 ครั้ง ระบบสุ่มแบบถ่วงน้ำหนักตามค่านี้</li>
+                <li>ยอดรวมของไอเทมที่ไม่ถูกพักต้องเท่ากับ <strong>100% พอดี</strong> ไม่เช่นนั้นระบบจะไม่ให้บันทึก</li>
+                <li>ใส่ทศนิยมได้ละเอียดสุด 0.0001 (เช่น 0.0001% = โอกาส 1 ในล้าน)</li>
+                <li>% ที่ตั้งตรงนี้คือตัวเลขเดียวกับที่แสดงให้ผู้เล่นเห็นหน้ากล่อง</li>
+              </ul>
+            </div>
+
+            <div className="bg-amber-50/60 rounded-xl p-4">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 mb-2">
+                <Lock size={14} className="text-amber-600" /> การพักรางวัล (ล็อก)
+              </div>
+              <ul className="space-y-1.5 list-disc pl-4">
+                <li>กดปุ่มแม่กุญแจเพื่อพักไอเทม — <strong>จะไม่ออกจากการสุ่มชั่วคราว</strong> โดยไม่ต้องลบออกจากกล่อง เหมาะกับของหมดสต็อกที่รอเติม</li>
+                <li>หน้าร้านยังโชว์รางวัลอยู่ แต่รูปจะจางลงพร้อมป้าย "หมดชั่วคราว" และ % ของตัวนั้นจะไม่ถูกนับในอัตราดรอปที่ผู้เล่นเห็น</li>
+                <li>เมื่อพักไอเทมแล้ว ต้องปรับ % ของตัวที่เหลือให้รวมครบ 100% ใหม่ก่อนบันทึก</li>
+                <li>ต้องเหลือไอเทมที่ไม่ถูกพักอย่างน้อย 1 ชิ้นเสมอ</li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50/60 rounded-xl p-4">
+              <div className="flex items-center gap-1.5 font-bold text-slate-800 mb-2">
+                <AlertTriangle size={14} className="text-blue-600" /> ระบบการันตี (Pity)
+              </div>
+              <ul className="space-y-1.5 list-disc pl-4">
+                <li>ถ้าผู้เล่นเปิดกล่องครบจำนวนครั้งที่กำหนด (ค่าเริ่มต้น 100 ครั้ง ตั้งได้ที่หน้ากล่องสุ่ม) โดยไม่ได้ของแรร์ ครั้งถัดไปจะ<strong>การันตีของแรร์</strong></li>
+                <li>ของแรร์ = ไอเทมที่ระดับความหายาก (Rarity) มี order ตั้งแต่ 3 ขึ้นไป</li>
+                <li><strong>ข้อควรระวัง:</strong> ถ้าพักไอเทมแรร์ครบทุกตัวในกล่อง ระบบการันตีจะไม่มีของแรร์ให้แจก และจะสุ่มจากไอเทมที่เหลือแทน — ควรเหลือแรร์ที่ไม่พักไว้อย่างน้อย 1 ตัว</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -203,11 +273,22 @@ export default function ManageProbabilities() {
                     <Package size={16} className="text-slate-400" />
                     ไอเทมในกล่อง ({editingItems.length})
                   </h3>
-                  <div className={`text-xs font-black px-3 py-1.5 rounded-lg border ${Math.abs(totalProb - 100) < 0.0001 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                    รวม {fmtProb(totalProb)}%
+                  <div className="flex items-center gap-2">
+                    {lockedCount > 0 && (
+                      <div className="text-xs font-black px-3 py-1.5 rounded-lg border bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                        <Lock size={11} /> พัก {lockedCount}
+                      </div>
+                    )}
+                    <div className={`text-xs font-black px-3 py-1.5 rounded-lg border ${Math.abs(totalProb - 100) < 0.0001 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                      รวม {fmtProb(totalProb)}%
+                    </div>
                   </div>
                 </div>
 
+                <div className="px-4 pt-3 flex items-center gap-1.5 text-[11px] text-slate-400 font-medium shrink-0">
+                  <LockOpen size={11} className="shrink-0" />
+                  กดปุ่มแม่กุญแจเพื่อพักรางวัล — ไอเทมจะไม่ออกจากการสุ่ม แต่หน้าร้านยังแสดง (ขึ้นป้าย "หมดชั่วคราว") และ % ตัวที่เหลือต้องรวมครบ 100%
+                </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   {editingItems.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400">
@@ -219,9 +300,9 @@ export default function ManageProbabilities() {
                     const itemData = items.find(i => i._id === ei.itemId);
                     if (!itemData) return null;
                     return (
-                      <div key={ei.itemId} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-4 shadow-sm hover:border-slate-300 transition-colors">
+                      <div key={ei.itemId} className={`bg-white border rounded-xl p-3 flex items-center gap-4 shadow-sm transition-colors ${ei.isLocked ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 hover:border-slate-300'}`}>
                         <div className="text-xs font-black text-slate-300 w-5">{index + 1}</div>
-                        <div className="w-10 h-10 bg-slate-50 rounded-lg p-1 border border-slate-100 shrink-0 flex items-center justify-center">
+                        <div className={`w-10 h-10 bg-slate-50 rounded-lg p-1 border border-slate-100 shrink-0 flex items-center justify-center ${ei.isLocked ? 'opacity-50 grayscale' : ''}`}>
                           {itemData.type === "coin_reward" ? (
                             <span className="text-2xl">💎</span>
                           ) : (
@@ -229,7 +310,7 @@ export default function ManageProbabilities() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-bold text-slate-800 text-sm truncate">{itemData.name}</div>
+                          <div className={`font-bold text-sm truncate ${ei.isLocked ? 'text-slate-400' : 'text-slate-800'}`}>{itemData.name}</div>
                           <div className="flex items-center gap-2 mt-0.5">
                             {itemData.rarityId && (
                               <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: `${itemData.rarityId.color}15`, color: itemData.rarityId.color }}>
@@ -241,9 +322,14 @@ export default function ManageProbabilities() {
                             ) : (
                               <span className="text-[10px] font-bold text-slate-500">฿{itemData.price.toLocaleString()}</span>
                             )}
+                            {ei.isLocked && (
+                              <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 flex items-center gap-1">
+                                <Lock size={8} /> พักชั่วคราว — ไม่ออกจากการสุ่ม
+                              </span>
+                            )}
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-3 shrink-0">
                           <div className="relative">
                             <input
@@ -251,10 +337,18 @@ export default function ManageProbabilities() {
                               min="0" max="100" step="0.0001"
                               value={ei.probability.toString()}
                               onChange={(e) => handleProbChange(ei.itemId, e.target.value)}
-                              className="w-28 bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:border-red-500 font-black text-slate-800 text-right"
+                              disabled={ei.isLocked}
+                              className="w-28 bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:border-red-500 font-black text-slate-800 text-right disabled:opacity-40 disabled:line-through"
                             />
                             <Percent size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
                           </div>
+                          <button
+                            onClick={() => handleToggleLock(ei.itemId)}
+                            className={`p-1.5 rounded-lg transition-colors ${ei.isLocked ? 'text-amber-600 bg-amber-100 hover:bg-amber-200' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}`}
+                            title={ei.isLocked ? "เปิดให้ออกจากการสุ่ม" : "พักชั่วคราว (ไม่ออกจากการสุ่ม)"}
+                          >
+                            {ei.isLocked ? <Lock size={16} /> : <LockOpen size={16} />}
+                          </button>
                           <button onClick={() => handleRemoveItem(ei.itemId)} className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors">
                             <Trash2 size={16} />
                           </button>

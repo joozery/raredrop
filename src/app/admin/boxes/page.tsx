@@ -93,11 +93,14 @@ export default function ManageBoxes() {
     try {
       const url = modalMode === "add" ? "/api/admin/boxes" : `/api/admin/boxes/${currentBox._id}`;
       const method = modalMode === "add" ? "POST" : "PUT";
-      
+
+      // หน้านี้ไม่ได้แก้เรทดรอป — ตัด items ออกกันไปทับ/โดน validation เรทของ API
+      const { items, ...boxPayload } = currentBox;
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentBox)
+        body: JSON.stringify(boxPayload)
       });
       
       const data = await res.json();

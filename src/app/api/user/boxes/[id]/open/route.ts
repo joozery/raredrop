@@ -55,7 +55,13 @@ export async function POST(
       return NextResponse.json({ error: "กล่องนี้ยังไม่มีไอเทม" }, { status: 400 });
     }
 
-    const isOutOfStock = box.items.some((bi: any) => {
+    // ไอเทมที่พักไว้ (isLocked) ไม่ร่วมการสุ่ม — เช็คสต็อก/สุ่มเฉพาะตัวที่เปิดอยู่
+    const unlockedItems = box.items.filter((bi: any) => !bi.isLocked);
+    if (unlockedItems.length === 0) {
+      return NextResponse.json({ error: "รางวัลในกล่องนี้ถูกพักชั่วคราวทั้งหมด ไม่สามารถสุ่มได้" }, { status: 400 });
+    }
+
+    const isOutOfStock = unlockedItems.some((bi: any) => {
       const item = bi.itemId as any;
       return item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
     });
@@ -102,10 +108,10 @@ export async function POST(
 
     for (let i = 0; i < times; i++) {
       let granted = false;
-      let attemptsLeft = box.items.length + 1; // กันวนซ้ำไม่จบถ้าของหมดพร้อมกันหมดทุกตัว
+      let attemptsLeft = unlockedItems.length + 1; // กันวนซ้ำไม่จบถ้าของหมดพร้อมกันหมดทุกตัว
 
       while (!granted && attemptsLeft-- > 0) {
-        const availableItems = box.items.filter((bi: any) => !depletedIds.has(bi.itemId._id.toString()));
+        const availableItems = unlockedItems.filter((bi: any) => !depletedIds.has(bi.itemId._id.toString()));
         if (availableItems.length === 0) break; // ของหมดทั้งกล่องกลางอากาศ (race หายากมาก) — หยุดสุ่มรอบนี้
 
         const availableRare = availableItems.filter(

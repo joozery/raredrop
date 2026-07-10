@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import Item from "@/models/Item";
 import Rarity from "@/models/Rarity";
+import { validateBoxItems } from "@/lib/validateBoxItems";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -46,6 +47,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     if (body.categoryId === "") {
       body.categoryId = null;
+    }
+
+    const itemsError = validateBoxItems(body.items);
+    if (itemsError) {
+      return NextResponse.json({ error: itemsError }, { status: 400 });
     }
 
     await connectToDatabase();

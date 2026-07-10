@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 export interface IBoxItem {
   itemId: Types.ObjectId;
   probability: number; // percentage (e.g. 10 for 10%)
+  isLocked?: boolean; // พักรางวัลชั่วคราว — ไม่ออกจากการสุ่ม, หน้าร้านโชว์เป็น "หมดชั่วคราว" และไม่นับใน % ที่แสดง
 }
 
 export interface IBox extends Document {
@@ -24,6 +25,7 @@ export interface IBox extends Document {
 const BoxItemSchema = new Schema({
   itemId: { type: Schema.Types.ObjectId, ref: 'Item', required: true },
   probability: { type: Number, required: true, min: 0, max: 100 },
+  isLocked: { type: Boolean, default: false },
 }, { _id: false });
 
 const BoxSchema: Schema = new Schema({
