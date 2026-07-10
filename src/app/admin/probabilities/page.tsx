@@ -120,8 +120,8 @@ export default function ManageProbabilities() {
       return;
     }
 
-    if (editingItems.length > 0 && Math.abs(totalProb - 100) > 0.00005) {
-      alert(`ไม่สามารถบันทึกได้: อัตราดรอปรวมของไอเทมที่ไม่ถูกพักต้องเท่ากับ 100% (ปัจจุบัน ${fmtProb(totalProb)}%)`);
+    if (editingItems.length > 0 && totalProb <= 0) {
+      alert("ไม่สามารถบันทึกได้: อัตราดรอปรวมของไอเทมที่ไม่ถูกพักต้องมากกว่า 0%");
       return;
     }
 
@@ -186,10 +186,10 @@ export default function ManageProbabilities() {
                 <Percent size={14} className="text-red-500" /> เปอร์เซ็นต์ดรอป
               </div>
               <ul className="space-y-1.5 list-disc pl-4">
-                <li>ตัวเลข % ของแต่ละไอเทม = โอกาสออกต่อการเปิด 1 ครั้ง ระบบสุ่มแบบถ่วงน้ำหนักตามค่านี้</li>
-                <li>ยอดรวมของไอเทมที่ไม่ถูกพักต้องเท่ากับ <strong>100% พอดี</strong> ไม่เช่นนั้นระบบจะไม่ให้บันทึก</li>
-                <li>ใส่ทศนิยมได้ละเอียดสุด 0.0001 (เช่น 0.0001% = โอกาส 1 ในล้าน)</li>
-                <li>% ที่ตั้งตรงนี้คือตัวเลขเดียวกับที่แสดงให้ผู้เล่นเห็นหน้ากล่อง</li>
+                <li>ตัวเลขของแต่ละไอเทมคือ "น้ำหนัก" ในการสุ่ม — โอกาสออกจริง = น้ำหนัก ÷ ยอดรวมของตัวที่ไม่ถูกพัก</li>
+                <li><strong>ไม่จำเป็นต้องรวมเป็น 100%</strong> เช่น ตั้ง 50 จากยอดรวม 200 = โอกาสจริง 25% (แนะนำให้รวม 100% เพื่ออ่านง่าย) แต่ยอดรวมต้องมากกว่า 0</li>
+                <li>ใส่ทศนิยมได้ละเอียดสุด 0.0001</li>
+                <li>% ที่ผู้เล่นเห็นหน้ากล่องคิดจากสัดส่วนจริงเสมอ ตรงกับโอกาสออกจริง</li>
               </ul>
             </div>
 
@@ -199,8 +199,8 @@ export default function ManageProbabilities() {
               </div>
               <ul className="space-y-1.5 list-disc pl-4">
                 <li>กดปุ่มแม่กุญแจเพื่อพักไอเทม — <strong>จะไม่ออกจากการสุ่มชั่วคราว</strong> โดยไม่ต้องลบออกจากกล่อง เหมาะกับของหมดสต็อกที่รอเติม</li>
-                <li>หน้าร้านยังโชว์รางวัลอยู่ แต่รูปจะจางลงพร้อมป้าย "หมดชั่วคราว" และ % ของตัวนั้นจะไม่ถูกนับในอัตราดรอปที่ผู้เล่นเห็น</li>
-                <li>เมื่อพักไอเทมแล้ว ต้องปรับ % ของตัวที่เหลือให้รวมครบ 100% ใหม่ก่อนบันทึก</li>
+                <li>หน้าร้านยังโชว์รางวัลอยู่ แต่จะมีป้าย "ไม่ร่วมการสุ่ม" บนการ์ด และ % ของตัวนั้นจะไม่ถูกนับในอัตราดรอปที่ผู้เล่นเห็น</li>
+                <li>เมื่อพักไอเทม โอกาสของตัวที่เหลือจะถูกคิดสัดส่วนใหม่จากยอดรวมอัตโนมัติ — บันทึกได้เลยไม่ต้องปรับ % ใหม่</li>
                 <li>ต้องเหลือไอเทมที่ไม่ถูกพักอย่างน้อย 1 ชิ้นเสมอ</li>
               </ul>
             </div>
@@ -287,7 +287,7 @@ export default function ManageProbabilities() {
 
                 <div className="px-4 pt-3 flex items-center gap-1.5 text-[11px] text-slate-400 font-medium shrink-0">
                   <LockOpen size={11} className="shrink-0" />
-                  กดปุ่มแม่กุญแจเพื่อพักรางวัล — ไอเทมจะไม่ออกจากการสุ่ม แต่หน้าร้านยังแสดง (ขึ้นป้าย "หมดชั่วคราว") และ % ตัวที่เหลือต้องรวมครบ 100%
+                  กดปุ่มแม่กุญแจเพื่อพักรางวัล — ไอเทมจะไม่ออกจากการสุ่ม แต่หน้าร้านยังแสดง (ขึ้นป้าย "ไม่ร่วมการสุ่ม") โอกาสตัวที่เหลือคิดสัดส่วนใหม่ให้อัตโนมัติ
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   {editingItems.length === 0 ? (
@@ -331,16 +331,21 @@ export default function ManageProbabilities() {
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min="0" max="100" step="0.0001"
-                              value={ei.probability.toString()}
-                              onChange={(e) => handleProbChange(ei.itemId, e.target.value)}
-                              disabled={ei.isLocked}
-                              className="w-28 bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:border-red-500 font-black text-slate-800 text-right disabled:opacity-40 disabled:line-through"
-                            />
-                            <Percent size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <div className="flex flex-col items-end gap-0.5">
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="0" step="0.0001"
+                                value={ei.probability.toString()}
+                                onChange={(e) => handleProbChange(ei.itemId, e.target.value)}
+                                disabled={ei.isLocked}
+                                className="w-28 bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:border-red-500 font-black text-slate-800 text-right disabled:opacity-40 disabled:line-through"
+                              />
+                              <Percent size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            </div>
+                            {!ei.isLocked && totalProb > 0 && Math.abs(totalProb - 100) > 0.01 && (
+                              <span className="text-[10px] font-bold text-blue-500">จริง ≈ {fmtProb((ei.probability / totalProb) * 100)}%</span>
+                            )}
                           </div>
                           <button
                             onClick={() => handleToggleLock(ei.itemId)}
@@ -358,10 +363,16 @@ export default function ManageProbabilities() {
                   })}
                 </div>
                 
-                {Math.abs(totalProb - 100) > 0.01 && editingItems.length > 0 && (
-                  <div className="p-3 m-4 mt-0 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-amber-700 shrink-0">
+                {Math.abs(totalProb - 100) > 0.01 && totalProb > 0 && editingItems.length > 0 && (
+                  <div className="p-3 m-4 mt-0 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2 text-blue-700 shrink-0">
                     <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                    <p className="text-xs font-medium"><strong>แจ้งเตือน:</strong> อัตราดรอปรวมทั้งหมดควรมีค่าเท่ากับ 100% (ปัจจุบัน {fmtProb(totalProb)}%) เพื่อให้การสุ่มแม่นยำ</p>
+                    <p className="text-xs font-medium">ยอดรวมไม่เท่ากับ 100% (ปัจจุบัน {fmtProb(totalProb)}%) — ระบบจะคิดโอกาสออกจริงเป็นสัดส่วนจากยอดรวมให้อัตโนมัติ ดูตัวเลข "จริง ≈" ท้ายช่องกรอกของแต่ละไอเทม</p>
+                  </div>
+                )}
+                {totalProb <= 0 && editingItems.length > 0 && !editingItems.every(i => i.isLocked) && (
+                  <div className="p-3 m-4 mt-0 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-red-700 shrink-0">
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                    <p className="text-xs font-medium"><strong>บันทึกไม่ได้:</strong> อัตราดรอปรวมของไอเทมที่ไม่ถูกพักต้องมากกว่า 0%</p>
                   </div>
                 )}
               </div>

@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 export interface IBoxItem {
   itemId: Types.ObjectId;
   probability: number; // percentage (e.g. 10 for 10%)
-  isLocked?: boolean; // พักรางวัลชั่วคราว — ไม่ออกจากการสุ่ม, หน้าร้านโชว์เป็น "หมดชั่วคราว" และไม่นับใน % ที่แสดง
+  isLocked?: boolean; // พักรางวัลชั่วคราว — ไม่ออกจากการสุ่ม, หน้าร้านขึ้นป้าย "ไม่ร่วมการสุ่ม" และไม่นับใน % ที่แสดง
 }
 
 export interface IBox extends Document {

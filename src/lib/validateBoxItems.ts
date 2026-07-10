@@ -1,9 +1,6 @@
-// อัตราดรอปรวมของไอเทมที่ "ไม่ล็อก" ต้องเท่ากับ 100% เป๊ะ — total = 0 ทำให้ weightedRandom คืนไอเทมตัวแรกเสมอ
-// และ total ≠ 100 ทำให้ % ที่โชว์ผู้ใช้ไม่ตรงกับโอกาสออกจริง
-// ไอเทมที่ล็อก (isLocked) ถูกตัดออกจากการสุ่มและ % หน้าร้าน จึงไม่นับรวมที่นี่
-// UI กรอกละเอียดสุด 0.0001 จึงใช้ tolerance ครึ่งหนึ่งของ step — จับพลาดระดับ 0.0001 ได้ แต่ปล่อย float error (~1e-13) ผ่าน
-const TOLERANCE = 0.00005;
-
+// เรทของแต่ละไอเทมคือ "น้ำหนัก" ในการสุ่ม — โอกาสออกจริง = เรท / ยอดรวมของตัวที่ไม่ล็อก
+// จึงไม่บังคับให้รวมเป็น 100% (เอนจินและ % หน้าร้านคิดสัดส่วนจากยอดรวมอัตโนมัติ)
+// แต่ยอดรวมต้องมากกว่า 0 — total = 0 ทำให้ weightedRandom คืนไอเทมตัวแรกเสมอ 100%
 export function validateBoxItems(items: unknown): string | null {
   if (items === undefined) return null; // ไม่ได้ส่ง items มา = ไม่ได้แก้เรท
   if (!Array.isArray(items)) return "รูปแบบข้อมูลไอเทมไม่ถูกต้อง";
@@ -21,8 +18,8 @@ export function validateBoxItems(items: unknown): string | null {
   }
 
   const total = unlocked.reduce((sum: number, i: any) => sum + i.probability, 0);
-  if (Math.abs(total - 100) > TOLERANCE) {
-    return `อัตราดรอปรวมของไอเทมที่ไม่ถูกพักต้องเท่ากับ 100% (ปัจจุบัน ${parseFloat(total.toFixed(4))}%)`;
+  if (total <= 0) {
+    return "อัตราดรอปรวมของไอเทมที่ไม่ถูกพักต้องมากกว่า 0%";
   }
 
   return null;

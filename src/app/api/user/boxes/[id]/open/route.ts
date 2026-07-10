@@ -17,6 +17,8 @@ const PITY_MIN_RARITY_ORDER = 3; // rarity.order >= 3 ถือว่า "rare"
 
 function weightedRandom(items: { itemId: any; probability: number }[]): string {
   const total = items.reduce((sum, i) => sum + i.probability, 0);
+  // น้ำหนักรวมเป็น 0 (ข้อมูลเก่า/ตัวที่เหลือหลังของหมดล้วนเป็น 0) — สุ่มแบบเท่ากันทุกตัว กันบั๊กตัวแรกออก 100%
+  if (total <= 0) return items[Math.floor(Math.random() * items.length)].itemId.toString();
   let rand = Math.random() * total;
   for (const item of items) {
     rand -= item.probability;
@@ -59,6 +61,11 @@ export async function POST(
     const unlockedItems = box.items.filter((bi: any) => !bi.isLocked);
     if (unlockedItems.length === 0) {
       return NextResponse.json({ error: "รางวัลในกล่องนี้ถูกพักชั่วคราวทั้งหมด ไม่สามารถสุ่มได้" }, { status: 400 });
+    }
+
+    const totalWeight = unlockedItems.reduce((sum: number, bi: any) => sum + (bi.probability || 0), 0);
+    if (totalWeight <= 0) {
+      return NextResponse.json({ error: "กล่องนี้ยังไม่ได้ตั้งอัตราดรอป ไม่สามารถสุ่มได้" }, { status: 400 });
     }
 
     const isOutOfStock = unlockedItems.some((bi: any) => {
