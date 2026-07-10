@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, FolderTree, Percent,
   Box, Boxes, Diamond, Users, Wallet, UserPlus,
   ArrowRightLeft, Store, ShoppingCart, BarChart3,
-  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert, BookOpen, Gamepad2
+  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert, BookOpen, Gamepad2, MousePointerClick
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +61,7 @@ const menuGroups = [
   {
     title: "ตั้งค่าระบบ",
     items: [
+      { name: "เมนูลัดหน้าแรก", icon: MousePointerClick, href: "/admin/menu-shortcuts" },
       { name: "ศูนย์ช่วยเหลือ (FAQ)", icon: HelpCircle, href: "/admin/help" },
       { name: "วิธีการเล่น", icon: Gamepad2, href: "/admin/knowledge" },
       { name: "ตั้งค่าเว็บไซต์", icon: Settings, href: "/admin/settings" },
