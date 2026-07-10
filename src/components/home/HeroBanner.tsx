@@ -51,7 +51,7 @@ export default function HeroBanner() {
 
   return (
     <div 
-      className={`relative w-full h-48 md:h-80 bg-slate-900 rounded-xl overflow-hidden border border-red-100 shadow-sm ${currentSlide.link ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      className={`relative w-full h-48 md:h-80 bg-slate-900 rounded-xl overflow-hidden border border-red-100 shadow-sm${currentSlide.link ? ' cursor-pointer hover:shadow-md transition-shadow' : ''}`}
       onClick={(e) => {
         if (currentSlide.link && (e.target as HTMLElement).tagName !== 'A' && !(e.target as HTMLElement).closest('a') && !(e.target as HTMLElement).closest('.nav-dot')) {
           if (currentSlide.link.startsWith('http')) {

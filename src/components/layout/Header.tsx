@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Coins } from "lucide-react";
+import { Search, Coins, User } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { TopupModal } from "@/components/payment/TopupModal";
 import { NotificationDropdown } from "@/components/layout/NotificationDropdown";
@@ -64,11 +64,11 @@ export function Header() {
             )}
             {session && <NotificationDropdown gemcoinIcon={gemcoinIcon} />}
             {session ? (
-              <Link href="/profile" className="w-8 h-8 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100">
+              <Link href="/profile" className="w-8 h-8 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100 text-gray-500 hover:text-gray-700">
                 {session.user?.image ? (
                   <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-gray-500 font-bold text-xs">{(session.user?.name || "U").charAt(0).toUpperCase()}</span>
+                  <User size={16} strokeWidth={2.5} />
                 )}
               </Link>
             ) : (
@@ -120,11 +120,11 @@ export function Header() {
             {session && <NotificationDropdown gemcoinIcon={gemcoinIcon} />}
 
             {session ? (
-              <Link href="/profile" className="w-10 h-10 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100 hover:border-gray-300 transition-colors">
+              <Link href="/profile" className="w-10 h-10 rounded-full border-2 border-gray-100 overflow-hidden shadow-sm flex items-center justify-center bg-gray-100 text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
                 {session.user?.image ? (
                   <img src={session.user.image} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-gray-500 font-bold text-sm">{(session.user?.name || "U").charAt(0).toUpperCase()}</span>
+                  <User size={20} strokeWidth={2.5} />
                 )}
               </Link>
             ) : (

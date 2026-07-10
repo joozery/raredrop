@@ -120,7 +120,7 @@ export default function FlashSale() {
                   <Link
                     href={`/boxes/${item.boxId}`}
                     key={item._id}
-                    className="w-[45vw] shrink-0 lg:w-auto bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow relative flex flex-col group overflow-hidden"
+                    className="w-[30vw] shrink-0 lg:w-auto bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow relative flex flex-col group overflow-hidden"
                   >
                     <span className={`absolute top-0 left-0 z-10 text-white text-[10px] font-bold px-2 py-1.5 rounded-br-lg shadow-sm ${itemUpcoming ? "bg-blue-500" : "bg-[#E04631]"}`}>
                       {itemUpcoming ? "เร็วๆ นี้" : item.discount}

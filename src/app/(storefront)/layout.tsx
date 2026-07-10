@@ -3,12 +3,9 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { BalanceProvider } from "@/contexts/BalanceContext";
-import { LiveChatWidget } from "@/components/chat/LiveChatWidget";
 import { ReferralCapture } from "@/components/referral/ReferralCapture";
 import { PopupAd } from "@/components/home/PopupAd";
-import { FloatingLeaderboard } from "@/components/layout/FloatingLeaderboard";
 
-import { FloatingWidgetsGroup } from "@/components/layout/FloatingWidgetsGroup";
 
 export default function StorefrontLayout({
   children,
@@ -30,10 +27,7 @@ export default function StorefrontLayout({
         </main>
         <BottomNav />
       </div>
-      <FloatingWidgetsGroup>
-        <FloatingLeaderboard />
-        <LiveChatWidget />
-      </FloatingWidgetsGroup>
+
       <PopupAd />
     </BalanceProvider>
   );

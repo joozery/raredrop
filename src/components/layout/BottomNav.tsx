@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Package, Store, User } from "lucide-react";
+import { Home, Package, Store, User, MessageCircle } from "lucide-react";
 
 const MAIN_NAV = [
   { href: "/",           icon: Home,    label: "หน้าหลัก" },
   { href: "/boxes",      icon: Package, label: "กล่องสุ่ม" },
   { href: "/shop",        icon: Store,   label: "ร้านค้า" },
+  { href: "/chat",       icon: MessageCircle, label: "แชท" },
   { href: "/profile",    icon: User,    label: "ฉัน" },
 ];
 
@@ -29,7 +30,7 @@ export function BottomNav() {
                 active ? "text-primary" : "text-gray-400"
               }`}
             >
-              <div className={`p-1.5 rounded-xl transition-all ${active ? "bg-red-50" : ""}`}>
+              <div className={`p-1.5 rounded-xl transition-all${active ? " bg-red-50" : ""}`}>
                 <Icon size={21} strokeWidth={active ? 2.5 : 2} className={active ? "text-primary" : ""} />
               </div>
               <span className={`text-[10px] font-${active ? "bold" : "medium"} leading-none`}>{label}</span>
