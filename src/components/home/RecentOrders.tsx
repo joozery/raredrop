@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShoppingBag, Gift } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { th } from "date-fns/locale";
 import { io, type Socket } from "socket.io-client";
@@ -59,10 +59,6 @@ export default function RecentOrders() {
           <h3 className="font-bold flex items-center gap-2 text-[15px] sm:text-base text-gray-900">
             <ShoppingBag size={18} className="text-[#E04631]" />
             คำสั่งซื้อล่าสุด
-            <span className="flex items-center gap-1 text-[10px] font-bold text-green-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              LIVE
-            </span>
           </h3>
         </div>
 
@@ -112,16 +108,7 @@ export default function RecentOrders() {
                   )}
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
-                  <span
-                    className={`inline-flex items-center gap-0.5 w-max text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded mb-0.5 ${
-                      p.kind === "box"
-                        ? "bg-purple-100 text-purple-600"
-                        : "bg-blue-100 text-blue-600"
-                    }`}
-                  >
-                    {p.kind === "box" ? <Gift size={9} /> : <ShoppingBag size={9} />}
-                    {p.kind === "box" ? "กล่องสุ่ม" : "ร้านค้า"}
-                  </span>
+
                   <span className="text-[11px] sm:text-xs font-bold text-gray-900 truncate">{p.title}</span>
                   {p.price > 0 && (
                     <span className="text-[12px] sm:text-sm font-bold text-[#E04631]">฿{p.price?.toLocaleString()}</span>
