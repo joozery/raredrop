@@ -11,9 +11,9 @@ import MobileLiveOpenings from "@/components/home/MobileLiveOpenings";
 
 export default function Home() {
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 pb-20 lg:pb-6">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6 pb-20 lg:pb-6">
       {/* Left Main Content */}
-      <div className="flex-1 flex flex-col gap-6 lg:gap-8 min-w-0">
+      <div className="flex-1 flex flex-col gap-3 lg:gap-5 min-w-0">
         <HeroBanner />
         <MenuShortcuts />
         <FlashSale />

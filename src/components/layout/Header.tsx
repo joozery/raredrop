@@ -14,7 +14,7 @@ export function Header() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
-  const [siteName, setSiteName] = useState("RareDrop");
+  const [siteName, setSiteName] = useState("LuxusX");
   const [gemcoinIcon, setGemcoinIcon] = useState("");
   const { data: session } = useSession();
   const { coins, gemCoins } = useBalance();

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useBalance } from "@/contexts/BalanceContext";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Package, Truck, ShoppingBag, X, Coins, Search, Filter,
@@ -25,6 +26,7 @@ type ActionType = "sell" | "deliver" | "market" | "unlist" | null;
 export default function InventoryPage() {
   const { data: session } = useSession();
   const { refreshBalance } = useBalance();
+  const router = useRouter();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -102,9 +104,8 @@ export default function InventoryPage() {
         if (channel === "discord" && DISCORD_TICKET_URL) {
           window.open(DISCORD_TICKET_URL, "_blank");
         } else if (data.ticket?.conversationId) {
-          window.dispatchEvent(
-            new CustomEvent("open-livechat", { detail: { conversationId: data.ticket.conversationId } })
-          );
+          // เด้งไปหน้าแชทและเปิดเคสนี้ให้เลย
+          router.push(`/chat?c=${data.ticket.conversationId}`);
         }
       }
 
@@ -347,16 +348,16 @@ export default function InventoryPage() {
                     <Truck size={18} className="text-emerald-600 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold text-emerald-700 text-sm">รับ item</p>
-                      <p className="text-xs text-emerald-600 mt-1">กรอก UID ของคุณ แล้วทีมงานจะติดต่อกลับเพื่อยืนยันการจัดส่ง</p>
+                      <p className="text-xs text-emerald-600 mt-1">กรอก UID/@username ของคุณ แล้วทีมงานจะติดต่อกลับเพื่อยืนยันการจัดส่ง</p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-gray-700">UID <span className="text-red-500">*</span></label>
+                    <label className="text-sm font-bold text-gray-700">UID/@username <span className="text-red-500">*</span></label>
                     <input
                       type="text" value={deliverUid}
                       onChange={(e) => setDeliverUid(e.target.value)}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10"
-                      placeholder="กรอก UID ของคุณ..."
+                      placeholder="กรอก UID/@username ของคุณ..."
                     />
                   </div>
                   <div className="flex flex-col gap-2">

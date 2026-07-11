@@ -43,7 +43,7 @@ export function Sidebar() {
   const [tiktokUrl, setTiktokUrl] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
-  const [siteName, setSiteName] = useState("RareDrop");
+  const [siteName, setSiteName] = useState("LuxusX");
   const [gemcoinIcon, setGemcoinIcon] = useState("");
 
   useEffect(() => {
@@ -132,39 +132,41 @@ export function Sidebar() {
 
       {/* Footer / Socials */}
       <div className="px-5 pb-6 shrink-0 bg-white">
-        <div className="border border-gray-100 rounded-2xl p-3 flex justify-between items-center mb-4 shadow-sm bg-gray-50/50">
-          {facebookUrl && (
-            <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
-               <img src="/banner/cover/facebook.svg" alt="Facebook" className="w-5 h-5" />
-            </a>
-          )}
-          {lineUrl && (
-            <a href={lineUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
-               <img src="/banner/cover/line.svg" alt="Line" className="w-5 h-5" />
-            </a>
-          )}
-          {discordUrl && (
-            <a
-              href={discordUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleDiscordClick}
-              className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform"
-            >
-               <img src="/banner/cover/discord.svg" alt="Discord" className="w-5 h-5" />
-            </a>
-          )}
-          {tiktokUrl && (
-            <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-black hover:scale-110 transition-transform font-bold text-sm">
-               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 15.66a6.34 6.34 0 0010.86 4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1.04-.52z"/></svg>
-            </a>
-          )}
-          {youtubeUrl && (
-            <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-[#FF0000] hover:scale-110 transition-transform font-bold text-sm">
-               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 00-2.122 2.136C0 8.07 0 12 0 12s0 3.93.501 5.814a3.016 3.016 0 002.122 2.136C4.495 20.5 12 20.5 12 20.5s7.505 0 9.377-.55a3.016 3.016 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-            </a>
-          )}
-        </div>
+        {(facebookUrl || lineUrl || discordUrl || tiktokUrl || youtubeUrl) && (
+          <div className="border border-gray-100 rounded-2xl p-3 flex justify-center gap-3 items-center mb-4 shadow-sm bg-gray-50/50 flex-wrap">
+            {facebookUrl && (
+              <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+                 <img src="/banner/cover/facebook.svg" alt="Facebook" className="w-5 h-5" />
+              </a>
+            )}
+            {lineUrl && (
+              <a href={lineUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
+                 <img src="/banner/cover/line.svg" alt="Line" className="w-5 h-5" />
+              </a>
+            )}
+            {discordUrl && (
+              <a
+                href={discordUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleDiscordClick}
+                className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform"
+              >
+                 <img src="/banner/cover/discord.svg" alt="Discord" className="w-5 h-5" />
+              </a>
+            )}
+            {tiktokUrl && (
+              <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-black hover:scale-110 transition-transform font-bold text-sm">
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 15.66a6.34 6.34 0 0010.86 4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1.04-.52z"/></svg>
+              </a>
+            )}
+            {youtubeUrl && (
+              <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-[#FF0000] hover:scale-110 transition-transform font-bold text-sm">
+                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 00-2.122 2.136C0 8.07 0 12 0 12s0 3.93.501 5.814a3.016 3.016 0 002.122 2.136C4.495 20.5 12 20.5 12 20.5s7.505 0 9.377-.55a3.016 3.016 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              </a>
+            )}
+          </div>
+        )}
         <p className="text-[11px] text-gray-400 font-medium text-center">© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
       </div>
     </aside>

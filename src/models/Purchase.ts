@@ -8,6 +8,12 @@ export interface IPurchase extends Document {
   pricePaid: number;
   deliveredData: string;
   buyerUid?: string;
+  // การซื้อครั้งเดียวหลายชิ้นจะแตกเป็นหลาย record — batchId ผูกไว้ด้วยกันเพื่อรวมโชว์เป็นออเดอร์เดียว
+  batchId?: string;
+  batchQuantity?: number;
+  // ทีมงานกด "จบงาน/เติมเรียบร้อย" ในหน้า orders
+  fulfilled?: boolean;
+  fulfilledAt?: Date;
   createdAt: Date;
 }
 
@@ -19,6 +25,13 @@ const PurchaseSchema: Schema = new Schema({
   pricePaid: { type: Number, required: true },
   deliveredData: { type: String, required: true },
   buyerUid: { type: String },
+  batchId: { type: String, index: true },
+  batchQuantity: { type: Number, default: 1 },
+  fulfilled: { type: Boolean, default: false },
+  fulfilledAt: { type: Date },
 }, { timestamps: true });
 
-export default mongoose.models.Purchase || mongoose.model<IPurchase>("Purchase", PurchaseSchema);
+if (mongoose.models.Purchase) {
+  delete (mongoose as any).models.Purchase;
+}
+export default mongoose.model<IPurchase>("Purchase", PurchaseSchema);

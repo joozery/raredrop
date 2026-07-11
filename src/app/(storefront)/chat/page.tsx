@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { MessageCircle, X, Send, ChevronLeft, Paperclip, Loader2, Info } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { LoginModal } from "@/components/auth/LoginModal";
 
 interface ChatMsg {
   _id: string;
@@ -52,8 +52,8 @@ interface Conversation {
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
 
+  const [loginOpen, setLoginOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -95,11 +95,10 @@ export default function ChatPage() {
     } catch {}
   }, []);
 
+  // ยังไม่ล็อกอิน → เปิด modal ล็อกอินขึ้นมาแทนการ redirect (ไม่มีหน้า /login จึงเคย 404)
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
+    if (status === "unauthenticated") setLoginOpen(true);
+  }, [status]);
 
   useEffect(() => {
     if (welcomeLoaded) return;
@@ -114,6 +113,13 @@ export default function ChatPage() {
       })
       .catch(() => setWelcomeLoaded(true));
   }, [welcomeLoaded]);
+
+  // เปิดจากที่อื่นด้วย ?c=<conversationId> (เช่น กดรับของจากคอลเลกชัน) → เปิดเคสนั้นเลย
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    const c = new URLSearchParams(window.location.search).get("c");
+    if (c) setActiveId(c);
+  }, [status]);
 
   useEffect(() => {
     if (activeId || status !== "authenticated") return;
@@ -213,7 +219,25 @@ export default function ChatPage() {
   const fmtTime = (iso: string) =>
     new Date(iso).toLocaleString("th-TH", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
-  if (status !== "authenticated") return <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-red-600" /></div>;
+  if (status === "loading") return <div className="p-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-red-600" /></div>;
+
+  if (status === "unauthenticated") {
+    return (
+      <>
+        <div className="flex flex-col items-center justify-center py-32 gap-4 text-gray-400 px-4 text-center">
+          <MessageCircle size={60} className="opacity-20" />
+          <p className="font-bold text-lg text-gray-600">กรุณาเข้าสู่ระบบก่อนใช้งานแชท</p>
+          <button
+            onClick={() => setLoginOpen(true)}
+            className="bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-red-700 transition-colors text-sm"
+          >
+            เข้าสู่ระบบ
+          </button>
+        </div>
+        <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
+      </>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto h-[calc(100vh-140px)] md:h-[calc(100vh-80px)] flex flex-col bg-white md:border md:border-gray-200 md:rounded-2xl md:my-6 overflow-hidden md:shadow-sm">

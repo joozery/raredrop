@@ -8,6 +8,7 @@ import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import RecentActivity from "@/models/RecentActivity";
 import { emitRecentActivity } from "@/lib/realtime";
+import { randomUUID } from "crypto";
 
 // POST /api/shop/[id] — buy listing
 export async function POST(
@@ -66,7 +67,8 @@ export async function POST(
       { new: true }
     );
 
-    // save purchase records (one per item)
+    // save purchase records (one per item) — ผูก batchId เดียวกันเพื่อรวมเป็นออเดอร์เดียวในหน้า orders
+    const batchId = randomUUID();
     const purchases = await Purchase.insertMany(
       availableAccounts.map((account: any) => ({
         userId: buyerId,
@@ -75,6 +77,8 @@ export async function POST(
         listingImage: listing.images?.[0] || "",
         pricePaid: listing.price,
         deliveredData: account.data,
+        batchId,
+        batchQuantity: availableAccounts.length,
         ...(buyerUid && { buyerUid }),
       }))
     );

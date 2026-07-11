@@ -18,6 +18,13 @@ export interface IInventory extends Document {
   claimedBy?: string;
   claimedAt?: Date;
   closedAt?: Date;
+  // ข้อมูลที่ลูกค้ากรอกตอนขอรับของจริง — เก็บแยกเพื่อโชว์เป็นคอลัมน์ในหน้า orders หลังบ้าน
+  deliverUid?: string;
+  deliverIgn?: string;
+  deliverChannel?: "livechat" | "discord";
+  // ทีมงานกด "จบงาน/จัดส่งแล้ว" ในหน้า orders
+  fulfilled?: boolean;
+  fulfilledAt?: Date;
 }
 
 const InventorySchema: Schema = new Schema({
@@ -32,6 +39,15 @@ const InventorySchema: Schema = new Schema({
   claimedBy: { type: String },
   claimedAt: { type: Date },
   closedAt: { type: Date },
+  deliverUid: { type: String },
+  deliverIgn: { type: String },
+  deliverChannel: { type: String, enum: ["livechat", "discord"] },
+  fulfilled: { type: Boolean, default: false },
+  fulfilledAt: { type: Date },
 }, { timestamps: true });
 
-export default mongoose.models.Inventory || mongoose.model<IInventory>("Inventory", InventorySchema);
+// ลบ model ที่ cache ไว้ เพื่อให้ schema ใหม่ (ฟิลด์ deliver*/fulfilled) ถูกใช้เสมอ
+if (mongoose.models.Inventory) {
+  delete (mongoose as any).models.Inventory;
+}
+export default mongoose.model<IInventory>("Inventory", InventorySchema);

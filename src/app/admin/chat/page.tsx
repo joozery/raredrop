@@ -125,9 +125,28 @@ export default function AdminChatPage() {
     return () => clearInterval(t);
   }, [activeId, loadMessages]);
 
+  // เด้งลงล่างเฉพาะตอนเปิดห้องใหม่ หรือผู้ใช้กำลังอยู่ล่างสุดอยู่แล้ว
+  // ป้องกัน poll ทุก 4 วิ ดึงจอกลับลงล่างขณะเลื่อนขึ้นดูประวัติ
+  const atBottomRef = useRef(true);
+  const prevActiveIdRef = useRef<string | null>(null);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
+
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
+    const el = scrollRef.current;
+    if (!el) return;
+    if (prevActiveIdRef.current !== activeId) {
+      prevActiveIdRef.current = activeId;
+      atBottomRef.current = true;
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+    if (atBottomRef.current) el.scrollTop = el.scrollHeight;
+  }, [messages, activeId]);
 
   const openConversation = (c: Conversation) => {
     setActiveId(c._id);
@@ -379,7 +398,7 @@ export default function AdminChatPage() {
                 </button>
               </div>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-5 flex flex-col gap-2.5 bg-slate-50">
+              <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-3 sm:p-5 flex flex-col gap-2.5 bg-slate-50">
                 {messages.map((m) => (
                   <div key={m._id} className={`flex ${m.senderRole === "admin" ? "justify-end" : "justify-start"}`}>
                     <div className="max-w-[85%] sm:max-w-[70%] flex flex-col gap-0.5">

@@ -103,6 +103,9 @@ export async function PATCH(
       let conversationId: string | undefined;
 
       inv.status = "delivered";
+      inv.deliverUid = uidValue;
+      inv.deliverIgn = ignValue;
+      inv.deliverChannel = deliverChannel;
 
       if (deliverChannel === "discord") {
         // เปิด ticket เป็น thread แยกใน Discord พร้อมปุ่มรับงาน/ปิด ticket

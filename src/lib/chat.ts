@@ -40,3 +40,25 @@ export async function appendUserMessage(
   convo.unreadByAdmin += 1;
   await convo.save();
 }
+
+// ทีมงานส่งข้อความเข้าแชทของลูกค้า (เช่น แจ้ง "เติมเรียบร้อยแล้ว" ตอนกดจบงานในหน้า orders)
+export async function appendAdminMessage(
+  convo: HydratedDocument<IChatConversation>,
+  adminId: string,
+  text: string,
+  imageUrl?: string
+) {
+  await ChatMessage.create({
+    conversationId: convo._id,
+    senderRole: "admin",
+    senderId: adminId,
+    text,
+    imageUrl,
+  });
+  convo.lastMessage = text || "📷 รูปภาพ";
+  convo.lastSender = "admin";
+  convo.lastMessageAt = new Date();
+  convo.unreadByUser += 1;
+  if (convo.status === "closed") convo.status = "open";
+  await convo.save();
+}

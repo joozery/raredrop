@@ -12,9 +12,9 @@ export default function RightPanel() {
   return (
     <div className="w-[320px] shrink-0 flex flex-col gap-6 hide-scrollbar">
 
-      {/* Why RareDrop */}
+      {/* Why LuxusX */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <h3 className="font-bold mb-4">ทำไมต้อง RareDrop?</h3>
+        <h3 className="font-bold mb-4">ทำไมต้อง LuxusX?</h3>
         <div className="grid grid-cols-4 gap-2">
           <div className="p-2 bg-gray-50 rounded-lg text-center flex flex-col items-center gap-1.5">
             <ShieldCheck size={16} className="text-primary" />
