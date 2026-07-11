@@ -214,10 +214,11 @@ export default function ManageOrders() {
                     </div>
                   </td>
                   <td className="py-4 px-5">
-                    <span className="font-mono text-xs font-bold text-slate-700">{o.buyerUid || o.uid || "—"}</span>
+                    <span className="font-mono text-xs font-bold text-slate-700">{o.uid || "—"}</span>
                   </td>
                   <td className="py-4 px-5">
-                    <span className="text-xs font-bold text-slate-700">{o.ign || "—"}</span>
+                    {/* ซื้อจากร้าน: ค่า UID/Username ที่ลูกค้ากรอกตอนซื้อ มาแสดงในช่องชื่อในเกม */}
+                    <span className="text-xs font-bold text-slate-700">{o.ign || o.buyerUid || "—"}</span>
                   </td>
                   <td className="py-4 px-5 text-center">
                     {o.type === "shop"

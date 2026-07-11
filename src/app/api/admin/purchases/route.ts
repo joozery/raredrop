@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongoose";
 import Purchase from "@/models/Purchase";
 import Inventory from "@/models/Inventory";
@@ -107,8 +108,11 @@ export async function POST(req: Request) {
     let userId: string | null = null;
 
     if (type === "shop") {
-      // id = batchId หรือ purchase _id (กรณีข้อมูลเก่าไม่มี batchId)
-      const match = { $or: [{ batchId: id }, { _id: id }] };
+      // id = batchId (UUID สำหรับออเดอร์ใหม่) หรือ purchase _id (ObjectId สำหรับข้อมูลเก่าที่ไม่มี batchId)
+      // ใส่เงื่อนไข _id เฉพาะเมื่อ id เป็น ObjectId จริง ไม่งั้น Mongoose จะ throw CastError ตอน cast UUID
+      const or: any[] = [{ batchId: id }];
+      if (mongoose.isValidObjectId(id)) or.push({ _id: id });
+      const match = { $or: or };
       const first = await Purchase.findOne(match).lean();
       if (!first) return NextResponse.json({ error: "ไม่พบออเดอร์" }, { status: 404 });
       userId = String((first as any).userId);

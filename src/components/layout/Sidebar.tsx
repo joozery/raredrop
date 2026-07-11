@@ -19,6 +19,7 @@ import {
   Gift,
   Gamepad2,
   Trophy,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ const menuItems = [
   { name: "แลก GemCoin", icon: Coins, href: "/exchange" },
   { name: "วิธีการเล่น", icon: Gamepad2, href: "/knowledge-base" },
   { name: "ช่วยเหลือ", icon: HelpCircle, href: "/help" },
+  { name: "แชท", icon: MessageCircle, href: "/chat" },
 ];
 
 export function Sidebar() {
