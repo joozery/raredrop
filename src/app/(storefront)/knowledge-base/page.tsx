@@ -8,6 +8,7 @@ interface Topic {
   _id: string;
   title: string;
   youtubeUrl: string;
+  coverImage?: string;
 }
 
 function getYoutubeId(url: string) {
@@ -94,7 +95,8 @@ export default function KnowledgeBasePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {topics.map((t) => {
             const videoId = getYoutubeId(t.youtubeUrl);
-            const thumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+            // ใช้ภาพปกที่อัปโหลดก่อน ถ้าไม่มีค่อย fallback เป็น thumbnail ของ YouTube
+            const thumbnail = t.coverImage || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null);
             return (
               <button
                 key={t._id}

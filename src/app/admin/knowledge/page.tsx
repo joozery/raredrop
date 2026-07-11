@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Gamepad2, Plus, Trash2, X, Save, Loader2, Pencil, Video } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Gamepad2, Plus, Trash2, X, Save, Loader2, Pencil, Video, ImagePlus } from "lucide-react";
 
 interface TopicItem {
   _id: string;
   title: string;
   youtubeUrl: string;
+  coverImage?: string;
   order: number;
 }
 
-const EMPTY_FORM = { title: "", youtubeUrl: "", order: "0" };
+const EMPTY_FORM = { title: "", youtubeUrl: "", coverImage: "", order: "0" };
 
 export default function AdminKnowledgePage() {
   const [topics, setTopics] = useState<TopicItem[]>([]);
@@ -19,7 +20,9 @@ export default function AdminKnowledgePage() {
   const [editing, setEditing] = useState<TopicItem | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -46,11 +49,28 @@ export default function AdminKnowledgePage() {
 
   const openEdit = (t: TopicItem) => {
     setEditing(t);
-    setForm({ title: t.title, youtubeUrl: t.youtubeUrl, order: String(t.order) });
+    setForm({ title: t.title, youtubeUrl: t.youtubeUrl, coverImage: t.coverImage || "", order: String(t.order) });
     setModal("edit");
   };
 
   const closeModal = () => { setModal(null); setEditing(null); };
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "knowledge");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok && data.url) setForm((f) => ({ ...f, coverImage: data.url }));
+      else showToast(data.error || "อัปโหลดรูปไม่สำเร็จ", false);
+    } catch {
+      showToast("อัปโหลดรูปไม่สำเร็จ", false);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.youtubeUrl.trim()) {
@@ -59,7 +79,7 @@ export default function AdminKnowledgePage() {
     }
     setSaving(true);
     try {
-      const body = { title: form.title.trim(), youtubeUrl: form.youtubeUrl.trim(), order: Number(form.order) };
+      const body = { title: form.title.trim(), youtubeUrl: form.youtubeUrl.trim(), coverImage: form.coverImage.trim(), order: Number(form.order) };
       const url = editing ? `/api/admin/knowledge-topics/${editing._id}` : "/api/admin/knowledge-topics";
       const method = editing ? "PUT" : "POST";
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -115,6 +135,7 @@ export default function AdminKnowledgePage() {
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider w-8">#</th>
+                <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">ภาพปก</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">หัวข้อ</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">ลิงก์ YouTube</th>
                 <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">จัดการ</th>
@@ -124,6 +145,15 @@ export default function AdminKnowledgePage() {
               {topics.map((t, i) => (
                 <tr key={t._id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="py-4 px-6 text-slate-400 text-xs font-bold">{t.order || i + 1}</td>
+                  <td className="py-4 px-6">
+                    {t.coverImage ? (
+                      <img src={t.coverImage} alt={t.title} className="w-16 h-10 rounded-lg object-cover border border-slate-100" />
+                    ) : (
+                      <div className="w-16 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
+                        <ImagePlus size={14} className="text-slate-300" />
+                      </div>
+                    )}
+                  </td>
                   <td className="py-4 px-6">
                     <p className="font-bold text-slate-800 text-xs line-clamp-1">{t.title}</p>
                   </td>
@@ -192,6 +222,51 @@ export default function AdminKnowledgePage() {
                   className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-red-500 font-medium text-slate-800"
                   placeholder="https://youtube.com/watch?v=..."
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">ภาพปก</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+                {form.coverImage ? (
+                  <div className="relative w-full h-40 rounded-xl overflow-hidden border border-slate-200 group">
+                    <img src={form.coverImage} alt="ภาพปก" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="bg-white/90 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-white"
+                      >
+                        เปลี่ยนรูป
+                      </button>
+                      <button
+                        onClick={() => setForm((f) => ({ ...f, coverImage: "" }))}
+                        className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-700"
+                      >
+                        ลบรูป
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full h-40 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-red-300 transition-colors flex flex-col items-center justify-center gap-2 text-slate-400"
+                  >
+                    {uploading ? <Loader2 size={22} className="animate-spin" /> : <ImagePlus size={22} />}
+                    <span className="text-xs font-bold">{uploading ? "กำลังอัปโหลด..." : "อัปโหลดภาพปก"}</span>
+                    <span className="text-[10px] text-slate-400">jpg, png, webp, gif</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5 w-28">

@@ -23,11 +23,16 @@ export async function GET() {
 export async function POST(req: Request) {
   const err = await requireAdmin();
   if (err) return err;
-  const { title, youtubeUrl, order } = await req.json();
+  const { title, youtubeUrl, coverImage, order } = await req.json();
   if (!title?.trim() || !youtubeUrl?.trim()) {
     return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบ" }, { status: 400 });
   }
   await connectToDatabase();
-  const topic = await KnowledgeTopic.create({ title: title.trim(), youtubeUrl: youtubeUrl.trim(), order: order ?? 0 });
+  const topic = await KnowledgeTopic.create({
+    title: title.trim(),
+    youtubeUrl: youtubeUrl.trim(),
+    coverImage: typeof coverImage === "string" ? coverImage.trim() : undefined,
+    order: order ?? 0,
+  });
   return NextResponse.json(topic, { status: 201 });
 }
