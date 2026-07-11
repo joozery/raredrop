@@ -6,6 +6,8 @@ import ShopListing from "@/models/ShopListing";
 import Purchase from "@/models/Purchase";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
+import RecentActivity from "@/models/RecentActivity";
+import { emitRecentActivity } from "@/lib/realtime";
 
 // POST /api/shop/[id] — buy listing
 export async function POST(
@@ -87,6 +89,27 @@ export async function POST(
         ? `ซื้อ "${listing.title}" x${availableAccounts.length} จากร้านค้า`
         : `ซื้อ "${listing.title}" จากร้านค้า`,
       referenceId: purchases[0]._id,
+    });
+
+    // realtime feed entry (one representative row per purchase action)
+    const activity = await RecentActivity.create({
+      userId: buyerId,
+      userName: updatedBuyer!.name || "ผู้ใช้",
+      userAvatar: updatedBuyer!.avatar,
+      title: listing.title,
+      image: listing.images?.[0] || "",
+      price: listing.price,
+      kind: "shop",
+    });
+    emitRecentActivity({
+      _id: String(activity._id),
+      userName: activity.userName,
+      userAvatar: activity.userAvatar,
+      title: activity.title,
+      image: activity.image,
+      price: activity.price,
+      kind: "shop",
+      createdAt: activity.createdAt.toISOString(),
     });
 
     return NextResponse.json({

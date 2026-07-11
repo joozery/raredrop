@@ -134,6 +134,21 @@
   animation: shimmer 2.5s infinite;
 }
 
+/* Slide + fade in for newly-arrived realtime feed cards (คำสั่งซื้อล่าสุด) */
+@keyframes slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+.animate-slide-in {
+  animation: slide-in-left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @keyframes gradient-shift {
   0%, 100% {
     background-position: 0% 50%;

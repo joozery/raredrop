@@ -12,6 +12,8 @@ import PityCounter from "@/models/PityCounter";
 import BoxCredit from "@/models/BoxCredit";
 import FlashSale from "@/models/FlashSale";
 import { notify } from "@/lib/notify";
+import RecentActivity from "@/models/RecentActivity";
+import { emitRecentActivity } from "@/lib/realtime";
 
 const PITY_MIN_RARITY_ORDER = 3; // rarity.order >= 3 ถือว่า "rare"
 
@@ -243,6 +245,29 @@ export async function POST(
         "success",
         "/exchange"
       );
+    }
+
+    // realtime feed entry — โชว์แค่ชื่อกล่อง + รูปปกกล่อง ไม่เปิดเผยว่าผู้เล่นได้รางวัลอะไร
+    if (results.length > 0) {
+      const activity = await RecentActivity.create({
+        userId,
+        userName: updatedUser!.name || "ผู้ใช้",
+        userAvatar: updatedUser!.avatar,
+        title: box.name,
+        image: box.image,
+        price: effectivePrice,
+        kind: "box",
+      });
+      emitRecentActivity({
+        _id: String(activity._id),
+        userName: activity.userName,
+        userAvatar: activity.userAvatar,
+        title: activity.title,
+        image: activity.image,
+        price: activity.price,
+        kind: "box",
+        createdAt: activity.createdAt.toISOString(),
+      });
     }
 
     return NextResponse.json({
