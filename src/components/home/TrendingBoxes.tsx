@@ -15,25 +15,24 @@ interface Box {
   flashSale?: { salePrice: number; endsAt: string } | null;
 }
 
-interface CategoryOption {
-  _id: string;
-  name: string;
-  image?: string;
-}
-
 export default function TrendingBoxes() {
   const [boxes, setBoxes] = useState<Box[]>([]);
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCat, setSelectedCat] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBoxes = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/boxes?limit=10`);
+        // ดึงเฉพาะกล่องที่แอดมินติ๊ก "แนะนำ" — ถ้ายังไม่มีเลยค่อย fallback เป็นกล่องทั้งหมด กัน section ว่าง
+        const res = await fetch(`/api/boxes?featured=true&limit=10`);
         const data = await res.json();
-        setBoxes(Array.isArray(data) ? data : []);
+        if (Array.isArray(data) && data.length > 0) {
+          setBoxes(data);
+        } else {
+          const resAll = await fetch(`/api/boxes?limit=10`);
+          const all = await resAll.json();
+          setBoxes(Array.isArray(all) ? all : []);
+        }
       } catch {
         setBoxes([]);
       } finally {
@@ -41,16 +40,7 @@ export default function TrendingBoxes() {
       }
     };
     fetchBoxes();
-
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((d) => setCategories(Array.isArray(d) ? d : []))
-      .catch(() => setCategories([]));
   }, []);
-
-  const filtered = selectedCat
-    ? boxes.filter((b) => b.categoryId?._id === selectedCat)
-    : boxes;
 
   const tagFor = (box: Box) => (box.isFeatured ? "ฮิตสุด" : "");
 
@@ -58,76 +48,11 @@ export default function TrendingBoxes() {
     <section>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold flex items-center gap-2">
-          เลือกหมวดหมู่ <Flame className="text-orange-500 fill-orange-500" size={20} />
+          กล่องสุ่มแนะนำ <Flame className="text-orange-500 fill-orange-500" size={20} />
         </h2>
-        <button className="text-xs text-gray-400 hover:text-primary transition-colors font-medium">
+        <Link href="/boxes" className="text-xs text-gray-400 hover:text-primary transition-colors font-medium">
           ดูทั้งหมด →
-        </button>
-      </div>
-
-      {/* Category icon grid */}
-      <div className="flex gap-3 overflow-x-auto hide-scrollbar py-2 -mx-2 px-2 mb-4">
-        {/* ทั้งหมด */}
-        <button
-          onClick={() => setSelectedCat(null)}
-          className="flex flex-col items-center gap-1.5 shrink-0 group"
-        >
-          <div
-            className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all ${
-              !selectedCat
-                ? "ring-2 ring-[#DC2626] ring-offset-1 shadow-md"
-                : "ring-1 ring-gray-200 hover:ring-gray-300"
-            } bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden`}
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={!selectedCat ? "#DC2626" : "#9CA3AF"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" />
-            </svg>
-          </div>
-          <span className={`text-[10px] font-semibold text-center leading-tight ${!selectedCat ? "text-[#DC2626]" : "text-gray-600"}`}>
-            ทั้งหมด
-          </span>
-          <span className="text-[9px] text-gray-400">({boxes.length})</span>
-        </button>
-
-        {categories.map((cat) => {
-          const count = boxes.filter((b) => b.categoryId?._id === cat._id).length;
-          const isSelected = selectedCat === cat._id;
-          return (
-            <button
-              key={cat._id}
-              onClick={() => setSelectedCat(isSelected ? null : cat._id)}
-              className="flex flex-col items-center gap-1.5 shrink-0 group"
-            >
-              <div
-                className={`w-14 h-14 rounded-xl overflow-hidden transition-all ${
-                  isSelected
-                    ? "ring-2 ring-[#DC2626] ring-offset-1 shadow-md"
-                    : "ring-1 ring-gray-200 hover:ring-gray-300"
-                } bg-gray-100`}
-              >
-                {cat.image ? (
-                  <img
-                    src={cat.image}
-                    alt={cat.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-400 text-xs font-bold">
-                    {cat.name.charAt(0)}
-                  </div>
-                )}
-              </div>
-              <span className={`text-[10px] font-semibold text-center leading-tight max-w-[56px] truncate ${isSelected ? "text-[#DC2626]" : "text-gray-600"}`}>
-                {cat.name}
-              </span>
-              <span className="text-[9px] text-gray-400">({count})</span>
-            </button>
-          );
-        })}
+        </Link>
       </div>
 
       {loading ? (
@@ -141,11 +66,11 @@ export default function TrendingBoxes() {
             </div>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : boxes.length === 0 ? (
         <p className="text-center text-gray-400 text-sm py-8">สินค้าหมดแล้ว</p>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-1">
-          {filtered.map((box) => {
+          {boxes.map((box) => {
             const tag = tagFor(box);
             return (
               <Link

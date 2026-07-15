@@ -43,7 +43,12 @@ export async function GET(req: Request) {
 
     const now = new Date();
     const boxIds = boxes.map((b) => b._id);
-    const flashSales = await FlashSale.find({ boxId: { $in: boxIds }, isActive: true, endsAt: { $gt: now } }).lean();
+    const flashSales = await FlashSale.find({
+      boxId: { $in: boxIds },
+      isActive: true,
+      endsAt: { $gt: now },
+      $or: [{ startsAt: null }, { startsAt: { $lte: now } }],
+    }).lean();
     const flashMap = new Map(flashSales.map((f: any) => [String(f.boxId), f]));
 
     const mappedBoxes = boxes.map((box) => {

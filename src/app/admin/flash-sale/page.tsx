@@ -94,11 +94,13 @@ export default function FlashSalePage() {
     }
     setSaving(true);
     try {
+      // datetime-local ไม่มี timezone — แปลงเป็น ISO (UTC) ฝั่ง browser ก่อนส่ง
+      // ไม่งั้น server ที่รันใน TZ อื่น (เช่น UTC) จะตีความเวลาเพี้ยนไป 7 ชม.
       const body = {
         boxId: form.boxId,
         salePrice: Number(form.salePrice),
-        startsAt: form.startsAt || null,
-        endsAt: form.endsAt,
+        startsAt: form.startsAt ? new Date(form.startsAt).toISOString() : null,
+        endsAt: new Date(form.endsAt).toISOString(),
       };
       const url = editing ? `/api/admin/flash-sale/${editing._id}` : "/api/admin/flash-sale";
       const method = editing ? "PUT" : "POST";

@@ -274,7 +274,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
   const handleDrawClick = (times: number) => {
     if (!session) { setIsLoginOpen(true); return; }
-    if (!box) return;
+    if (!box || cannotDraw) return;
     setSelectedDraw({ times, price: effectivePrice * times });
     setIsPaymentModalOpen(true);
   };
@@ -347,6 +347,10 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
     const item = bi.itemId;
     return !bi.isLocked && item?.type !== "coin_reward" && !item?.unlimitedStock && item?.stock <= 0;
   });
+
+  // กล่องไม่มีไอเทม / ไอเทมถูกพักหมด / ยังไม่ตั้งอัตราดรอป — API จะปฏิเสธอยู่แล้ว จึงปิดปุ่มตั้งแต่หน้านี้
+  const isNotReady = !!box && unlockedTotalProb <= 0;
+  const cannotDraw = isOutOfStock || isNotReady;
 
   if (loading) {
     return (
@@ -558,9 +562,9 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               <button
                 key={opt.times}
                 onClick={() => handleDrawClick(opt.times)}
-                disabled={isOutOfStock}
+                disabled={cannotDraw}
                 className={`flex-1 relative flex flex-col items-center justify-center py-2.5 rounded-xl border transition-all active:scale-95 ${
-                  isOutOfStock ? "bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed" : opt.isBest ? "bg-red-50/50 border-red-200 shadow-sm" : "bg-white border-gray-100 hover:bg-gray-50"
+                  cannotDraw ? "bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed" : opt.isBest ? "bg-red-50/50 border-red-200 shadow-sm" : "bg-white border-gray-100 hover:bg-gray-50"
                 }`}
               >
                 {opt.isBest && (
@@ -577,10 +581,10 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             ))}
           </div>
           <div className="flex flex-col items-center w-full xl:flex-1">
-            {isOutOfStock ? (
+            {cannotDraw ? (
               <button disabled className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white font-black text-xl lg:text-2xl py-3 lg:py-4 rounded-xl shadow-[0_6px_0_#9ca3af] transition-all flex flex-col items-center justify-center cursor-not-allowed">
                 <div className="flex items-center gap-2">
-                  สินค้าหมด (Out of Stock)
+                  {isOutOfStock ? "สินค้าหมด (Out of Stock)" : "กล่องนี้ยังไม่พร้อมให้สุ่ม"}
                 </div>
                 <span className="text-xs font-semibold text-gray-100 mt-1 opacity-90 drop-shadow-sm">ไม่สามารถสุ่มได้ในขณะนี้</span>
               </button>

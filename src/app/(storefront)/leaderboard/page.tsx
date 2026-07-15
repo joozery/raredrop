@@ -12,14 +12,6 @@ interface LeaderEntry {
   count: number;
 }
 
-type Period = "all" | "month" | "week";
-
-const PERIOD_TABS: { value: Period; label: string }[] = [
-  { value: "all", label: "ตลอดกาล" },
-  { value: "month", label: "30 วัน" },
-  { value: "week", label: "สัปดาห์นี้" },
-];
-
 const RANK_STYLE = [
   { bg: "bg-gradient-to-br from-yellow-400 to-amber-500", text: "text-yellow-700", badge: "bg-yellow-400", shadow: "shadow-yellow-200" },
   { bg: "bg-gradient-to-br from-slate-300 to-slate-400", text: "text-slate-600", badge: "bg-slate-300", shadow: "shadow-slate-200" },
@@ -51,19 +43,18 @@ export default function LeaderboardPage() {
   const { data: session } = useSession();
   const meId = (session?.user as any)?.id as string | undefined;
 
-  const [period, setPeriod] = useState<Period>("all");
   const [data, setData] = useState<LeaderEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/leaderboard?type=topup&period=${period}`);
+      const res = await fetch(`/api/leaderboard?type=topup&period=month`);
       if (res.ok) setData(await res.json());
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -79,7 +70,7 @@ export default function LeaderboardPage() {
           <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
             <Trophy size={24} className="text-amber-500" /> จัดอันดับเติมเงิน
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">ผู้ที่มียอดเติมเงินสูงสุด</p>
+          <p className="text-sm text-gray-500 mt-0.5">ผู้ที่มียอดเติมเงินสูงสุดในรอบ 30 วัน</p>
         </div>
         <button
           onClick={fetchData}
@@ -88,23 +79,6 @@ export default function LeaderboardPage() {
         >
           <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
         </button>
-      </div>
-
-      {/* Period Tabs */}
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
-        {PERIOD_TABS.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setPeriod(t.value)}
-            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-              period === t.value
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
       </div>
 
       {loading ? (

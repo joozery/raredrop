@@ -86,7 +86,12 @@ export async function POST(
 
     // เช็ค flash sale ที่ active อยู่
     const nowFs = new Date();
-    const activeFlashSale = await FlashSale.findOne({ boxId, isActive: true, endsAt: { $gt: nowFs } });
+    const activeFlashSale = await FlashSale.findOne({
+      boxId,
+      isActive: true,
+      endsAt: { $gt: nowFs },
+      $or: [{ startsAt: null }, { startsAt: { $lte: nowFs } }],
+    });
     const effectivePrice = activeFlashSale ? activeFlashSale.salePrice : box.price;
 
     // เช็ค BoxCredit (สิทธิ์เปิดฟรีจากการแลก GemCoin) — เช็คความสามารถจ่ายล่วงหน้าด้วย worst-case (ขอเท่าไหร่คิดเท่านั้น)

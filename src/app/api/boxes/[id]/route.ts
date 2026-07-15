@@ -47,7 +47,12 @@ export async function GET(
     } catch {}
 
     const now = new Date();
-    const flashSale = await FlashSale.findOne({ boxId: id, isActive: true, endsAt: { $gt: now } });
+    const flashSale = await FlashSale.findOne({
+      boxId: id,
+      isActive: true,
+      endsAt: { $gt: now },
+      $or: [{ startsAt: null }, { startsAt: { $lte: now } }],
+    });
     const flashSaleData = flashSale
       ? { salePrice: flashSale.salePrice, endsAt: flashSale.endsAt }
       : null;
