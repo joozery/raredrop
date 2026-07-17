@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, description, image, titleImage, price, categoryId, isFeatured, isActive, items, animation } = body;
+    const { name, description, image, titleImage, price, categoryId, isFeatured, isActive, items, animation, animationType } = body;
 
     if (!name || !image || price === undefined) {
       return NextResponse.json({ error: "Name, image, and price are required" }, { status: 400 });
@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       image,
       titleImage,
       animation,
+      animationType,
       categoryId: categoryId || undefined,
       price: Number(price),
       isFeatured: isFeatured !== undefined ? isFeatured : false,

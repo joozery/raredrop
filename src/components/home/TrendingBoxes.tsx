@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Flame } from "lucide-react";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 interface Box {
   _id: string;
@@ -92,11 +93,11 @@ export default function TrendingBoxes() {
                   </span>
                 ) : null}
                 <div className={`w-full aspect-square rounded-lg flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-105 overflow-hidden bg-gray-50 ${box.isOutOfStock ? "grayscale opacity-60" : ""}`}>
-                  <img
+                  <MediaImage
                     src={box.image}
                     alt={box.name}
                     className="w-full h-full object-cover mix-blend-multiply opacity-90"
-                    onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
+                    fallbackSrc="/product/pokemon.webp"
                   />
                 </div>
                 <h3 className="font-bold text-gray-900 text-[13px] text-center leading-tight mb-1">{box.name}</h3>

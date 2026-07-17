@@ -10,7 +10,9 @@ import {
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { MediaImage } from "@/components/ui/MediaImage";
 import { TopupModal } from "@/components/payment/TopupModal";
+import { RouletteAnimation } from "@/components/animation/RouletteAnimation";
 
 // ---- หน้า category slug (เช่น /boxes/freefire) ----
 function CategoryBoxesPage({ slug }: { slug: string }) {
@@ -143,11 +145,11 @@ function CategoryBoxesPage({ slug }: { slug: string }) {
                 </span>
               ) : null}
               <div className={`aspect-square rounded-xl bg-gray-50 overflow-hidden mb-3 ${box.isOutOfStock ? "grayscale opacity-60" : ""}`}>
-                <img
+                <MediaImage
                   src={box.image}
                   alt={box.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
+                  fallbackSrc="/product/pokemon.webp"
                 />
               </div>
               <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{box.name}</h3>
@@ -180,7 +182,7 @@ interface ItemData { _id: string; name: string; image: string; price: number; ra
 interface BoxItem { itemId: ItemData; probability: number; isLocked?: boolean }
 interface FlashSaleData { salePrice: number; endsAt: string }
 interface BoxData {
-  _id: string; name: string; description?: string; image: string; titleImage?: string; animation?: string;
+  _id: string; name: string; description?: string; image: string; titleImage?: string; animation?: string; animationType?: 'video' | 'roulette';
   price: number; items: BoxItem[]; pityCount: number; pityThreshold: number; freeCredits: number;
   flashSale?: FlashSaleData | null;
 }
@@ -304,8 +306,10 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       setFreeCredits((prev) => Math.max(0, prev - (data.freeOpensUsed || 0)));
       await updateSession(); // refresh coins in session
 
-      if (playAnimation) {
-        setIsAnimating(true);
+      if (playAnimation && box?.animationType === 'roulette') {
+        setIsAnimating(true); // inline roulette view
+      } else if (playAnimation && box?.animation) {
+        setIsAnimating(true); // overlay video/gif
       } else {
         setShowResult(true);
       }
@@ -374,12 +378,14 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
     );
   }
 
+
+
   return (
     <div className="flex flex-col min-h-screen bg-[#FAFAFA] pb-56 font-sans overflow-x-hidden">
 
       {/* Top Navigation */}
       <div className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="text-gray-700 hover:bg-gray-100 p-1.5 rounded-lg transition-colors">
             <ChevronLeft size={24} strokeWidth={2.5} />
           </Link>
@@ -407,10 +413,77 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto w-full px-4 pt-6 pb-4 flex flex-col gap-5">
+      <div className="max-w-[1400px] mx-auto w-full px-4 pt-6 pb-4 flex flex-col gap-5">
 
-        {/* Hero Section */}
-        <div className="bg-[url('/coverrandon.png')] bg-cover bg-center rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-10 relative flex flex-row items-center justify-between gap-2 lg:gap-8 z-10">
+        {/* Hero Section — replaced by roulette if animationType is roulette */}
+        {box.animationType === 'roulette' ? (
+          <div
+            className="w-full rounded-2xl relative overflow-hidden flex flex-col items-center justify-center py-10 px-4"
+            style={{
+              background: "radial-gradient(900px 420px at 12% 0%, rgba(232,25,44,.18), transparent 60%), radial-gradient(900px 420px at 88% 100%, rgba(232,25,44,.12), transparent 60%), #0c0507",
+              minHeight: 320,
+            }}
+          >
+            <div className="text-center mb-8">
+              <p className="text-white/50 text-xs font-semibold tracking-widest uppercase mb-1">{isAnimating ? "กำลังสุ่ม" : "พร้อมสุ่ม"}</p>
+              <h2 className="text-white text-2xl font-black">{box.name}</h2>
+            </div>
+
+            {isAnimating ? (
+              <RouletteAnimation
+                key={String(results[0]?.itemId)+String(Date.now())}
+                boxItems={box.items}
+                resultItem={results[0]}
+                onEnded={() => { setIsAnimating(false); setShowResult(true); }}
+              />
+            ) : (
+              <div className="w-[calc(100%+28px)] -mx-[14px] sm:w-full sm:mx-auto max-w-[1280px] px-0 sm:px-8 select-none">
+                <style>{`@keyframes rd-pulse{0%,100%{opacity:.5}50%{opacity:1}}.rd-strip{animation:rd-pulse 2.8s ease-in-out infinite}.rd-strip-tr{animation-delay:1.4s}.rd-strip-bl{animation-delay:.7s}.rd-strip-br{animation-delay:2.1s}.rd-sideglow-r{animation-delay:1.4s}`}</style>
+                <div style={{ position:"relative",width:"100%",maxWidth:"1280px",margin:"0 auto" }}>
+                  <div style={{ position:"absolute",top:-24,left:"50%",transform:"translateX(-50%)",zIndex:8,width:0,height:0,borderLeft:"13px solid transparent",borderRight:"13px solid transparent",borderTop:"18px solid #e8192c",filter:"drop-shadow(0 0 8px #ff2d3f)" }} />
+                  <div style={{ position:"absolute",bottom:-24,left:"50%",transform:"translateX(-50%)",zIndex:8,width:0,height:0,borderLeft:"13px solid transparent",borderRight:"13px solid transparent",borderBottom:"18px solid #e8192c",filter:"drop-shadow(0 0 8px #ff2d3f)" }} />
+                  <div style={{ position:"relative",borderRadius:110,padding:"24px 64px",background:"linear-gradient(180deg,#3a3c44 0%,#17181d 10%,#0d0e12 30%,#0a0b0e 70%,#191a20 92%,#3a3c44 100%)",boxShadow:"0 1px 0 rgba(255,255,255,.10) inset,0 34px 70px -20px rgba(0,0,0,.95),0 0 80px -26px rgba(232,25,44,.5),0 0 0 1px #000" }}>
+                    <div style={{ position:"absolute",inset:10,borderRadius:96,pointerEvents:"none",border:"1.5px solid transparent",background:"linear-gradient(165deg,#63666f,#15161a 30%,#000 55%,#4a4c55 100%) border-box",WebkitMask:"linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0)",WebkitMaskComposite:"xor",maskComposite:"exclude" as any }} />
+                    {["top","bottom"].map((s)=>(<div key={s} style={{ position:"absolute",left:"50%",transform:"translateX(-50%)",width:"34%",height:10,...(s==="top"?{top:6}:{bottom:6}),background:"linear-gradient(180deg,#26272d,#0b0c0f)",borderRadius:6,boxShadow:"0 0 0 1px #000" }} />))}
+                    {[{cls:"",st:{top:-2,left:"12%"}},{cls:"rd-strip-tr",st:{top:-2,right:"12%"}},{cls:"rd-strip-bl",st:{bottom:-2,left:"12%"}},{cls:"rd-strip-br",st:{bottom:-2,right:"12%"}}].map((s,i)=>(<div key={i} className={`rd-strip ${s.cls}`} style={{ position:"absolute",height:5,width:120,borderRadius:4,background:"#ff2d3f",filter:"blur(1px)",boxShadow:"0 0 18px 4px rgba(255,45,63,.7)",...s.st }} />))}
+                    {[0,1].map((i)=>(<div key={i} className={i===1?"rd-strip rd-sideglow-r":"rd-strip"} style={{ position:"absolute",top:"26%",bottom:"26%",width:8,borderRadius:8,background:"linear-gradient(180deg,transparent,#ff2d3f,transparent)",filter:"blur(2px)",boxShadow:"0 0 22px 5px rgba(255,45,63,.5)",...(i===0?{left:2}:{right:2}) }} />))}
+                    <span style={{ position:"absolute",top:"50%",transform:"translateY(-50%)",left:20,zIndex:8,color:"#ff2d3f",fontSize:34,lineHeight:1,fontWeight:800,textShadow:"0 0 10px rgba(255,45,63,.9)",userSelect:"none" }}>‹</span>
+                    <span style={{ position:"absolute",top:"50%",transform:"translateY(-50%)",right:20,zIndex:8,color:"#ff2d3f",fontSize:34,lineHeight:1,fontWeight:800,textShadow:"0 0 10px rgba(255,45,63,.9)",userSelect:"none" }}>›</span>
+                    <div style={{ position:"relative",overflow:"hidden",borderRadius:70,padding:"22px 0" }}>
+                      <div style={{ position:"absolute",left:"50%",top:-24,bottom:-24,width:1.5,zIndex:7,transform:"translateX(-50%)",pointerEvents:"none",background:"linear-gradient(180deg,#ff2d3f,rgba(255,45,63,.25) 30%,rgba(255,45,63,.25) 70%,#ff2d3f)",boxShadow:"0 0 8px rgba(255,45,63,.8)" }} />
+                      <div style={{ position:"absolute",inset:0,zIndex:6,pointerEvents:"none",background:"linear-gradient(90deg,rgba(10,11,14,.95) 0%,transparent 14%,transparent 86%,rgba(10,11,14,.95) 100%)" }} />
+                      {/* เลื่อนวนช้า ๆ ตอนรอสุ่ม — การ์ด 2 ชุดเหมือนกันต่อกัน + translateX(-50%) = วนไร้รอยต่อ
+                          (ระยะห่างการ์ดใช้ marginRight แทน gap เพื่อให้ครึ่งทางตรงกับจุดเริ่มพอดี) */}
+                      <div style={{ display:"flex",width:"max-content",animation:"marquee 45s linear infinite" }}>
+                        {(()=>{
+                          // วนซ้ำไอเทมให้เต็มราง 7 ใบเสมอ — กล่องที่มีไอเทมน้อยจะได้ไม่โชว์โหรงเหรง (ตอนสุ่มจริงการ์ดก็วนซ้ำแบบเดียวกัน)
+                          const avail=box.items.filter(b=>!b.isLocked);
+                          const set=avail.length===0?[]:Array.from({length:7},(_,i)=>avail[i%avail.length]);
+                          return [...set,...set];
+                        })().map((bi,i)=>{
+                          const item=bi.itemId; const rarity=item?.rarityId; const rc=rarity?.color||"#64748b";
+                          return (
+                            <div key={i} style={{ flex:"0 0 clamp(140px, 44vw, 186px)",marginRight:16,height:212,borderRadius:18,position:"relative",background:"linear-gradient(180deg,#33343b,#1e1f25 70%)",border:"1px solid #3d3e46",boxShadow:"0 1px 0 rgba(255,255,255,.08) inset",display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 14px 16px",overflow:"hidden" }}>
+                              {rarity?.backgroundImage&&(<div style={{ position:"absolute",inset:0,zIndex:0,background:"#0a0a14" }}><img src={rarity.backgroundImage} alt="" style={{ width:"100%",height:"100%",objectFit:"cover",opacity:0.75 }} /><div style={{ position:"absolute",inset:0,background:"linear-gradient(to top,#0a0a14,rgba(10,10,20,0.4) 60%,transparent)" }} /></div>)}
+                              <div style={{ alignSelf:"flex-start",display:"flex",alignItems:"center",gap:5,background:rc,borderRadius:99,padding:"3px 8px",fontSize:10,fontWeight:800,color:"#fff",zIndex:2,position:"relative" }}><Sparkles size={8} color="#fff" />{rarity?.name?.toUpperCase()||"ITEM"}</div>
+                              <div style={{ margin:"auto 0",width:92,height:92,display:"flex",alignItems:"center",justifyContent:"center",border:`1.5px solid ${rc}`,borderRadius:12,background:!rarity?.backgroundImage?"#f8fafc":"rgba(255,255,255,0.04)",padding:4,position:"relative",zIndex:2 }}>
+                                {item?.image?<img src={item.image} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"contain",mixBlendMode:!rarity?.backgroundImage?"multiply":"normal" }} />:<Package size={28} color="#9ca3af" />}
+                              </div>
+                              <div style={{ fontSize:14,fontWeight:800,marginTop:6,textAlign:"center",color:"#f4f4f6",position:"relative",zIndex:2,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",width:"100%" }}>{item?.name}</div>
+                              <div style={{ fontSize:11,color:"#a7a9b2",marginTop:2,position:"relative",zIndex:2 }}>ไอเทมระดับ {rarity?.name||"N/A"}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        ) : (
+          <div className="bg-[url('/coverrandon.png')] bg-cover bg-center rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-10 relative flex flex-row items-center justify-between gap-2 lg:gap-8 z-10">
           
           {/* Left (Text) */}
           <div className="relative z-10 flex flex-col items-start text-left gap-1 lg:gap-3 flex-1 w-1/2">
@@ -433,7 +506,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
             <div className="absolute bottom-3 lg:bottom-14 w-[130px] sm:w-[180px] lg:w-[280px] h-[35px] sm:h-[40px] lg:h-[60px] border-2 lg:border-4 border-red-400/30 rounded-[100%] bg-white/40 backdrop-blur-sm" />
             <div className="absolute bottom-4 lg:bottom-16 w-[100px] sm:w-[140px] lg:w-[200px] h-[30px] sm:h-[35px] lg:h-[40px] bg-red-100/80 rounded-[100%] shadow-[0_0_15px_rgba(239,68,68,0.4)]" />
             {box.image ? (
-              <img src={box.image} alt={box.name} className="relative z-10 w-48 sm:w-56 lg:w-72 object-contain rounded-2xl border-[3px] border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)] hover:-translate-y-1 lg:hover:-translate-y-2 hover:shadow-[0_0_45px_rgba(239,68,68,0.8)] transition-all duration-500 ease-out" />
+              <MediaImage src={box.image} alt={box.name} className="relative z-10 w-48 sm:w-56 lg:w-72 object-contain rounded-2xl border-[3px] border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.6)] hover:-translate-y-1 lg:hover:-translate-y-2 hover:shadow-[0_0_45px_rgba(239,68,68,0.8)] transition-all duration-500 ease-out" />
             ) : (
               <div className="relative z-10 w-48 sm:w-56 lg:w-72 h-48 sm:h-56 flex items-center justify-center">
                 <Package size={50} className="text-red-200 lg:w-[80px] lg:h-[80px]" />
@@ -442,6 +515,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           </div>
           
         </div>
+        )}
 
         {/* Flash Sale Banner */}
         {box.flashSale && (
@@ -689,9 +763,9 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
         </div>
       )}
 
-      {/* Animation Overlay */}
-      {isAnimating && (
-        <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center">
+      {/* Animation Overlay — video/gif only (roulette handled above as inline view) */}
+      {isAnimating && box.animationType !== 'roulette' && (
+        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-center justify-center">
           {box.animation ? (
             box.animation.match(/\.(mp4|webm|mov)$/i) ? (
               <video
@@ -709,7 +783,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
               />
             )
           ) : (
-            // fallback: ไม่มี animation ข้ามตรงไปผลลัพธ์เลย
             <div className="text-white text-2xl font-black animate-pulse"
               ref={(el) => { if (el) setTimeout(() => { setIsAnimating(false); setShowResult(true); }, 800); }}>
               กำลังเปิดกล่อง...

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Zap, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 interface FlashSaleItem {
   _id: string;
@@ -127,11 +128,11 @@ export default function FlashSale() {
                     </span>
 
                     <div className={`w-full aspect-square flex items-center justify-center overflow-hidden ${itemUpcoming ? "bg-gray-100" : "bg-[#FFF9F9]"}`}>
-                      <img
+                      <MediaImage
                         src={item.image}
                         alt={item.name}
                         className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${itemUpcoming ? "opacity-50 grayscale" : ""}`}
-                        onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
+                        fallbackSrc="/product/pokemon.webp"
                       />
                     </div>
 

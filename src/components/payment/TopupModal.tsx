@@ -48,6 +48,8 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error" | "pending">("idle");
   const [message, setMessage] = useState("");
+  // กันลูกค้าโอนเงินแล้วปิดหน้าต่างโดยลืมแนบสลิป — ต้องยืนยันก่อนปิด
+  const [confirmClose, setConfirmClose] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const stopPolling = () => {
@@ -173,6 +175,7 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
     setPreview(null);
     setStatus("idle");
     setMessage("");
+    setConfirmClose(false);
     setCryptoUserAddress(null);
     setCryptoTxHash(null);
   };
@@ -235,9 +238,19 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
     }
   };
 
-  const handleClose = () => {
+  const forceClose = () => {
+    setConfirmClose(false);
     onClose();
     setTimeout(resetState, 300); // delay reset so animation finishes
+  };
+
+  const handleClose = () => {
+    // อยู่หน้า QR แต่ยังแจ้งชำระไม่สำเร็จ — ถามยืนยันก่อน กันลืมแนบสลิปทั้งที่โอนเงินไปแล้ว
+    if (step === "qrcode" && status !== "success") {
+      setConfirmClose(true);
+      return;
+    }
+    forceClose();
   };
 
   const handleGenerateQR = async () => {
@@ -355,6 +368,31 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden relative flex flex-col max-h-[90vh]">
+        {confirmClose && (
+          <div className="absolute inset-0 z-20 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center p-5 animate-in fade-in duration-150">
+            <div className="bg-white rounded-xl shadow-xl p-5 w-full">
+              <div className="flex items-center gap-2 text-amber-600 font-bold text-sm mb-2">
+                <AlertCircle size={18} className="shrink-0" /> คุณยังไม่ได้แนบสลิป
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                ถ้าโอนเงินแล้ว ต้องแนบสลิปและกด &quot;แจ้งชำระเงิน&quot; ระบบถึงจะเติมเงินให้
+                — ปิดหน้าต่างตอนนี้ยอดเงินจะยังไม่เข้า
+              </p>
+              <button
+                onClick={() => setConfirmClose(false)}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 text-sm mb-2"
+              >
+                <Upload size={15} /> กลับไปแนบสลิป
+              </button>
+              <button
+                onClick={forceClose}
+                className="w-full text-slate-400 hover:text-slate-600 font-bold py-2 rounded-xl transition-colors text-xs"
+              >
+                ยังไม่ได้โอนเงิน — ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        )}
         <div className="bg-gradient-to-r from-red-600 to-red-500 p-5 flex items-center justify-between shrink-0">
           <h2 className="text-white font-bold text-lg">
             {step === "amount" ? "ระบุจำนวนเงิน"

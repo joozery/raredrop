@@ -22,6 +22,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 const menuItems = [
   { name: "หน้าหลัก", icon: Home, href: "/" },
@@ -47,6 +48,10 @@ export function Sidebar() {
   const [logoUrl, setLogoUrl] = useState("");
   const [siteName, setSiteName] = useState("LuxusX");
   const [gemcoinIcon, setGemcoinIcon] = useState("");
+  const [sidebarBg, setSidebarBg] = useState("");
+  const [textColor, setTextColor] = useState("");
+  const [hoverTextColor, setHoverTextColor] = useState("");
+  const [hoverBgColor, setHoverBgColor] = useState("");
 
   useEffect(() => {
     fetch("/api/public-settings", { cache: "no-store" })
@@ -60,6 +65,10 @@ export function Sidebar() {
         setTiktokUrl(d.help_tiktok_url || "");
         setYoutubeUrl(d.help_youtube_url || "");
         setGemcoinIcon(d.gemcoin_icon || "");
+        setSidebarBg(d.sidebar_bg || "");
+        setTextColor(d.sidebar_text_color || "");
+        setHoverTextColor(d.sidebar_hover_text_color || "");
+        setHoverBgColor(d.sidebar_hover_bg_color || "");
       })
       .catch(() => {});
   }, []);
@@ -69,10 +78,23 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-72 bg-white border-r border-gray-100 flex flex-col h-full shrink-0">
+    <aside
+      className="w-72 bg-white border-r border-gray-100 flex flex-col h-full shrink-0 relative"
+      style={{
+        "--sb-text": textColor || "#4b5563",
+        "--sb-hover-text": hoverTextColor || "#111827",
+        "--sb-hover-bg": hoverBgColor || "#f9fafb",
+      } as React.CSSProperties}
+    >
+      {/* พื้นหลังจากหลังบ้าน — รองรับทั้งรูปและวิดีโอ */}
+      {sidebarBg && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <MediaImage src={sidebarBg} className="w-full h-full object-cover" />
+        </div>
+      )}
       {/* Logo */}
       {logoUrl && (
-        <div className="h-28 flex items-center px-6 shrink-0 mt-2">
+        <div className="h-28 flex items-center px-6 shrink-0 mt-2 relative">
           <Link href="/" className="flex items-center w-full justify-center">
             <Image
               src={logoUrl}
@@ -87,7 +109,7 @@ export function Sidebar() {
       )}
 
       {/* Menu */}
-      <div className="flex-1 overflow-y-auto px-5 flex flex-col hide-scrollbar pb-6">
+      <div className="flex-1 overflow-y-auto px-5 flex flex-col hide-scrollbar pb-6 relative">
         <div className="flex flex-col gap-2">
           {menuItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
@@ -99,9 +121,9 @@ export function Sidebar() {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200",
-                  isActive 
-                    ? "bg-[#DC2626] text-white shadow-md shadow-red-500/20" 
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  isActive
+                    ? "bg-[#DC2626] text-white shadow-md shadow-red-500/20"
+                    : "text-[color:var(--sb-text)] hover:bg-[color:var(--sb-hover-bg)] hover:text-[color:var(--sb-hover-text)]"
                 )}
               >
                 {item.href === "/exchange" && gemcoinIcon ? (
@@ -109,7 +131,7 @@ export function Sidebar() {
                     <img src={gemcoinIcon} alt="" className="w-8 h-8 object-contain max-w-none" />
                   </div>
                 ) : (
-                  <Icon size={22} className={cn(isActive ? "text-white" : "text-gray-500", "shrink-0")} strokeWidth={isActive ? 2 : 1.5} />
+                  <Icon size={22} className={cn(isActive ? "text-white" : "text-current opacity-80", "shrink-0")} strokeWidth={isActive ? 2 : 1.5} />
                 )}
                 <span className={cn("text-[15px]", isActive ? "font-bold" : "font-medium")}>
                   {item.name}
@@ -123,7 +145,7 @@ export function Sidebar() {
             target={discordUrl ? "_blank" : undefined}
             rel={discordUrl ? "noopener noreferrer" : undefined}
             onClick={handleDiscordClick}
-            className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 text-[color:var(--sb-text)] hover:bg-[color:var(--sb-hover-bg)] hover:text-[color:var(--sb-hover-text)]"
           >
             <img src="/banner/cover/discord.svg" alt="Discord" className="w-[22px] h-[22px]" />
             <span className="text-[15px] font-medium">ร่วม Discord รับ GemCoin</span>
@@ -133,7 +155,7 @@ export function Sidebar() {
       </div>
 
       {/* Footer / Socials */}
-      <div className="px-5 pb-6 shrink-0 bg-white">
+      <div className={cn("px-5 pb-6 shrink-0 relative", !sidebarBg && "bg-white")}>
         {(facebookUrl || lineUrl || discordUrl || tiktokUrl || youtubeUrl) && (
           <div className="border border-gray-100 rounded-2xl p-3 flex justify-center gap-3 items-center mb-4 shadow-sm bg-gray-50/50 flex-wrap">
             {facebookUrl && (

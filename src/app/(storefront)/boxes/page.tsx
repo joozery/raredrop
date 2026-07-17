@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Package, Flame } from "lucide-react";
+import { MediaImage } from "@/components/ui/MediaImage";
 
 interface Box {
   _id: string;
@@ -165,11 +166,11 @@ export default function BoxesPage() {
                 </span>
               ) : null}
               <div className={`aspect-square rounded-xl bg-gray-50 overflow-hidden mb-3 ${box.isOutOfStock ? "grayscale opacity-60" : ""}`}>
-                <img
+                <MediaImage
                   src={box.image}
                   alt={box.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }}
+                  fallbackSrc="/product/pokemon.webp"
                 />
               </div>
               {box.categoryId && (

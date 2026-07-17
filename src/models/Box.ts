@@ -16,6 +16,7 @@ export interface IBox extends Document {
   isFeatured: boolean;
   isActive: boolean;
   items: IBoxItem[];
+  animationType?: 'video' | 'roulette';
   animation?: string;
   pityThreshold: number;
   createdAt: Date;
@@ -38,6 +39,7 @@ const BoxSchema: Schema = new Schema({
   isFeatured: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   items: [BoxItemSchema],
+  animationType: { type: String, enum: ['video', 'roulette'], default: 'video' },
   animation: { type: String },
   pityThreshold: { type: Number, default: 100, min: 1 },
 }, { timestamps: true });

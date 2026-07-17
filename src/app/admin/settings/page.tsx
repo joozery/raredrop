@@ -10,6 +10,29 @@ interface HeroBannerData {
   link: string;
 }
 
+function ColorField({ label, value, onChange, fallback }: { label: string; value: string; onChange: (v: string) => void; fallback: string }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-bold text-slate-600">{label}</label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value || fallback}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-9 h-9 rounded-lg border border-slate-200 cursor-pointer bg-white p-1 shrink-0"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="ค่าเริ่มต้น"
+          className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+        />
+      </div>
+    </div>
+  );
+}
+
 interface SettingItem {
   _id: string;
   key: string;
@@ -51,6 +74,12 @@ export default function SettingsPage() {
   const [qrDecoding, setQrDecoding] = useState(false);
   const [qrDecodeError, setQrDecodeError] = useState("");
   const [qrDecodeResult, setQrDecodeResult] = useState<{ type: string; shopName?: string; accountType?: string; accountNumber?: string; ref1?: string } | null>(null);
+  const [sidebarBg, setSidebarBg] = useState("");
+  const [sidebarTextColor, setSidebarTextColor] = useState("");
+  const [sidebarHoverTextColor, setSidebarHoverTextColor] = useState("");
+  const [sidebarHoverBgColor, setSidebarHoverBgColor] = useState("");
+  const [sidebarSaving, setSidebarSaving] = useState(false);
+  const [sidebarSaved, setSidebarSaved] = useState(false);
   const [popupImage, setPopupImage] = useState("");
   const [popupLink, setPopupLink] = useState("");
   const [popupSaving, setPopupSaving] = useState(false);
@@ -109,6 +138,15 @@ export default function SettingsPage() {
               ref1: qrRef1 ? String(qrRef1) : undefined,
             });
           }
+
+          const sidebarBgSetting = d.find((s: SettingItem) => s.key === "sidebar_bg");
+          if (sidebarBgSetting) setSidebarBg(String(sidebarBgSetting.value));
+          const sidebarTextSetting = d.find((s: SettingItem) => s.key === "sidebar_text_color");
+          if (sidebarTextSetting) setSidebarTextColor(String(sidebarTextSetting.value));
+          const sidebarHoverTextSetting = d.find((s: SettingItem) => s.key === "sidebar_hover_text_color");
+          if (sidebarHoverTextSetting) setSidebarHoverTextColor(String(sidebarHoverTextSetting.value));
+          const sidebarHoverBgSetting = d.find((s: SettingItem) => s.key === "sidebar_hover_bg_color");
+          if (sidebarHoverBgSetting) setSidebarHoverBgColor(String(sidebarHoverBgSetting.value));
 
           const popupImageSetting = d.find((s: SettingItem) => s.key === "popup_image");
           if (popupImageSetting) setPopupImage(String(popupImageSetting.value));
@@ -270,6 +308,30 @@ export default function SettingsPage() {
     }
   };
 
+  const saveSidebar = async () => {
+    setSidebarSaving(true);
+    try {
+      await Promise.all(
+        ([
+          ["sidebar_bg", sidebarBg],
+          ["sidebar_text_color", sidebarTextColor],
+          ["sidebar_hover_text_color", sidebarHoverTextColor],
+          ["sidebar_hover_bg_color", sidebarHoverBgColor],
+        ] as const).map(([key, value]) =>
+          fetch("/api/admin/settings", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key, value }),
+          })
+        )
+      );
+      setSidebarSaved(true);
+      setTimeout(() => setSidebarSaved(false), 2000);
+    } finally {
+      setSidebarSaving(false);
+    }
+  };
+
   const savePopup = async () => {
     setPopupSaving(true);
     try {
@@ -328,6 +390,7 @@ export default function SettingsPage() {
   const excludedKeys = [
     "site_logo", "site_og_image", "hero_banner_carousel", "hero_banner_image", "hero_banner_link",
     "knowledge_hero_image", "knowledge_hero_link", "gemcoin_icon",
+    "sidebar_bg", "sidebar_text_color", "sidebar_hover_text_color", "sidebar_hover_bg_color",
     "payment_method", "payment_qr_image", "payment_qr_type", "payment_qr_account_type", "payment_qr_account_number", "payment_qr_shop_name",
     "popup_image", "popup_link",
   ];
@@ -570,6 +633,42 @@ export default function SettingsPage() {
                 <img src={gemcoinIcon} alt="gemcoin icon preview" className="h-7 w-7 object-contain border border-slate-200 rounded p-0.5" />
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar Customization Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">Sidebar หน้าบ้าน (พื้นหลัง & สีตัวหนังสือ)</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="พื้นหลัง Sidebar (รูป/วิดีโอ — เว้นว่าง = พื้นขาวเดิม)"
+            value={sidebarBg}
+            onChange={setSidebarBg}
+            folder="branding"
+            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+            placeholder="https://... หรืออัพโหลดรูป/วิดีโอ"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <ColorField label="สีตัวหนังสือเมนู" value={sidebarTextColor} onChange={setSidebarTextColor} fallback="#4b5563" />
+            <ColorField label="สีตัวหนังสือตอน hover" value={sidebarHoverTextColor} onChange={setSidebarHoverTextColor} fallback="#111827" />
+            <ColorField label="สีพื้นเมนูตอน hover" value={sidebarHoverBgColor} onChange={setSidebarHoverBgColor} fallback="#f9fafb" />
+          </div>
+          <p className="text-xs text-slate-400 -mt-1">
+            สีใช้กับเมนูปกติ — เมนูที่เลือกอยู่ยังเป็นปุ่มแดงตัวหนังสือขาวเหมือนเดิม ลบค่าสีออก = กลับไปใช้สีเริ่มต้น
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveSidebar}
+              disabled={sidebarSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {sidebarSaving ? <Loader2 size={13} className="animate-spin" /> : sidebarSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {sidebarSaved ? "บันทึกแล้ว!" : "บันทึกการตั้งค่า Sidebar"}
+            </button>
           </div>
         </div>
       </div>

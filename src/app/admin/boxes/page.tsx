@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Search, X, Package, Percent } from "lucide-react";
 import { UploadInput } from "@/components/ui/UploadInput";
+import { MediaImage } from "@/components/ui/MediaImage";
 import Link from "next/link";
 
 interface CategoryData {
@@ -16,6 +17,7 @@ interface BoxData {
   description?: string;
   image: string;
   titleImage?: string;
+  animationType?: 'video' | 'roulette';
   animation?: string;
   price: number;
   pityThreshold: number;
@@ -32,6 +34,8 @@ export default function ManageBoxes() {
   
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
@@ -41,6 +45,8 @@ export default function ManageBoxes() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => { setPage(1); }, [search]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -127,9 +133,12 @@ export default function ManageBoxes() {
     }
   };
 
-  const filteredBoxes = boxes.filter(box => 
+  const filteredBoxes = boxes.filter(box =>
     box.name?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredBoxes.length / PAGE_SIZE));
+  const pagedBoxes = filteredBoxes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-6">
@@ -182,7 +191,7 @@ export default function ManageBoxes() {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">ไม่พบข้อมูล</td>
                 </tr>
-              ) : filteredBoxes.map((box) => {
+              ) : pagedBoxes.map((box) => {
                 const cData = box.categoryId as any as CategoryData;
 
                 return (
@@ -191,7 +200,7 @@ export default function ManageBoxes() {
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 p-1 relative">
                           {box.image ? (
-                            <img src={box.image} alt={box.name} className="w-full h-full object-contain" />
+                            <MediaImage src={box.image} alt={box.name} className="w-full h-full object-contain" />
                           ) : (
                             <Package size={18} className="text-slate-400" />
                           )}
@@ -251,6 +260,51 @@ export default function ManageBoxes() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-500 font-medium">
+              แสดง {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredBoxes.length)} จาก {filteredBoxes.length} กล่อง
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white hover:border border-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-bold"
+              >
+                ‹
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                .reduce<(number | "…")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && (p as number) - (arr[idx - 1] as number) > 1) acc.push("…");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, idx) =>
+                  p === "…" ? (
+                    <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-slate-400 text-xs">…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p as number)}
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${page === p ? "bg-red-600 text-white shadow-sm" : "text-slate-600 hover:bg-white hover:border border-slate-200"}`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white hover:border border-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-bold"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (
@@ -278,12 +332,12 @@ export default function ManageBoxes() {
               </div>
 
               <UploadInput
-                label="รูปภาพกล่อง *"
+                label="รูปภาพกล่อง (รูป/วิดีโอ) *"
                 value={currentBox.image || ""}
                 onChange={(url) => setCurrentBox({ ...currentBox, image: url })}
                 folder="boxes"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                placeholder="https://... หรืออัพโหลดรูปภาพ"
+                accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
+                placeholder="https://... หรืออัพโหลดรูปภาพ/วิดีโอ"
               />
 
               <UploadInput
@@ -319,16 +373,29 @@ export default function ManageBoxes() {
                 </div>
               </div>
 
-              <UploadInput
-                label="Animation เปิดกล่อง (ไม่บังคับ)"
-                value={currentBox.animation || ""}
-                onChange={(url) => setCurrentBox({ ...currentBox, animation: url })}
-                folder="animations"
-                accept="video/mp4,video/webm,image/gif"
-                placeholder="https://... หรืออัพโหลดวิดีโอ/gif"
-                isVideo
-              />
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">รูปแบบอนิเมชั่นการเปิด</label>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+                    <input type="radio" name="animationType" checked={currentBox.animationType === 'video' || !currentBox.animationType} onChange={() => setCurrentBox({...currentBox, animationType: 'video'})} className="accent-red-600 w-4 h-4" /> วิดีโอ (Video)
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+                    <input type="radio" name="animationType" checked={currentBox.animationType === 'roulette'} onChange={() => setCurrentBox({...currentBox, animationType: 'roulette'})} className="accent-red-600 w-4 h-4" /> รางเลื่อน (Roulette)
+                  </label>
+                </div>
+              </div>
 
+              {(!currentBox.animationType || currentBox.animationType === 'video') && (
+                <UploadInput
+                  label="Animation เปิดกล่อง (ไม่บังคับ)"
+                  value={currentBox.animation || ""}
+                  onChange={(url) => setCurrentBox({ ...currentBox, animation: url })}
+                  folder="animations"
+                  accept="video/mp4,video/webm,image/gif"
+                  placeholder="https://... หรืออัพโหลดวิดีโอ/gif"
+                  isVideo
+                />
+              )}
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">รายละเอียดกล่อง (ไม่บังคับ)</label>
                 <textarea

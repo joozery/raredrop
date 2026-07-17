@@ -10,6 +10,7 @@ const PUBLIC_KEYS = [
   "hero_banner_icon", "hero_banner_button1", "hero_banner_button2", "hero_banner_carousel",
   "knowledge_hero_label", "knowledge_hero_image", "knowledge_hero_link", "knowledge_hero_title", "knowledge_hero_subtitle",
   "red_envelope_help_text", "gemcoin_icon",
+  "sidebar_bg", "sidebar_text_color", "sidebar_hover_text_color", "sidebar_hover_bg_color",
   "payment_method", "payment_qr_image", "min_topup_amount",
   "popup_enabled", "popup_image", "popup_link", "popup_dismiss_hours",
   "crypto_enabled", "crypto_wallet_address", "crypto_network", "crypto_rate_per_unit",

@@ -9,19 +9,22 @@ const APP_ICON = "/logoluxux.png";
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   let siteName = "LuxusX";
   let siteDesc = "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท";
+  let titleSuffix: string = "กล่องสุ่มสินค้าพรีเมียม";
 
   try {
     await connectToDatabase();
-    const [n, d] = await Promise.all([
+    const [n, d, ts] = await Promise.all([
       Setting.findOne({ key: "site_name" }).lean(),
       Setting.findOne({ key: "site_description" }).lean(),
+      Setting.findOne({ key: "site_title_suffix" }).lean(),
     ]);
     if ((n as any)?.value) siteName = (n as any).value;
     if ((d as any)?.value) siteDesc = (d as any).value;
+    if ((ts as any)?.value !== undefined) titleSuffix = (ts as any).value;
   } catch {}
 
   return {
-    name: `${siteName} - กล่องสุ่มสินค้าพรีเมียม`,
+    name: titleSuffix ? `${siteName} - ${titleSuffix}` : siteName,
     short_name: siteName,
     description: siteDesc,
     start_url: "/",

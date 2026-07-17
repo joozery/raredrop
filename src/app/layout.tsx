@@ -25,17 +25,19 @@ const BASE = "https://luxusx.com";
 async function getSiteSettings() {
   try {
     await connectToDatabase();
-    const [n, d, og, lo] = await Promise.all([
+    const [n, d, og, lo, ts] = await Promise.all([
       Setting.findOne({ key: "site_name" }).lean(),
       Setting.findOne({ key: "site_description" }).lean(),
       Setting.findOne({ key: "site_og_image" }).lean(),
       Setting.findOne({ key: "site_logo" }).lean(),
+      Setting.findOne({ key: "site_title_suffix" }).lean(),
     ]);
     return {
       siteName: (n as any)?.value || "LuxusX",
       siteDesc: (d as any)?.value || "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท",
       ogImage: (og as any)?.value || `${BASE}/logoluxux.png`,
       siteLogo: (lo as any)?.value || `${BASE}/logoluxux.png`,
+      titleSuffix: (ts as any)?.value ?? "กล่องสุ่มสินค้าพรีเมียม",
     };
   } catch {
     return {
@@ -43,13 +45,14 @@ async function getSiteSettings() {
       siteDesc: "เปิดกล่องสุ่มสินค้าพรีเมียมออนไลน์ ลุ้นของสะสมสุดพิเศษ ราคาเริ่มต้นไม่กี่บาท",
       ogImage: `${BASE}/logoluxux.png`,
       siteLogo: `${BASE}/logoluxux.png`,
+      titleSuffix: "กล่องสุ่มสินค้าพรีเมียม",
     };
   }
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { siteName, siteDesc, ogImage, siteLogo } = await getSiteSettings();
-  const title = `${siteName} - กล่องสุ่มสินค้าพรีเมียม`;
+  const { siteName, siteDesc, ogImage, siteLogo, titleSuffix } = await getSiteSettings();
+  const title = titleSuffix ? `${siteName} - ${titleSuffix}` : siteName;
   return {
     metadataBase: new URL(BASE),
     title: { default: title, template: `%s | ${siteName}` },
