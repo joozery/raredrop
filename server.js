@@ -36,5 +36,13 @@ app.prepare().then(() => {
     console.log(
       `> Ready on http://localhost:${port} (${dev ? "development" : "production"}) with Socket.IO`
     );
+
+    // Poller เติมเงิน TrueMoney ฝั่ง server — จับคู่เงินเข้ากับรายการ pending เองตลอด
+    // ไม่ต้องพึ่งเบราว์เซอร์ลูกค้าเปิดค้าง (route จะข้ามถ้าไม่มีรายการ pending / ถูก throttle ในตัว)
+    setInterval(() => {
+      fetch(`http://127.0.0.1:${port}/api/internal/truemoney/poll`, {
+        headers: { "x-internal-key": process.env.NEXTAUTH_SECRET || "" },
+      }).catch(() => {});
+    }, 5000);
   });
 });

@@ -35,6 +35,7 @@ const menuGroups = [
       { name: "จัดการผู้เล่น", icon: Users, href: "/admin/users" },
       { name: "จัดการแอดมิน", icon: UserPlus, href: "/admin/manage-admins" },
       { name: "กระเป๋าเงิน (Wallet)", icon: Wallet, href: "/admin/wallet" },
+      { name: "เติมเงิน TrueMoney", icon: Wallet, href: "/admin/truemoney" },
       { name: "ระบบเลเวล & EXP", icon: TrendingUp, href: "/admin/levels" },
       { name: "ประวัติธุรกรรม", icon: ArrowRightLeft, href: "/admin/transactions" },
       { name: "ส่งการแจ้งเตือน", icon: Send, href: "/admin/notifications" },
