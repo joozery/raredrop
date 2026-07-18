@@ -703,9 +703,14 @@ export default function CardsPage() {
             </div>
 
             {/* Footer Rules */}
-            <div className="py-4 text-center flex items-center justify-center gap-1.5 relative z-10 mt-2">
-               <div className="w-3.5 h-3.5 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-black shadow-sm shadow-red-500/30">!</div>
-               <span className="text-[10px] font-bold text-gray-400 tracking-wide">รางวัลทั้งหมดเป็นไปตามเงื่อนไขของกิจกรรม</span>
+            <div className="py-4 text-center flex flex-col items-center justify-center gap-1 relative z-10 mt-2">
+              <div className="flex items-center justify-center gap-1.5">
+                <div className="w-3.5 h-3.5 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-black shadow-sm shadow-red-500/30">!</div>
+                <span className="text-[10px] font-bold text-gray-400 tracking-wide">รางวัลทั้งหมดเป็นไปตามเงื่อนไขของกิจกรรม</span>
+              </div>
+              {round?.prizes?.some((p) => p.isSpecial) && (
+                <span className="text-[10px] font-bold text-amber-500 tracking-wide">⭐ รางวัลพิเศษจะเริ่มลุ้นได้หลังเปิดการ์ดเกินครึ่งรอบ</span>
+              )}
             </div>
 
             {roundActive && !roundCompleted && (

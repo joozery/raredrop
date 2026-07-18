@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     }
 
     // 3) รางวัลประจำใบ — คละไว้แล้วตั้งแต่แอดมินเปิดรอบ (1 รางวัล : 1 ใบ ไม่ซ้ำ)
-    const chosen: any = (claimed.cards[index] as any)?.assigned;
+    let chosen: any = (claimed.cards[index] as any)?.assigned;
     if (!chosen) {
       // รอบเก่าก่อนระบบ 1:1 หรือข้อมูลเพี้ยน — คืนเงิน + ปลดการ์ดคืน
       await Promise.all([
@@ -80,6 +80,36 @@ export async function POST(req: Request) {
         ),
       ]);
       return NextResponse.json({ error: "รอบนี้ข้อมูลรางวัลไม่พร้อม กรุณาติดต่อแอดมิน" }, { status: 409 });
+    }
+
+    // 3.5) เงื่อนไขรางวัลพิเศษ: ออกได้เฉพาะ "ครึ่งหลัง" ของรอบ — ให้คนเปิดครึ่งแรกได้เปิดกันก่อน
+    // ถ้าครึ่งแรกมีคนเปิดโดนใบ jackpot พอดี ระบบย้าย jackpot ไปซ่อนใบคว่ำใบอื่นแบบลับ ๆ
+    // แล้วให้รางวัลของใบนั้นแทน — ยังครบ 1 รางวัล : 1 ใบเหมือนเดิม แค่เลื่อนจังหวะออก
+    if (chosen.isSpecial) {
+      const halfNeeded = Math.floor(claimed.cards.length / 2);
+      const openedBefore = claimed.cards.filter((c: any) => c.opened).length - 1; // ไม่นับใบที่เพิ่งจองนี้
+      if (openedBefore < halfNeeded) {
+        const candidates = (claimed.cards as any[])
+          .map((c: any, i: number) => ({ c, i }))
+          .filter(({ c, i }: any) => i !== index && !c.opened && c.assigned && !c.assigned.isSpecial);
+        for (let k = candidates.length - 1; k > 0; k--) {
+          const j = Math.floor(Math.random() * (k + 1));
+          [candidates[k], candidates[j]] = [candidates[j], candidates[k]];
+        }
+        for (const { c, i: swapIdx } of candidates) {
+          // เงื่อนไขกัน race — ใบเป้าหมายต้องยังคว่ำอยู่ตอนสลับจริง ไม่งั้นลองใบถัดไป
+          const swapped = await CardRound.findOneAndUpdate(
+            { _id: round._id, [`cards.${swapIdx}.opened`]: { $ne: true } },
+            { $set: { [`cards.${index}.assigned`]: c.assigned, [`cards.${swapIdx}.assigned`]: chosen } },
+            { new: true }
+          );
+          if (swapped) {
+            chosen = c.assigned;
+            break;
+          }
+        }
+        // ถ้าสลับไม่สำเร็จเลย (แทบเป็นไปไม่ได้ในครึ่งแรก) — ปล่อยให้ jackpot ออกตามเดิม
+      }
     }
 
     // 4) เข้ารางวัลให้ผู้เล่น — สต็อกไอเทมถูกจองไว้แล้วตอนเปิดรอบ ไม่ต้องตัดซ้ำ

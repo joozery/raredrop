@@ -773,6 +773,7 @@ export default function ManageCardPrizes() {
                 <span className="flex flex-col">
                   <span className="text-sm font-bold text-slate-800">⭐ รางวัลพิเศษ (Jackpot)</span>
                   <span className="text-[10px] text-slate-500 mt-0.5">ใครเปิดเจอใบที่ซ่อนรางวัลนี้ <span className="font-bold text-amber-600">รอบจบทันที</span> — ใบที่เหลือเปิดต่อไม่ได้ และสต็อกไอเทมที่จองไว้ของใบที่ไม่ถูกเปิดจะถูกคืน</span>
+                  <span className="text-[10px] text-slate-500 mt-0.5">ออกได้เฉพาะ<span className="font-bold text-amber-600">ครึ่งหลังของรอบ</span> — ครึ่งแรกระบบจะเลื่อนไปซ่อนใบอื่นให้อัตโนมัติ ผู้เล่นได้เปิดกันก่อนครึ่งรอบแล้วค่อยลุ้นแจ็คพอต</span>
                   <span className="text-[10px] font-bold text-amber-600 mt-1">ตั้งได้เพียง 1 รางวัลเท่านั้น — ติ๊กตัวนี้แล้วป้ายพิเศษของตัวเดิม (ถ้ามี) จะถูกปลดออกอัตโนมัติ</span>
                 </span>
               </label>
