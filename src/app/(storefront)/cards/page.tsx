@@ -9,8 +9,8 @@ import { useBalance } from '@/contexts/BalanceContext';
 
 interface CardPrize { title: string; name: string; icon?: string; weight?: number; type?: string; amount?: number }
 interface RoundCard { opened: boolean; openedBy?: string; openedByName?: string; prize?: CardPrize }
-interface RoundPrize { title: string; name: string; icon?: string; type?: string; amount?: number; taken: boolean }
-interface RoundData { _id: string | null; roundNumber: number; status: 'active' | 'completed' | 'none'; cards: RoundCard[]; prizes?: RoundPrize[] }
+interface RoundPrize { title: string; name: string; icon?: string; type?: string; amount?: number; isSpecial?: boolean; taken: boolean }
+interface RoundData { _id: string | null; roundNumber: number; status: 'active' | 'completed' | 'none'; completedReason?: 'all_opened' | 'special'; cards: RoundCard[]; prizes?: RoundPrize[] }
 interface HistoryEntry {
   roundNumber: number;
   cardIndex: number;
@@ -474,10 +474,17 @@ export default function CardsPage() {
 
             {/* รอบจบ/ยังไม่เริ่ม — บอกสถานะชัด ๆ เหนือแถวการ์ด */}
             {ready && roundCompleted && (
-              <div className="mb-6 bg-red-50 border border-red-200 text-red-600 rounded-2xl px-5 py-4 text-center">
-                <p className="text-sm font-black">{completedTitle}</p>
-                <p className="text-xs font-bold text-red-400 mt-1">{completedSubtitle}</p>
-              </div>
+              round?.completedReason === 'special' ? (
+                <div className="mb-6 bg-amber-50 border border-amber-300 text-amber-600 rounded-2xl px-5 py-4 text-center">
+                  <p className="text-sm font-black">⭐ รางวัลพิเศษถูกเปิดแล้ว — รอบนี้จบทันที!</p>
+                  <p className="text-xs font-bold text-amber-500 mt-1">{completedSubtitle}</p>
+                </div>
+              ) : (
+                <div className="mb-6 bg-red-50 border border-red-200 text-red-600 rounded-2xl px-5 py-4 text-center">
+                  <p className="text-sm font-black">{completedTitle}</p>
+                  <p className="text-xs font-bold text-red-400 mt-1">{completedSubtitle}</p>
+                </div>
+              )
             )}
             {ready && round && !roundActive && !roundCompleted && (
               <div className="mb-6 bg-gray-50 border border-gray-200 text-gray-500 rounded-2xl px-5 py-4 text-center">
@@ -586,7 +593,7 @@ export default function CardsPage() {
             className="flex-1 bg-gradient-to-b from-red-500 to-red-700 hover:from-red-400 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 rounded-2xl shadow-[0_5px_0_#991b1b] disabled:shadow-[0_5px_0_#9ca3af] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
           >
             <span className="text-base font-black">
-              {!ready ? 'กำลังโหลด...' : roundCompleted ? `${completedTitle} — รอรอบใหม่` : !roundActive ? 'รอแอดมินเปิดรอบ' : pool.length === 0 ? 'ยังไม่มีรางวัลให้เปิด' : phase !== 'idle' ? 'กำลังเปิด...' : `เปิดการ์ดใบที่ ${selected + 1}`}
+              {!ready ? 'กำลังโหลด...' : roundCompleted ? (round?.completedReason === 'special' ? '⭐ รางวัลพิเศษออกแล้ว — รอรอบใหม่' : `${completedTitle} — รอรอบใหม่`) : !roundActive ? 'รอแอดมินเปิดรอบ' : pool.length === 0 ? 'ยังไม่มีรางวัลให้เปิด' : phase !== 'idle' ? 'กำลังเปิด...' : `เปิดการ์ดใบที่ ${selected + 1}`}
             </span>
             {roundActive && !roundCompleted && pool.length > 0 && selected >= 0 && (
               <span className="text-lg font-black">฿{openCost.toLocaleString()}</span>
@@ -672,6 +679,13 @@ export default function CardsPage() {
                           {p.taken ? 'ถูกเปิดไปแล้ว' : p.title}
                         </p>
                       </div>
+
+                      {/* ป้ายรางวัลพิเศษ — เปิดเจอใบนี้รอบจบทันที */}
+                      {p.isSpecial && (
+                        <span className={`absolute top-1.5 right-1.5 z-10 text-[8px] font-black px-1.5 py-0.5 rounded-full border ${p.taken ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-amber-100 text-amber-600 border-amber-300'}`}>
+                          ⭐ พิเศษ
+                        </span>
+                      )}
 
                       {/* Right Diamond */}
                       {!p.taken && (

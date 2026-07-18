@@ -4,10 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongoose";
 import CardRound from "@/models/CardRound";
 import Inventory from "@/models/Inventory";
+import Item from "@/models/Item";
 import Setting from "@/models/Setting";
 import Transaction from "@/models/Transaction";
 import User from "@/models/User";
+import RecentActivity from "@/models/RecentActivity";
 import { notify } from "@/lib/notify";
+import { emitRecentActivity } from "@/lib/realtime";
 import { serializeRound } from "@/lib/cardGame";
 
 // เปิดการ์ด 1 ใบ — สุ่ม/ตัดเงิน/แจกของ ทำฝั่ง server ทั้งหมด client แค่เล่นอนิเมชันตามผล
@@ -96,6 +99,7 @@ export async function POST(req: Request) {
       type: chosen.type,
       amount: chosen.amount || 0,
       itemId: chosen.type === "item" ? chosen.itemId : undefined,
+      isSpecial: !!chosen.isSpecial,
     };
     let updatedRound = await CardRound.findOneAndUpdate(
       { _id: round._id },
@@ -103,11 +107,27 @@ export async function POST(req: Request) {
       { new: true }
     );
 
-    // 6) ปิดรอบเมื่อครบ 10 ใบ — รอบถัดไปแอดมินต้องกดเปิดเองจากหลังบ้าน
-    if (updatedRound && updatedRound.cards.every((c: any) => c.opened)) {
-      updatedRound.status = "completed";
-      updatedRound.completedAt = new Date();
-      await updatedRound.save();
+    // 6) ปิดรอบ — เปิดครบทุกใบ หรือรางวัลพิเศษออก (จบรอบทันที ใบที่เหลือไม่ต้องเปิด)
+    if (updatedRound) {
+      const allOpened = updatedRound.cards.every((c: any) => c.opened);
+      if (allOpened || chosen.isSpecial) {
+        updatedRound.status = "completed";
+        updatedRound.completedAt = new Date();
+        updatedRound.completedReason = chosen.isSpecial ? "special" : "all_opened";
+        await updatedRound.save();
+
+        // รอบจบก่อนครบ — คืนสต็อกไอเทมที่จองไว้ให้ใบที่ไม่ถูกเปิด
+        if (!allOpened) {
+          for (const c of updatedRound.cards as any[]) {
+            if (!c.opened && c.assigned?.type === "item" && c.assigned.itemId) {
+              const item = await Item.findById(c.assigned.itemId);
+              if (item && !item.unlimitedStock) {
+                await Item.updateOne({ _id: item._id }, { $inc: { stock: 1 } });
+              }
+            }
+          }
+        }
+      }
     }
 
     // 7) ประวัติธุรกรรม + แจ้งเตือน
@@ -127,6 +147,27 @@ export async function POST(req: Request) {
       "success",
       chosen.type === "item" ? "/inventory" : undefined
     );
+
+    // feed "คำสั่งซื้อล่าสุด" หน้าแรก — รางวัลการ์ดเป็นข้อมูลสาธารณะอยู่แล้ว (โชว์บนการ์ดหงาย) โชว์ได้เลย
+    const activity = await RecentActivity.create({
+      userId,
+      userName: paidUser.name || "ผู้เล่น",
+      userAvatar: paidUser.avatar,
+      title: `สุ่มการ์ดได้ ${chosen.name}`,
+      image: chosen.icon || "",
+      price: cost,
+      kind: "card",
+    });
+    emitRecentActivity({
+      _id: String(activity._id),
+      userName: activity.userName,
+      userAvatar: activity.userAvatar,
+      title: activity.title,
+      image: activity.image,
+      price: activity.price,
+      kind: "card",
+      createdAt: activity.createdAt.toISOString(),
+    });
 
     return NextResponse.json({
       prize: { title: prizeSnapshot.title, name: prizeSnapshot.name, icon: prizeSnapshot.icon, type: prizeSnapshot.type, amount: prizeSnapshot.amount },

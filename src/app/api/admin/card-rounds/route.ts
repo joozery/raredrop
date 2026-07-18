@@ -82,6 +82,7 @@ export async function POST() {
         type: p.type || "custom",
         amount: p.amount || 0,
         itemId: p.type === "item" ? p.itemId : undefined,
+        isSpecial: !!p.isSpecial,
       });
     }
 

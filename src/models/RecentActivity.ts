@@ -1,9 +1,9 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 // Unified realtime feed for the homepage "คำสั่งซื้อล่าสุด" section.
-// Both shop purchases (kind: "shop") and box openings (kind: "box") write one doc here.
-// User name/avatar are snapshotted so the feed needs no populate and the socket payload
-// is self-contained.
+// Shop purchases (kind: "shop"), box openings (kind: "box") and card game opens
+// (kind: "card") write one doc here. User name/avatar are snapshotted so the feed
+// needs no populate and the socket payload is self-contained.
 export interface IRecentActivity extends Document {
   userId: Types.ObjectId;
   userName: string;
@@ -11,7 +11,7 @@ export interface IRecentActivity extends Document {
   title: string;
   image?: string;
   price: number;
-  kind: "shop" | "box";
+  kind: "shop" | "box" | "card";
   createdAt: Date;
 }
 
@@ -23,7 +23,7 @@ const RecentActivitySchema: Schema = new Schema(
     title: { type: String, required: true },
     image: { type: String },
     price: { type: Number, required: true, default: 0 },
-    kind: { type: String, enum: ["shop", "box"], required: true },
+    kind: { type: String, enum: ["shop", "box", "card"], required: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

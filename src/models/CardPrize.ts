@@ -9,6 +9,7 @@ export interface ICardPrize extends Document {
   amount: number; // จำนวนที่จะได้รับ (ใช้กับ coin/gemcoin)
   itemId?: Types.ObjectId; // ไอเทมจากคลัง (ใช้กับ type=item — ของจะเข้าคอลเลกชันผู้เล่น)
   weight: number; // น้ำหนักโอกาสออก (สัมพัทธ์ — ยิ่งมากยิ่งออกบ่อย)
+  isSpecial: boolean; // รางวัลพิเศษ — ใครเปิดเจอใบที่ซ่อนรางวัลนี้ รอบจบทันที
   isActive: boolean;
   order: number;
 }
@@ -21,6 +22,7 @@ const CardPrizeSchema: Schema = new Schema({
   amount: { type: Number, default: 0 },
   itemId: { type: Schema.Types.ObjectId, ref: "Item" },
   weight: { type: Number, default: 1 },
+  isSpecial: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   order: { type: Number, default: 0 },
 }, { timestamps: true });

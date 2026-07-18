@@ -37,9 +37,14 @@ export async function POST(req: Request) {
       amount: Number(body.amount) || 0,
       itemId: body.type === "item" && body.itemId ? body.itemId : undefined,
       weight: Number(body.weight) || 1,
+      isSpecial: !!body.isSpecial,
       isActive: body.isActive !== false,
       order: Number(body.order) || 0,
     });
+    // รางวัลพิเศษมีได้ตัวเดียว — ตั้งตัวใหม่แล้วปลดตัวเดิมออกอัตโนมัติ
+    if (prize.isSpecial) {
+      await CardPrize.updateMany({ _id: { $ne: prize._id } }, { $set: { isSpecial: false } });
+    }
     return NextResponse.json(prize);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

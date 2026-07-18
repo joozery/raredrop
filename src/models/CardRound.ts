@@ -10,6 +10,7 @@ interface IPrizeSnapshot {
   type: "coin" | "gemcoin" | "item" | "custom";
   amount?: number;
   itemId?: Types.ObjectId;
+  isSpecial?: boolean; // เปิดเจอใบนี้ = รอบจบทันที
 }
 
 export interface ICardRoundCard {
@@ -29,6 +30,8 @@ export interface ICardRound extends Document {
   cards: ICardRoundCard[];
   status: "active" | "completed";
   completedAt?: Date;
+  // all_opened = เปิดครบทุกใบ / special = รางวัลพิเศษออก รอบจบก่อนครบ
+  completedReason?: "all_opened" | "special";
 }
 
 const PrizeSnapshotSchema = new Schema({
@@ -38,6 +41,7 @@ const PrizeSnapshotSchema = new Schema({
   type: { type: String, enum: ["coin", "gemcoin", "item", "custom"] },
   amount: Number,
   itemId: { type: Schema.Types.ObjectId, ref: "Item" },
+  isSpecial: { type: Boolean, default: false },
 }, { _id: false });
 
 const CardSchema = new Schema({
@@ -54,6 +58,7 @@ const CardRoundSchema: Schema = new Schema({
   cards: { type: [CardSchema], default: [] },
   status: { type: String, enum: ["active", "completed"], default: "active" },
   completedAt: { type: Date },
+  completedReason: { type: String, enum: ["all_opened", "special"] },
 }, { timestamps: true });
 
 if (mongoose.models.CardRound) {

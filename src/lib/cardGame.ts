@@ -41,6 +41,7 @@ export function serializeRound(round: any) {
       icon: e.src.icon || "",
       type: e.src.type || "custom",
       amount: e.src.amount || 0,
+      isSpecial: !!e.src.isSpecial,
       taken: e.taken,
     }))
     .sort((a: any, b: any) =>
@@ -51,13 +52,14 @@ export function serializeRound(round: any) {
     _id: String(round._id),
     roundNumber: round.roundNumber,
     status: round.status,
+    completedReason: round.completedReason || undefined,
     prizes,
     cards: round.cards.map((c: any) => ({
       opened: !!c.opened,
       openedBy: c.openedBy ? String(c.openedBy) : undefined,
       openedByName: c.openedByName || undefined,
       prize: c.prize
-        ? { title: c.prize.title, name: c.prize.name, icon: c.prize.icon, type: c.prize.type, amount: c.prize.amount }
+        ? { title: c.prize.title, name: c.prize.name, icon: c.prize.icon, type: c.prize.type, amount: c.prize.amount, isSpecial: !!c.prize.isSpecial }
         : undefined,
     })),
   };

@@ -13,6 +13,7 @@ interface CardPrizeData {
   amount?: number;
   itemId?: string;
   weight: number;
+  isSpecial?: boolean;
   isActive: boolean;
   order: number;
 }
@@ -538,7 +539,12 @@ export default function ManageCardPrizes() {
                           <Sparkles size={18} className="text-slate-400" />
                         )}
                       </div>
-                      <div className="font-bold text-slate-900">{p.name}</div>
+                      <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                        {p.name}
+                        {p.isSpecial && (
+                          <span className="text-[9px] font-black bg-amber-100 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full whitespace-nowrap">⭐ พิเศษ — จบรอบทันที</span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="py-4 px-6">
@@ -703,6 +709,21 @@ export default function ManageCardPrizes() {
                 />
                 <p className="text-[10px] text-slate-400 mt-1">แต่ละรอบรางวัลทุกตัวออก 1 ครั้งพอดี (คละตำแหน่งการ์ดตอนเปิดรอบ) — ไม่มีน้ำหนักโอกาสออกแล้ว</p>
               </div>
+
+              {/* รางวัลพิเศษ — เปิดเจอใบที่ซ่อนรางวัลนี้ รอบจบทันที */}
+              <label className={`flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors ${current.isSpecial ? "border-amber-400 bg-amber-50" : "border-slate-200 bg-slate-50 hover:border-amber-300"}`}>
+                <input
+                  type="checkbox"
+                  checked={!!current.isSpecial}
+                  onChange={(e) => setCurrent({ ...current, isSpecial: e.target.checked })}
+                  className="accent-amber-500 w-4 h-4 mt-0.5"
+                />
+                <span className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-800">⭐ รางวัลพิเศษ (Jackpot)</span>
+                  <span className="text-[10px] text-slate-500 mt-0.5">ใครเปิดเจอใบที่ซ่อนรางวัลนี้ <span className="font-bold text-amber-600">รอบจบทันที</span> — ใบที่เหลือเปิดต่อไม่ได้ และสต็อกไอเทมที่จองไว้ของใบที่ไม่ถูกเปิดจะถูกคืน</span>
+                  <span className="text-[10px] font-bold text-amber-600 mt-1">ตั้งได้เพียง 1 รางวัลเท่านั้น — ติ๊กตัวนี้แล้วป้ายพิเศษของตัวเดิม (ถ้ามี) จะถูกปลดออกอัตโนมัติ</span>
+                </span>
+              </label>
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5">สถานะ</label>

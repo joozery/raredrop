@@ -11,7 +11,7 @@ export interface RecentActivityPayload {
   title: string;
   image?: string;
   price: number;
-  kind: "shop" | "box";
+  kind: "shop" | "box" | "card";
   createdAt: string;
 }
 

@@ -14,7 +14,7 @@ interface Activity {
   title: string;
   image?: string;
   price: number;
-  kind: "shop" | "box";
+  kind: "shop" | "box" | "card";
   createdAt: string;
 }
 
@@ -157,6 +157,12 @@ export default function RecentOrders() {
                     />
                   ) : (
                     <ShoppingBag size={20} className="text-gray-400" />
+                  )}
+                  {/* ป้ายแยกประเภท — ตอนนี้ติดเฉพาะรายการจากเกมสุ่มการ์ด */}
+                  {p.kind === "card" && (
+                    <span className="absolute bottom-0 inset-x-0 text-[8px] font-black text-white bg-red-500/90 text-center leading-tight py-[1px]">
+                      สุ่มการ์ด
+                    </span>
                   )}
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
