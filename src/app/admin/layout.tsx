@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, FolderTree, Percent,
   Box, Boxes, Diamond, Users, Wallet, UserPlus,
   ArrowRightLeft, Store, ShoppingCart, BarChart3,
-  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert, BookOpen, Gamepad2, MousePointerClick
+  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert, BookOpen, Gamepad2, MousePointerClick, Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +50,7 @@ const menuGroups = [
       { name: "แลก GemCoin", icon: Diamond, href: "/admin/gem-rewards" },
       { name: "โค้ดแลกของ", icon: Ticket, href: "/admin/promo-codes" },
       { name: "ซองแดง", icon: Gift, href: "/admin/red-envelope" },
+      { name: "สุ่มการ์ดพิเศษ", icon: Sparkles, href: "/admin/cards" },
       { name: "Live Chat", icon: MessageCircle, href: "/admin/chat" },
     ]
   },

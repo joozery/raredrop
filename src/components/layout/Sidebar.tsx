@@ -20,6 +20,7 @@ import {
   Gamepad2,
   Trophy,
   MessageCircle,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -27,6 +28,7 @@ import { MediaImage } from "@/components/ui/MediaImage";
 const menuItems = [
   { name: "หน้าหลัก", icon: Home, href: "/" },
   { name: "กล่องสุ่ม", icon: Package, href: "/boxes" },
+  { name: "สุ่มการ์ดพิเศษ", icon: Sparkles, href: "/cards" },
   { name: "ร้านค้า", icon: Briefcase, href: "/shop" },
   { name: "ซองแดง", icon: Gift, href: "/red-envelope" },
   { name: "จัดอันดับเติมเงิน", icon: Trophy, href: "/leaderboard" },
