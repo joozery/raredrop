@@ -63,6 +63,10 @@ export default function ManageCardPrizes() {
   // ข้อความที่โชว์หน้าเว็บตอนการ์ดถูกเปิดครบรอบ
   const [completedTitle, setCompletedTitle] = useState("🎉 การ์ดทั้งหมดถูกเปิดออกหมดแล้ว");
   const [completedSubtitle, setCompletedSubtitle] = useState("รอแอดมินเปิดรอบใหม่ แล้วกลับมาลุ้นกันอีกครั้ง!");
+  const [specialTitle, setSpecialTitle] = useState("⭐ รางวัลพิเศษถูกเปิดแล้ว — รอบนี้จบทันที!");
+  const [specialSubtitle, setSpecialSubtitle] = useState("รอแอดมินเปิดรอบใหม่ แล้วกลับมาลุ้นกันอีกครั้ง!");
+  // ไอคอน GemCoin จากตั้งค่าเว็บ (key: gemcoin_icon) — ใช้เติมรูปรางวัลประเภท gemcoin ให้อัตโนมัติ
+  const [gemIcon, setGemIcon] = useState("");
   const [completedSaving, setCompletedSaving] = useState(false);
   const [completedSaved, setCompletedSaved] = useState(false);
   // รอบ event ปัจจุบัน — รอบใหม่ไม่เปิดอัตโนมัติ แอดมินกดเปิดจากหน้านี้
@@ -107,6 +111,12 @@ export default function ManageCardPrizes() {
         if (ct && ct.value) setCompletedTitle(String(ct.value));
         const cs = Array.isArray(settings) ? settings.find((s: any) => s.key === "cards_completed_subtitle") : null;
         if (cs && cs.value) setCompletedSubtitle(String(cs.value));
+        const st = Array.isArray(settings) ? settings.find((s: any) => s.key === "cards_special_completed_title") : null;
+        if (st && st.value) setSpecialTitle(String(st.value));
+        const ss = Array.isArray(settings) ? settings.find((s: any) => s.key === "cards_special_completed_subtitle") : null;
+        if (ss && ss.value) setSpecialSubtitle(String(ss.value));
+        const gi = Array.isArray(settings) ? settings.find((s: any) => s.key === "gemcoin_icon") : null;
+        if (gi) setGemIcon(String(gi.value || ""));
       }
     } catch (err) {
       console.error(err);
@@ -115,6 +125,14 @@ export default function ManageCardPrizes() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // ฟอร์มเป็นประเภท gemcoin แล้วช่องไอคอนว่าง — เติมรูปจากตั้งค่าเว็บให้เสมอ
+  // (ครอบคลุมทั้งตอนเปิดแก้รางวัลเดิมที่เป็น gemcoin อยู่แล้ว และตอน gemIcon เพิ่งโหลดเสร็จ)
+  useEffect(() => {
+    if (!isModalOpen || !gemIcon) return;
+    setCurrent((c) => (c.type === "gemcoin" && !c.icon ? { ...c, icon: gemIcon } : c));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen, current.type, current.icon, gemIcon]);
 
   const saveCost = async () => {
     setCostSaving(true);
@@ -204,19 +222,19 @@ export default function ManageCardPrizes() {
   const saveCompletedText = async () => {
     setCompletedSaving(true);
     try {
-      const [r1, r2] = await Promise.all([
+      const patch = (key: string, value: string) =>
         fetch("/api/admin/settings", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: "cards_completed_title", value: completedTitle }),
-        }),
-        fetch("/api/admin/settings", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: "cards_completed_subtitle", value: completedSubtitle }),
-        }),
+          body: JSON.stringify({ key, value }),
+        });
+      const results = await Promise.all([
+        patch("cards_completed_title", completedTitle),
+        patch("cards_completed_subtitle", completedSubtitle),
+        patch("cards_special_completed_title", specialTitle),
+        patch("cards_special_completed_subtitle", specialSubtitle),
       ]);
-      if (r1.ok && r2.ok) {
+      if (results.every((r) => r.ok)) {
         setCompletedSaved(true);
         setTimeout(() => setCompletedSaved(false), 2000);
       }
@@ -231,12 +249,15 @@ export default function ManageCardPrizes() {
     setIsModalOpen(true);
   };
 
-  // เปลี่ยนประเภท — เติมป้าย/ชื่อให้อัตโนมัติถ้ายังว่างหรือเป็นค่า default ของประเภทเดิม
+  // เปลี่ยนประเภท — เติมป้าย/ชื่อ/ไอคอนให้อัตโนมัติถ้ายังว่างหรือเป็นค่า default ของประเภทเดิม
   const handleTypeChange = (type: "coin" | "gemcoin" | "item" | "custom") => {
     const next: Partial<CardPrizeData> = { ...current, type };
     if (type === "coin" && (!current.title || ["GEMCOIN", "ITEM"].includes(current.title))) next.title = "COIN";
     if (type === "gemcoin" && (!current.title || ["COIN", "ITEM"].includes(current.title))) next.title = "GEMCOIN";
     if (type === "item" && (!current.title || ["COIN", "GEMCOIN"].includes(current.title))) next.title = "ITEM";
+    // gemcoin — ดึงไอคอน GemCoin จากตั้งค่าเว็บมาให้เลย (แก้ทับได้) / เปลี่ยนไปประเภทอื่นแล้วยังเป็นรูป auto ก็เคลียร์ให้
+    if (type === "gemcoin" && gemIcon && !current.icon) next.icon = gemIcon;
+    if (type !== "gemcoin" && gemIcon && current.icon === gemIcon) next.icon = "";
     setCurrent(next);
   };
 
@@ -484,11 +505,42 @@ export default function ManageCardPrizes() {
             />
           </div>
         </div>
+        {/* ตัวอย่างหน้าตาแบนเนอร์จริงบนหน้าเว็บ */}
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-center">
+          <p className="text-xs font-black">{completedTitle || "🎉 การ์ดทั้งหมดถูกเปิดออกหมดแล้ว"}</p>
+          <p className="text-[10px] font-bold text-red-400 mt-0.5">{completedSubtitle || "รอแอดมินเปิดรอบใหม่ แล้วกลับมาลุ้นกันอีกครั้ง!"}</p>
+        </div>
+
+        {/* กรณีรอบจบเพราะรางวัลพิเศษออก — ใช้ข้อความอีกชุด */}
+        <div className="border-t border-slate-100 pt-4">
+          <p className="text-xs font-bold text-amber-600">⭐ กรณีรอบจบเพราะรางวัลพิเศษถูกเปิด</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5">บรรทัดหลัก</label>
+            <input
+              type="text"
+              value={specialTitle}
+              onChange={(e) => setSpecialTitle(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-amber-500 transition-all font-medium text-slate-800"
+              placeholder="⭐ รางวัลพิเศษถูกเปิดแล้ว — รอบนี้จบทันที!"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5">บรรทัดรอง</label>
+            <input
+              type="text"
+              value={specialSubtitle}
+              onChange={(e) => setSpecialSubtitle(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-amber-500 transition-all font-medium text-slate-800"
+              placeholder="รอแอดมินเปิดรอบใหม่ แล้วกลับมาลุ้นกันอีกครั้ง!"
+            />
+          </div>
+        </div>
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* ตัวอย่างหน้าตาแบนเนอร์จริงบนหน้าเว็บ */}
-          <div className="flex-1 min-w-[240px] bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-center">
-            <p className="text-xs font-black">{completedTitle || "🎉 การ์ดทั้งหมดถูกเปิดออกหมดแล้ว"}</p>
-            <p className="text-[10px] font-bold text-red-400 mt-0.5">{completedSubtitle || "รอแอดมินเปิดรอบใหม่ แล้วกลับมาลุ้นกันอีกครั้ง!"}</p>
+          <div className="flex-1 min-w-[240px] bg-amber-50 border border-amber-300 text-amber-600 rounded-xl px-4 py-3 text-center">
+            <p className="text-xs font-black">{specialTitle || "⭐ รางวัลพิเศษถูกเปิดแล้ว — รอบนี้จบทันที!"}</p>
+            <p className="text-[10px] font-bold text-amber-500 mt-0.5">{specialSubtitle || "รอแอดมินเปิดรอบใหม่ แล้วกลับมาลุ้นกันอีกครั้ง!"}</p>
           </div>
           <button
             onClick={saveCompletedText}
@@ -496,7 +548,7 @@ export default function ManageCardPrizes() {
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors shrink-0"
           >
             {completedSaving ? <Loader2 size={13} className="animate-spin" /> : completedSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
-            {completedSaved ? "บันทึกแล้ว!" : "บันทึกข้อความ"}
+            {completedSaved ? "บันทึกแล้ว!" : "บันทึกข้อความทั้งหมด"}
           </button>
         </div>
       </div>

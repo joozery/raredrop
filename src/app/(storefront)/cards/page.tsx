@@ -43,6 +43,9 @@ export default function CardsPage() {
   // ข้อความตอนเปิดครบรอบ — แก้ได้จากหลังบ้าน (/admin/cards)
   const [completedTitle, setCompletedTitle] = useState('🎉 การ์ดทั้งหมดถูกเปิดออกหมดแล้ว');
   const [completedSubtitle, setCompletedSubtitle] = useState('รอแอดมินเปิดรอบใหม่ แล้วกลับมาลุ้นกันอีกครั้ง!');
+  // ข้อความตอนรอบจบเพราะรางวัลพิเศษออก — แก้ได้จากหลังบ้านเช่นกัน
+  const [specialTitle, setSpecialTitle] = useState('⭐ รางวัลพิเศษถูกเปิดแล้ว — รอบนี้จบทันที!');
+  const [specialSubtitle, setSpecialSubtitle] = useState('รอแอดมินเปิดรอบใหม่ แล้วกลับมาลุ้นกันอีกครั้ง!');
   const [toast, setToast] = useState<string | null>(null);
   // รอทั้ง config (รูปการ์ด/รางวัล) และรอบจาก server ให้ครบก่อนค่อยโชว์การ์ดจริง
   // — กันดีไซน์ default (โลโก้ X) แวบขึ้นมาก่อนรูปจริงโหลดเสร็จ
@@ -272,6 +275,8 @@ export default function CardsPage() {
         if (d.cardsPerRound) setCardsPerRound(d.cardsPerRound);
         if (d.completedTitle) setCompletedTitle(d.completedTitle);
         if (d.completedSubtitle) setCompletedSubtitle(d.completedSubtitle);
+        if (d.specialCompletedTitle) setSpecialTitle(d.specialCompletedTitle);
+        if (d.specialCompletedSubtitle) setSpecialSubtitle(d.specialCompletedSubtitle);
       })
       .catch(() => {})
       .finally(() => setConfigLoaded(true));
@@ -476,8 +481,8 @@ export default function CardsPage() {
             {ready && roundCompleted && (
               round?.completedReason === 'special' ? (
                 <div className="mb-6 bg-amber-50 border border-amber-300 text-amber-600 rounded-2xl px-5 py-4 text-center">
-                  <p className="text-sm font-black">⭐ รางวัลพิเศษถูกเปิดแล้ว — รอบนี้จบทันที!</p>
-                  <p className="text-xs font-bold text-amber-500 mt-1">{completedSubtitle}</p>
+                  <p className="text-sm font-black">{specialTitle}</p>
+                  <p className="text-xs font-bold text-amber-500 mt-1">{specialSubtitle}</p>
                 </div>
               ) : (
                 <div className="mb-6 bg-red-50 border border-red-200 text-red-600 rounded-2xl px-5 py-4 text-center">
@@ -593,7 +598,7 @@ export default function CardsPage() {
             className="flex-1 bg-gradient-to-b from-red-500 to-red-700 hover:from-red-400 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 rounded-2xl shadow-[0_5px_0_#991b1b] disabled:shadow-[0_5px_0_#9ca3af] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3"
           >
             <span className="text-base font-black">
-              {!ready ? 'กำลังโหลด...' : roundCompleted ? (round?.completedReason === 'special' ? '⭐ รางวัลพิเศษออกแล้ว — รอรอบใหม่' : `${completedTitle} — รอรอบใหม่`) : !roundActive ? 'รอแอดมินเปิดรอบ' : pool.length === 0 ? 'ยังไม่มีรางวัลให้เปิด' : phase !== 'idle' ? 'กำลังเปิด...' : `เปิดการ์ดใบที่ ${selected + 1}`}
+              {!ready ? 'กำลังโหลด...' : roundCompleted ? (round?.completedReason === 'special' ? specialTitle : `${completedTitle} — รอรอบใหม่`) : !roundActive ? 'รอแอดมินเปิดรอบ' : pool.length === 0 ? 'ยังไม่มีรางวัลให้เปิด' : phase !== 'idle' ? 'กำลังเปิด...' : `เปิดการ์ดใบที่ ${selected + 1}`}
             </span>
             {roundActive && !roundCompleted && pool.length > 0 && selected >= 0 && (
               <span className="text-lg font-black">฿{openCost.toLocaleString()}</span>
