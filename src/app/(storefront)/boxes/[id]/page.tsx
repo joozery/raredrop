@@ -415,76 +415,93 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
       <div className="max-w-[1400px] mx-auto w-full px-4 pt-6 pb-4 flex flex-col gap-5">
 
-        {/* Hero Section — replaced by roulette if animationType is roulette */}
+        {/* Hero Section — roulette: laser border + cards; otherwise: image banner */}
         {box.animationType === 'roulette' ? (
-          <div
-            className="w-full rounded-2xl relative overflow-hidden flex flex-col items-center justify-center py-10 px-4"
-            style={{
-              background: "radial-gradient(900px 420px at 12% 0%, rgba(232,25,44,.18), transparent 60%), radial-gradient(900px 420px at 88% 100%, rgba(232,25,44,.12), transparent 60%), #0c0507",
-              minHeight: 320,
-            }}
-          >
-            <div className="text-center mb-8">
-              <p className="text-white/50 text-xs font-semibold tracking-widest uppercase mb-1">{isAnimating ? "กำลังสุ่ม" : "พร้อมสุ่ม"}</p>
-              <h2 className="text-white text-2xl font-black">{box.name}</h2>
-            </div>
+          <>
+            <style>{`
+              @keyframes laser-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            `}</style>
+            {/* Laser border wrapper */}
+            <div style={{ position:"relative", borderRadius:20, padding:"5px", overflow:"hidden" }}>
+              {/* Rotating laser beam */}
+              <div style={{
+                position:"absolute",
+                width:"300%", height:"300%",
+                top:"-100%", left:"-100%",
+                background:"conic-gradient(from 0deg, transparent 0deg, #ff2d3f 8deg, #ff6b35 18deg, #ffcc00 28deg, #00e5ff 38deg, #a855f7 48deg, #ff2d3f 56deg, transparent 68deg, transparent 178deg, #ff2d3f 186deg, #ff6b35 196deg, #ffcc00 206deg, #00e5ff 216deg, #a855f7 226deg, transparent 238deg)",
+                animation:"laser-spin 2.5s linear infinite",
+                transformOrigin:"center",
+                filter:"blur(0.5px)",
+              }} />
+              {/* Inner content */}
+              <div
+                className="w-full relative overflow-hidden flex flex-col items-center justify-center"
+                style={{
+                  background: "#F3F4F6",
+                  borderRadius: 16,
 
-            {isAnimating ? (
-              <RouletteAnimation
-                key={String(results[0]?.itemId)+String(Date.now())}
-                boxItems={box.items}
-                resultItem={results[0]}
-                onEnded={() => { setIsAnimating(false); setShowResult(true); }}
-              />
-            ) : (
-              <div className="w-[calc(100%+28px)] -mx-[14px] sm:w-full sm:mx-auto max-w-[1280px] px-0 sm:px-8 select-none">
-                <style>{`@keyframes rd-pulse{0%,100%{opacity:.5}50%{opacity:1}}.rd-strip{animation:rd-pulse 2.8s ease-in-out infinite}.rd-strip-tr{animation-delay:1.4s}.rd-strip-bl{animation-delay:.7s}.rd-strip-br{animation-delay:2.1s}.rd-sideglow-r{animation-delay:1.4s}`}</style>
-                <div style={{ position:"relative",width:"100%",maxWidth:"1280px",margin:"0 auto" }}>
-                  <div style={{ position:"absolute",top:-24,left:"50%",transform:"translateX(-50%)",zIndex:8,width:0,height:0,borderLeft:"13px solid transparent",borderRight:"13px solid transparent",borderTop:"18px solid #e8192c",filter:"drop-shadow(0 0 8px #ff2d3f)" }} />
-                  <div style={{ position:"absolute",bottom:-24,left:"50%",transform:"translateX(-50%)",zIndex:8,width:0,height:0,borderLeft:"13px solid transparent",borderRight:"13px solid transparent",borderBottom:"18px solid #e8192c",filter:"drop-shadow(0 0 8px #ff2d3f)" }} />
-                  <div style={{ position:"relative",borderRadius:110,padding:"24px 64px",background:"linear-gradient(180deg,#3a3c44 0%,#17181d 10%,#0d0e12 30%,#0a0b0e 70%,#191a20 92%,#3a3c44 100%)",boxShadow:"0 1px 0 rgba(255,255,255,.10) inset,0 34px 70px -20px rgba(0,0,0,.95),0 0 80px -26px rgba(232,25,44,.5),0 0 0 1px #000" }}>
-                    <div style={{ position:"absolute",inset:10,borderRadius:96,pointerEvents:"none",border:"1.5px solid transparent",background:"linear-gradient(165deg,#63666f,#15161a 30%,#000 55%,#4a4c55 100%) border-box",WebkitMask:"linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0)",WebkitMaskComposite:"xor",maskComposite:"exclude" as any }} />
-                    {["top","bottom"].map((s)=>(<div key={s} style={{ position:"absolute",left:"50%",transform:"translateX(-50%)",width:"34%",height:10,...(s==="top"?{top:6}:{bottom:6}),background:"linear-gradient(180deg,#26272d,#0b0c0f)",borderRadius:6,boxShadow:"0 0 0 1px #000" }} />))}
-                    {[{cls:"",st:{top:-2,left:"12%"}},{cls:"rd-strip-tr",st:{top:-2,right:"12%"}},{cls:"rd-strip-bl",st:{bottom:-2,left:"12%"}},{cls:"rd-strip-br",st:{bottom:-2,right:"12%"}}].map((s,i)=>(<div key={i} className={`rd-strip ${s.cls}`} style={{ position:"absolute",height:5,width:120,borderRadius:4,background:"#ff2d3f",filter:"blur(1px)",boxShadow:"0 0 18px 4px rgba(255,45,63,.7)",...s.st }} />))}
-                    {[0,1].map((i)=>(<div key={i} className={i===1?"rd-strip rd-sideglow-r":"rd-strip"} style={{ position:"absolute",top:"26%",bottom:"26%",width:8,borderRadius:8,background:"linear-gradient(180deg,transparent,#ff2d3f,transparent)",filter:"blur(2px)",boxShadow:"0 0 22px 5px rgba(255,45,63,.5)",...(i===0?{left:2}:{right:2}) }} />))}
-                    <span style={{ position:"absolute",top:"50%",transform:"translateY(-50%)",left:20,zIndex:8,color:"#ff2d3f",fontSize:34,lineHeight:1,fontWeight:800,textShadow:"0 0 10px rgba(255,45,63,.9)",userSelect:"none" }}>‹</span>
-                    <span style={{ position:"absolute",top:"50%",transform:"translateY(-50%)",right:20,zIndex:8,color:"#ff2d3f",fontSize:34,lineHeight:1,fontWeight:800,textShadow:"0 0 10px rgba(255,45,63,.9)",userSelect:"none" }}>›</span>
-                    <div style={{ position:"relative",overflow:"hidden",borderRadius:70,padding:"22px 0" }}>
-                      <div style={{ position:"absolute",left:"50%",top:-24,bottom:-24,width:1.5,zIndex:7,transform:"translateX(-50%)",pointerEvents:"none",background:"linear-gradient(180deg,#ff2d3f,rgba(255,45,63,.25) 30%,rgba(255,45,63,.25) 70%,#ff2d3f)",boxShadow:"0 0 8px rgba(255,45,63,.8)" }} />
-                      <div style={{ position:"absolute",inset:0,zIndex:6,pointerEvents:"none",background:"linear-gradient(90deg,rgba(10,11,14,.95) 0%,transparent 14%,transparent 86%,rgba(10,11,14,.95) 100%)" }} />
-                      {/* marquee — แสดงทุก item (ไม่จำกัด 7 ใบ) */}
-                      {(()=>{
-                        const avail=box.items; // โชว์ทุก item รวมที่พักไว้ให้ลุ้น
-                        const minCards=Math.max(avail.length,7);
-                        const set=avail.length===0?[]:Array.from({length:minCards},(_,i)=>avail[i%avail.length]);
-                        const dur=Math.min(Math.max(set.length*2.5,20),120);
-                        const cards=[...set,...set];
-                        return (
-                      <div style={{ display:"flex",width:"max-content",animation:`marquee ${dur}s linear infinite` }}>
-                        {cards.map((bi,i)=>{
-                          const item=bi.itemId; const rarity=item?.rarityId; const rc=rarity?.color||"#64748b";
-                          return (
-                            <div key={i} style={{ flex:"0 0 clamp(140px, 44vw, 186px)",marginRight:16,height:212,borderRadius:18,position:"relative",background:"linear-gradient(180deg,#33343b,#1e1f25 70%)",border:"1px solid #3d3e46",boxShadow:"0 1px 0 rgba(255,255,255,.08) inset",display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 14px 16px",overflow:"hidden" }}>
-                              {rarity?.backgroundImage&&(<div style={{ position:"absolute",inset:0,zIndex:0,background:"#0a0a14" }}><img src={rarity.backgroundImage} alt="" style={{ width:"100%",height:"100%",objectFit:"cover",opacity:0.75 }} /><div style={{ position:"absolute",inset:0,background:"linear-gradient(to top,#0a0a14,rgba(10,10,20,0.4) 60%,transparent)" }} /></div>)}
-                              <div style={{ alignSelf:"flex-start",display:"flex",alignItems:"center",gap:5,background:rc,borderRadius:99,padding:"3px 8px",fontSize:10,fontWeight:800,color:"#fff",zIndex:2,position:"relative" }}><Sparkles size={8} color="#fff" />{rarity?.name?.toUpperCase()||"ITEM"}</div>
-                              <div style={{ margin:"auto 0",width:92,height:92,display:"flex",alignItems:"center",justifyContent:"center",border:`1.5px solid ${rc}`,borderRadius:12,background:!rarity?.backgroundImage?"#f8fafc":"rgba(255,255,255,0.04)",padding:4,position:"relative",zIndex:2 }}>
-                                {item?.image?<img src={item.image} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"contain",mixBlendMode:!rarity?.backgroundImage?"multiply":"normal" }} />:<Package size={28} color="#9ca3af" />}
-                              </div>
-                              <div style={{ fontSize:14,fontWeight:800,marginTop:6,textAlign:"center",color:"#f4f4f6",position:"relative",zIndex:2,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",width:"100%" }}>{item?.name}</div>
-                              <div style={{ fontSize:11,color:"#a7a9b2",marginTop:2,position:"relative",zIndex:2 }}>ไอเทมระดับ {rarity?.name||"N/A"}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                        );
-                      })()}
-                    </div>
+                  paddingTop: isAnimating ? 0 : 24,
+                  paddingBottom: isAnimating ? 0 : 24,
+                  paddingLeft: isAnimating ? 0 : 16,
+                  paddingRight: isAnimating ? 0 : 16,
+                }}
+              >
+                {!isAnimating && (
+                  <div className="text-center mb-6">
+                    <p className="text-gray-400 text-xs font-semibold tracking-widest uppercase mb-1">พร้อมสุ่ม</p>
+                    <h2 className="text-gray-900 text-2xl font-black">{box.name}</h2>
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-          </div>
+                {isAnimating ? (
+                  <RouletteAnimation
+                    key={String(results[0]?.itemId)+String(Date.now())}
+                    boxItems={box.items}
+                    resultItem={results[0]}
+                    onEnded={() => { setIsAnimating(false); setShowResult(true); }}
+                    noFrame
+                  />
+                ) : (
+                  <div className="w-full select-none">
+                    <style>{`@keyframes rd-pulse{0%,100%{opacity:.5}50%{opacity:1}}.rd-strip{animation:rd-pulse 2.8s ease-in-out infinite}.rd-strip-tr{animation-delay:1.4s}.rd-strip-bl{animation-delay:.7s}.rd-strip-br{animation-delay:2.1s}.rd-sideglow-r{animation-delay:1.4s}`}</style>
+                    {/* Triangle pointers */}
+                    <div style={{ position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",zIndex:8,width:0,height:0,borderLeft:"13px solid transparent",borderRight:"13px solid transparent",borderTop:"18px solid #e8192c",filter:"drop-shadow(0 0 8px #ff2d3f)" }} />
+                    <div style={{ position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",zIndex:8,width:0,height:0,borderLeft:"13px solid transparent",borderRight:"13px solid transparent",borderBottom:"18px solid #e8192c",filter:"drop-shadow(0 0 8px #ff2d3f)" }} />
+                    {/* Center line */}
+                    <div style={{ position:"absolute",left:"50%",top:0,bottom:0,width:1.5,zIndex:7,transform:"translateX(-50%)",pointerEvents:"none",background:"linear-gradient(180deg,#ff2d3f,rgba(255,45,63,.25) 30%,rgba(255,45,63,.25) 70%,#ff2d3f)",boxShadow:"0 0 8px rgba(255,45,63,.8)" }} />
+                    {/* Fade edges — match gray bg */}
+                    <div style={{ position:"absolute",inset:0,zIndex:6,pointerEvents:"none",background:"linear-gradient(90deg,rgba(243,244,246,.98) 0%,transparent 12%,transparent 88%,rgba(243,244,246,.98) 100%)" }} />
+                    {/* Cards marquee */}
+                    {(()=>{
+                      const avail=box.items;
+                      const minCards=Math.max(avail.length,7);
+                      const set=avail.length===0?[]:Array.from({length:minCards},(_,i)=>avail[i%avail.length]);
+                      const dur=Math.min(Math.max(set.length*2.5,20),120);
+                      const cards=[...set,...set];
+                      return (
+                        <div style={{ display:"flex",width:"max-content",animation:`marquee ${dur}s linear infinite` }}>
+                          {cards.map((bi,i)=>{
+                            const item=bi.itemId; const rarity=item?.rarityId; const rc=rarity?.color||"#64748b";
+                            return (
+                              <div key={i} style={{ flex:"0 0 clamp(140px, 44vw, 186px)",marginRight:16,height:212,borderRadius:18,position:"relative",background:"linear-gradient(180deg,#33343b,#1e1f25 70%)",border:"1px solid #3d3e46",boxShadow:"0 1px 0 rgba(255,255,255,.08) inset",display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 14px 16px",overflow:"hidden" }}>
+                                {rarity?.backgroundImage&&(<div style={{ position:"absolute",inset:0,zIndex:0,background:"#0a0a14" }}><img src={rarity.backgroundImage} alt="" style={{ width:"100%",height:"100%",objectFit:"cover",opacity:0.75 }} /><div style={{ position:"absolute",inset:0,background:"linear-gradient(to top,#0a0a14,rgba(10,10,20,0.4) 60%,transparent)" }} /></div>)}
+                                <div style={{ alignSelf:"flex-start",display:"flex",alignItems:"center",gap:5,background:rc,borderRadius:99,padding:"3px 8px",fontSize:10,fontWeight:800,color:"#fff",zIndex:2,position:"relative" }}><Sparkles size={8} color="#fff" />{rarity?.name?.toUpperCase()||"ITEM"}</div>
+                                <div style={{ margin:"auto 0",width:92,height:92,display:"flex",alignItems:"center",justifyContent:"center",border:`1.5px solid ${rc}`,borderRadius:12,background:!rarity?.backgroundImage?"#f8fafc":"rgba(255,255,255,0.04)",padding:4,position:"relative",zIndex:2 }}>
+                                  {item?.image?<img src={item.image} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"contain",mixBlendMode:!rarity?.backgroundImage?"multiply":"normal" }} />:<Package size={28} color="#9ca3af" />}
+                                </div>
+                                <div style={{ fontSize:14,fontWeight:800,marginTop:6,textAlign:"center",color:"#f4f4f6",position:"relative",zIndex:2,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",width:"100%" }}>{item?.name}</div>
+                                <div style={{ fontSize:11,color:"#a7a9b2",marginTop:2,position:"relative",zIndex:2 }}>ไอเทมระดับ {rarity?.name||"N/A"}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
         ) : (
           <div className="bg-[url('/coverrandon.png')] bg-cover bg-center rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-10 relative flex flex-row items-center justify-between gap-2 lg:gap-8 z-10">
           
@@ -500,7 +517,6 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                 <h1 className="text-2xl lg:text-5xl font-black italic text-red-600 leading-[0.85] tracking-tighter drop-shadow-sm mt-0.5 lg:mt-1">DROPS</h1>
               </div>
             )}
-
           </div>
 
           {/* Right (Image) */}
