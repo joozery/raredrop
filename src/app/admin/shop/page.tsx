@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Reorder, useDragControls } from "framer-motion";
 import {
   ShoppingBag, Plus, Pencil, Trash2, X, Save, Loader2,
   Eye, EyeOff, Package, ChevronDown, ChevronUp, PlusCircle,
-  AlertCircle, Upload, GripVertical, Image as ImageIcon, Search, FolderInput,
+  AlertCircle, Upload, Image as ImageIcon, Search, FolderInput, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { UploadInput } from "@/components/ui/UploadInput";
 import Link from "next/link";
@@ -61,6 +60,11 @@ const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: 
 
 interface ShopListingCardProps {
   l: ShopListing;
+  index: number;
+  isFirst: boolean;
+  isLast: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   categoryName?: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -81,24 +85,34 @@ interface ShopListingCardProps {
 }
 
 function ShopListingCard({
-  l, categoryName, isExpanded, onToggleExpand, toggleStatus, openEdit, handleDelete,
+  l, isFirst, isLast, onMoveUp, onMoveDown, categoryName, isExpanded, onToggleExpand, toggleStatus, openEdit, handleDelete,
   addingTo, setAddingTo, newAccountData, setNewAccountData, handleAddAccount, addingAccount, handleRemoveAccount,
   bulkMode, setBulkMode, bulkQty, setBulkQty,
 }: ShopListingCardProps) {
-  const dragControls = useDragControls();
   const stock = l.accounts.filter((a) => !a.sold).length;
 
   return (
-    <Reorder.Item value={l} dragListener={false} dragControls={dragControls} as="div" className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       {/* Listing header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
         <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-          <div
-            onPointerDown={(e) => dragControls.start(e)}
-            className="shrink-0 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing touch-none"
-            title="ลากเพื่อจัดเรียง"
-          >
-            <GripVertical size={18} />
+          <div className="shrink-0 flex flex-col items-center gap-0.5">
+            <button
+              onClick={onMoveUp}
+              disabled={isFirst}
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-300 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+              title="เลื่อนขึ้น"
+            >
+              <ArrowUp size={13} />
+            </button>
+            <button
+              onClick={onMoveDown}
+              disabled={isLast}
+              className="w-6 h-6 flex items-center justify-center rounded text-slate-300 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+              title="เลื่อนลง"
+            >
+              <ArrowDown size={13} />
+            </button>
           </div>
           {l.images[0] ? (
             <img src={l.images[0]} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shrink-0 border border-slate-100" />
@@ -246,7 +260,7 @@ function ShopListingCard({
           )}
         </div>
       )}
-    </Reorder.Item>
+    </div>
   );
 }
 
@@ -578,6 +592,18 @@ export default function AdminShopPage() {
     }).catch(() => {});
   };
 
+  const moveItem = (fromIndex: number, toIndex: number) => {
+    const filtered = listings.filter((l) => !search || l.title.toLowerCase().includes(search.toLowerCase()));
+    const item = filtered[fromIndex];
+    const globalFrom = listings.indexOf(item);
+    const targetItem = filtered[toIndex];
+    const globalTo = listings.indexOf(targetItem);
+    const newOrder = [...listings];
+    newOrder.splice(globalFrom, 1);
+    newOrder.splice(globalTo, 0, item);
+    handleReorder(newOrder);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -722,11 +748,16 @@ export default function AdminShopPage() {
           </button>
         </div>
       ) : (
-        <Reorder.Group as="div" axis="y" values={listings} onReorder={handleReorder} className="flex flex-col gap-4">
-          {listings.filter((l) => !search || l.title.toLowerCase().includes(search.toLowerCase())).map((l) => (
+        <div className="flex flex-col gap-4">
+          {listings.filter((l) => !search || l.title.toLowerCase().includes(search.toLowerCase())).map((l, idx, arr) => (
             <ShopListingCard
               key={l._id}
               l={l}
+              index={idx}
+              isFirst={idx === 0}
+              isLast={idx === arr.length - 1}
+              onMoveUp={() => moveItem(idx, idx - 1)}
+              onMoveDown={() => moveItem(idx, idx + 1)}
               categoryName={categories.find((c) => c._id === l.categoryId)?.name}
               isExpanded={expandedId === l._id}
               onToggleExpand={() => setExpandedId(expandedId === l._id ? null : l._id)}
@@ -746,7 +777,7 @@ export default function AdminShopPage() {
               setBulkQty={setBulkQty}
             />
           ))}
-        </Reorder.Group>
+        </div>
       )}
 
       {/* Create/Edit Modal */}
