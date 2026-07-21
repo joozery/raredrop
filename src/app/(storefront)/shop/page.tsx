@@ -24,6 +24,7 @@ interface ShopItem {
   isFeatured?: boolean;
   requireUid?: boolean;
   uidLabel?: string;
+  order?: number;
   createdAt: string;
 }
 
@@ -427,8 +428,8 @@ export default function ShopPage() {
       if (sortBy === "featured") {
         if (a.isFeatured && !b.isFeatured) return -1;
         if (!a.isFeatured && b.isFeatured) return 1;
-        // ภายในกลุ่มเดียวกัน เรียงใหม่สุดก่อน
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        // ภายในกลุ่มเดียวกัน เรียงตามลำดับที่แอดมินกำหนด
+        return (a.order ?? 0) - (b.order ?? 0);
       }
       if (sortBy === "price_asc") return a.price - b.price;
       if (sortBy === "price_desc") return b.price - a.price;
