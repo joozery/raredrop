@@ -152,7 +152,7 @@ function CategoryBoxesPage({ slug }: { slug: string }) {
                   fallbackSrc="/product/pokemon.webp"
                 />
               </div>
-              <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{box.name}</h3>
+              <h3 className="font-bold text-sm leading-tight mb-1 line-clamp-2 text-gray-900">{box.name}</h3>
               <p className="text-xs mb-3 text-center">
                 {box.flashSale ? (
                   <>
@@ -452,15 +452,16 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                     <div style={{ position:"relative",overflow:"hidden",borderRadius:70,padding:"22px 0" }}>
                       <div style={{ position:"absolute",left:"50%",top:-24,bottom:-24,width:1.5,zIndex:7,transform:"translateX(-50%)",pointerEvents:"none",background:"linear-gradient(180deg,#ff2d3f,rgba(255,45,63,.25) 30%,rgba(255,45,63,.25) 70%,#ff2d3f)",boxShadow:"0 0 8px rgba(255,45,63,.8)" }} />
                       <div style={{ position:"absolute",inset:0,zIndex:6,pointerEvents:"none",background:"linear-gradient(90deg,rgba(10,11,14,.95) 0%,transparent 14%,transparent 86%,rgba(10,11,14,.95) 100%)" }} />
-                      {/* เลื่อนวนช้า ๆ ตอนรอสุ่ม — การ์ด 2 ชุดเหมือนกันต่อกัน + translateX(-50%) = วนไร้รอยต่อ
-                          (ระยะห่างการ์ดใช้ marginRight แทน gap เพื่อให้ครึ่งทางตรงกับจุดเริ่มพอดี) */}
-                      <div style={{ display:"flex",width:"max-content",animation:"marquee 45s linear infinite" }}>
-                        {(()=>{
-                          // วนซ้ำไอเทมให้เต็มราง 7 ใบเสมอ — กล่องที่มีไอเทมน้อยจะได้ไม่โชว์โหรงเหรง (ตอนสุ่มจริงการ์ดก็วนซ้ำแบบเดียวกัน)
-                          const avail=box.items.filter(b=>!b.isLocked);
-                          const set=avail.length===0?[]:Array.from({length:7},(_,i)=>avail[i%avail.length]);
-                          return [...set,...set];
-                        })().map((bi,i)=>{
+                      {/* marquee — แสดงทุก item (ไม่จำกัด 7 ใบ) */}
+                      {(()=>{
+                        const avail=box.items; // โชว์ทุก item รวมที่พักไว้ให้ลุ้น
+                        const minCards=Math.max(avail.length,7);
+                        const set=avail.length===0?[]:Array.from({length:minCards},(_,i)=>avail[i%avail.length]);
+                        const dur=Math.min(Math.max(set.length*2.5,20),120);
+                        const cards=[...set,...set];
+                        return (
+                      <div style={{ display:"flex",width:"max-content",animation:`marquee ${dur}s linear infinite` }}>
+                        {cards.map((bi,i)=>{
                           const item=bi.itemId; const rarity=item?.rarityId; const rc=rarity?.color||"#64748b";
                           return (
                             <div key={i} style={{ flex:"0 0 clamp(140px, 44vw, 186px)",marginRight:16,height:212,borderRadius:18,position:"relative",background:"linear-gradient(180deg,#33343b,#1e1f25 70%)",border:"1px solid #3d3e46",boxShadow:"0 1px 0 rgba(255,255,255,.08) inset",display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 14px 16px",overflow:"hidden" }}>
@@ -475,6 +476,8 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
                           );
                         })}
                       </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -516,6 +519,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           
         </div>
         )}
+
 
         {/* Flash Sale Banner */}
         {box.flashSale && (
@@ -656,11 +660,11 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
           </div>
           <div className="flex flex-col items-center w-full xl:flex-1">
             {cannotDraw ? (
-              <button disabled className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white font-black text-xl lg:text-2xl py-3 lg:py-4 rounded-xl shadow-[0_6px_0_#9ca3af] transition-all flex flex-col items-center justify-center cursor-not-allowed">
+              <button disabled className="w-full font-black text-xl lg:text-2xl py-3 lg:py-4 rounded-xl transition-all flex flex-col items-center justify-center cursor-not-allowed bg-gradient-to-r from-gray-400 to-gray-500 shadow-[0_6px_0_#9ca3af] text-white">
                 <div className="flex items-center gap-2">
                   {isOutOfStock ? "สินค้าหมด (Out of Stock)" : "กล่องนี้ยังไม่พร้อมให้สุ่ม"}
                 </div>
-                <span className="text-xs font-semibold text-gray-100 mt-1 opacity-90 drop-shadow-sm">ไม่สามารถสุ่มได้ในขณะนี้</span>
+                <span className="text-xs font-semibold mt-1 opacity-90 drop-shadow-sm">ไม่สามารถสุ่มได้ในขณะนี้</span>
               </button>
             ) : (
               <button

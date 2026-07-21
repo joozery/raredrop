@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Clock, Gift, Package, X } from 'lucide-react';
+import { Sparkles, Clock, Gift, Package, X, BookOpen } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { MediaImage } from '@/components/ui/MediaImage';
 import { LoginModal } from '@/components/auth/LoginModal';
@@ -57,6 +57,9 @@ export default function CardsPage() {
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   // popup รางวัลประจำรอบ — เด้งอัตโนมัติครั้งแรกที่เจอรอบใหม่ (จำด้วย localStorage)
   const [prizesOpen, setPrizesOpen] = useState(false);
+  // popup วิธีการเล่น — เนื้อหาแก้ได้จากหลังบ้าน
+  const [howToPlayOpen, setHowToPlayOpen] = useState(false);
+  const [howToPlay, setHowToPlay] = useState('');
 
   const totalCards = round?.cards?.length || cardsPerRound;
   const cards: RoundCard[] = round?.cards?.length ? round.cards : Array.from({ length: totalCards }, () => ({ opened: false }));
@@ -277,6 +280,7 @@ export default function CardsPage() {
         if (d.completedSubtitle) setCompletedSubtitle(d.completedSubtitle);
         if (d.specialCompletedTitle) setSpecialTitle(d.specialCompletedTitle);
         if (d.specialCompletedSubtitle) setSpecialSubtitle(d.specialCompletedSubtitle);
+        if (d.howToPlay) setHowToPlay(d.howToPlay);
       })
       .catch(() => {})
       .finally(() => setConfigLoaded(true));
@@ -366,6 +370,14 @@ export default function CardsPage() {
                   className="flex items-center justify-center md:justify-start gap-2 text-xs font-bold bg-white/80 backdrop-blur-md border border-gray-200 shadow-sm px-4 py-2.5 rounded-full text-gray-700 hover:bg-white transition-colors"
                 >
                   <Clock size={16} className="text-gray-400" /> ประวัติการสุ่ม
+                </button>
+                <button
+                  onClick={() => setHowToPlayOpen(true)}
+                  title="วิธีการเล่น"
+                  className="flex items-center justify-center gap-1.5 text-xs font-black bg-white/80 backdrop-blur-md border border-gray-200 shadow-sm px-3 py-2.5 rounded-full text-gray-600 hover:bg-white hover:text-blue-600 hover:border-blue-200 transition-colors"
+                >
+                  <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] font-black flex items-center justify-center shrink-0">?</span>
+                  <span className="text-xs">วิธีการเล่น</span>
                 </button>
               </div>
             </div>
@@ -781,6 +793,50 @@ export default function CardsPage() {
       )}
 
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+
+      {/* popup วิธีการเล่น */}
+      {howToPlayOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setHowToPlayOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <BookOpen size={18} className="text-blue-500" />
+                </div>
+                <h2 className="font-black text-lg text-gray-900">วิธีการเล่น</h2>
+              </div>
+              <button onClick={() => setHowToPlayOpen(false)} className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                <X size={16} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+              {howToPlay ? (
+                <div className="text-sm text-gray-700 leading-relaxed space-y-2">
+                  {howToPlay.split('\n').map((line, i) => {
+                    const parts = line.split(/\*\*(.*?)\*\*/g);
+                    return (
+                      <p key={i} className={line.trim() === '' ? 'h-2' : ''}>
+                        {parts.map((part, j) =>
+                          j % 2 === 1
+                            ? <strong key={j} className="text-gray-900 font-bold">{part}</strong>
+                            : <span key={j}>{part}</span>
+                        )}
+                      </p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 text-center py-4">ยังไม่มีเนื้อหา — แอดมินสามารถแก้ไขได้ที่หลังบ้าน ตั้งค่า → สุ่มการ์ดพิเศษ</p>
+              )}
+            </div>
+            <div className="px-6 pb-5">
+              <button onClick={() => setHowToPlayOpen(false)} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl transition-colors text-sm">
+                เข้าใจแล้ว!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{__html: `
         .hide-scrollbar::-webkit-scrollbar {

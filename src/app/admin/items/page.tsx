@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Search, X, Box, Coins, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, X, Box, Coins, Image as ImageIcon, FolderInput } from "lucide-react";
+import Link from "next/link";
 import { UploadInput } from "@/components/ui/UploadInput";
 
 interface RarityData {
@@ -168,10 +169,16 @@ export default function ManageItems() {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">คลังไอเทม (Items Inventory)</h1>
           <p className="text-sm text-slate-500 mt-1">จัดการข้อมูลไอเทมทั้งหมดที่จะนำไปใส่ในกล่องสุ่ม</p>
         </div>
-        <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm shadow-red-500/20 shrink-0">
-          <Plus size={16} />
-          เพิ่มไอเทมใหม่
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href="/admin/items/bulk-import" className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm">
+            <FolderInput size={16} />
+            นำเข้าจากโฟลเดอร์
+          </Link>
+          <button onClick={openAddModal} className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors shadow-sm shadow-red-500/20">
+            <Plus size={16} />
+            เพิ่มไอเทมใหม่
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm flex flex-col overflow-hidden">

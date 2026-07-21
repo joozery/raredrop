@@ -176,7 +176,7 @@ export default function BoxesPage() {
               {box.categoryId && (
                 <span className="text-[10px] font-bold text-gray-400 mb-1">{box.categoryId.name}</span>
               )}
-              <h3 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">{box.name}</h3>
+              <h3 className="font-bold text-sm leading-tight mb-1 line-clamp-2 text-gray-900">{box.name}</h3>
               <p className="text-xs mb-3 text-center">
                 {box.flashSale ? (
                   <>

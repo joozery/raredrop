@@ -5,9 +5,10 @@ import { Reorder, useDragControls } from "framer-motion";
 import {
   ShoppingBag, Plus, Pencil, Trash2, X, Save, Loader2,
   Eye, EyeOff, Package, ChevronDown, ChevronUp, PlusCircle,
-  AlertCircle, Upload, GripVertical, Image as ImageIcon, Search,
+  AlertCircle, Upload, GripVertical, Image as ImageIcon, Search, FolderInput,
 } from "lucide-react";
 import { UploadInput } from "@/components/ui/UploadInput";
+import Link from "next/link";
 
 interface Account {
   _id: string;
@@ -587,12 +588,14 @@ export default function AdminShopPage() {
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">จัดการสินค้าและ Account ID สำหรับขาย</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center justify-center gap-2 bg-red-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-sm shrink-0"
-        >
-          <Plus size={16} /> เพิ่มสินค้าใหม่
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href="/admin/shop/bulk-import" className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-sm">
+            <FolderInput size={16} /> นำเข้าจากโฟลเดอร์
+          </Link>
+          <button onClick={openCreate} className="flex items-center justify-center gap-2 bg-red-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-sm">
+            <Plus size={16} /> เพิ่มสินค้าใหม่
+          </button>
+        </div>
       </div>
 
       {/* Category management */}
