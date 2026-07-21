@@ -26,7 +26,7 @@ export async function GET(
         populate: { path: "rarityId", model: Rarity, select: "name color order backgroundImage" },
       });
 
-    if (!box || !box.isActive) {
+    if (!box) {
       return NextResponse.json({ error: "ไม่พบกล่องสุ่มนี้" }, { status: 404 });
     }
 

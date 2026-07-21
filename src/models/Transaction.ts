@@ -6,7 +6,8 @@ export interface ITransaction extends Document {
   amount: number;
   balanceAfter: number;
   description?: string;
-  referenceId?: Types.ObjectId; // Could be BoxId, ItemId, or OrderId depending on type
+  referenceId?: Types.ObjectId;
+  slipUrl?: string; // URL รูปสลิปที่อัปโหลดไป R2
   createdAt: Date;
 }
 
@@ -21,6 +22,7 @@ const TransactionSchema: Schema = new Schema({
   balanceAfter: { type: Number, required: true },
   description: { type: String },
   referenceId: { type: Schema.Types.ObjectId },
+  slipUrl: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

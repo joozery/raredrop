@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+
 import { connectToDatabase } from "@/lib/mongoose";
 import User from "@/models/User";
 import Transaction from "@/models/Transaction";
 import Setting from "@/models/Setting";
 import { notify } from "@/lib/notify";
 import { awardXp, getExpPerBaht } from "@/lib/xp";
+import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 // รายละเอียดเพิ่มเติม: https://slip2go.com/guide — ดู "Success Code" / "Error Code"
 const SLIP_RESULT_MESSAGES: Record<string, string> = {
@@ -114,22 +117,38 @@ export async function POST(req: Request) {
     // ดึงจำนวนเงินจากผลลัพธ์ของ API
     const amount = parseFloat(data.data.amount);
 
-    // อัปเดตเงินให้ User (เก็บ transaction ไว้กันสลิปซ้ำด้วยในอนาคตแนะนำให้เช็ค ref_no)
-    console.log("Target User ID:", (session.user as any)?.id);
+    // อัปโหลดสลิปไป R2 เพื่อเก็บหลักฐาน (best-effort — ไม่ fail ถ้าอัปโหลดไม่ได้)
+    let slipUrl: string | undefined;
+    try {
+      const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+      const key = `slips/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      await r2.send(new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        Body: fileBuffer,
+        ContentType: mimeType,
+        CacheControl: "public, max-age=31536000",
+      }));
+      slipUrl = `${R2_PUBLIC_URL}/${key}`;
+    } catch (uploadErr) {
+      console.error("Slip upload to R2 failed (non-fatal):", uploadErr);
+    }
+
+    // อัปเดตเงินให้ User
     const user = await User.findByIdAndUpdate(
       (session.user as any)?.id,
       { $inc: { coins: amount } },
       { returnDocument: "after" }
     );
-    console.log("Updated User Result:", user);
-    
+
     if (user) {
       await Transaction.create({
         userId: user._id,
         type: "topup",
         amount: amount,
         balanceAfter: user.coins,
-        description: `เติมเงินผ่านสลิปสำเร็จ`
+        description: `เติมเงินผ่านสลิปสำเร็จ`,
+        slipUrl,
       });
       await notify(
         user._id.toString(),

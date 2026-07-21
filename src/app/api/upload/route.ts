@@ -3,8 +3,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { r2, R2_BUCKET, R2_PUBLIC_URL } from "@/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm"];
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"]; // แปลงเป็น WebP (gif/video คงรูปแบบเดิม)
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
 export async function POST(req: Request) {
@@ -30,16 +32,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "ไฟล์ใหญ่เกิน 50MB" }, { status: 400 });
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+    let buffer = Buffer.from(await file.arrayBuffer());
+    let contentType = file.type;
+    let ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+
+    // แปลง jpg/png/webp → WebP ก่อนอัปโหลด
+    if (IMAGE_TYPES.includes(file.type)) {
+      buffer = await sharp(buffer).webp({ quality: 85 }).toBuffer();
+      contentType = "image/webp";
+      ext = "webp";
+    }
+
     const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
 
     await r2.send(
       new PutObjectCommand({
         Bucket: R2_BUCKET,
         Key: key,
         Body: buffer,
-        ContentType: file.type,
+        ContentType: contentType,
         CacheControl: "public, max-age=31536000",
       })
     );
