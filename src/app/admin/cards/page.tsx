@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Edit2, Trash2, X, Sparkles, Save, CheckCircle2, Loader2, Play, Search, Package } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Sparkles, Save, CheckCircle2, Loader2, Play, Search, Package, History } from "lucide-react";
+import Link from "next/link";
 import { UploadInput } from "@/components/ui/UploadInput";
 
 interface CardPrizeData {
@@ -35,6 +36,7 @@ interface RoundInfo {
   status: "active" | "completed" | "none";
   cards: { opened: boolean }[];
 }
+
 
 const TYPE_LABEL: Record<string, string> = {
   coin: "เหรียญ (บาท)",
@@ -355,6 +357,13 @@ export default function ManageCardPrizes() {
           <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${roundInfo?.status === "active" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
             {roundInfo?.status === "active" ? "กำลังเล่น" : roundInfo?.status === "completed" ? "จบรอบแล้ว" : "ยังไม่เริ่ม"}
           </span>
+          <Link
+            href="/admin/cards/history"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            <History size={13} />
+            ประวัติรอบ
+          </Link>
           <button
             onClick={startRound}
             disabled={roundStarting || roundInfo?.status === "active"}

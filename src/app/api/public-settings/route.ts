@@ -12,6 +12,8 @@ const PUBLIC_KEYS = [
   "red_envelope_help_text", "gemcoin_icon",
   "sidebar_bg", "sidebar_text_color", "sidebar_hover_text_color", "sidebar_hover_bg_color",
   "payment_method", "payment_qr_image", "min_topup_amount",
+  "bank_name", "bank_account_name", "bank_logo", "promptpay_name",
+  "promptpay_warning_title", "promptpay_warning_desc",
   "popup_enabled", "popup_image", "popup_link", "popup_dismiss_hours",
   "crypto_enabled", "crypto_wallet_address", "crypto_network", "crypto_rate_per_unit",
   "livechat_welcome_message", "livechat_case_closed_text", "livechat_case_open_text", "livechat_contact_text"

@@ -32,6 +32,12 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
   const [minTopup, setMinTopup] = useState(1);
 
   // Crypto / MetaMask state
+  const [bankName, setBankName] = useState("");
+  const [bankAccountName, setBankAccountName] = useState("");
+  const [bankLogo, setBankLogo] = useState("");
+  const [ppWarningTitle, setPpWarningTitle] = useState("หลีกเลี่ยงการโอนเงินจากธนาคารกรุงเทพ");
+  const [ppWarningDesc, setPpWarningDesc] = useState("เพื่อป้องกันความล่าช้าในการตรวจสอบยอดชำระเงินกรุณาใช้ธนาคารอื่นในการโอนชำระ");
+
   const [cryptoEnabled, setCryptoEnabled] = useState(false);
   const [cryptoWalletAddress, setCryptoWalletAddress] = useState("");
   const [cryptoNetwork, setCryptoNetwork] = useState("eth");
@@ -68,6 +74,12 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
         if (d.crypto_wallet_address) setCryptoWalletAddress(d.crypto_wallet_address);
         if (d.crypto_network) setCryptoNetwork(d.crypto_network);
         if (d.crypto_rate_per_unit) setCryptoRatePerUnit(Number(d.crypto_rate_per_unit) || 1);
+        if (d.bank_name) setBankName(d.bank_name);
+        if (d.bank_account_name) setBankAccountName(d.bank_account_name);
+        else if (d.promptpay_name) setBankAccountName(d.promptpay_name);
+        if (d.bank_logo) setBankLogo(d.bank_logo);
+        if (d.promptpay_warning_title !== undefined) setPpWarningTitle(d.promptpay_warning_title);
+        if (d.promptpay_warning_desc !== undefined) setPpWarningDesc(d.promptpay_warning_desc);
       })
       .catch(() => {});
   }, []);
@@ -471,6 +483,22 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
                 ))}
               </div>
 
+              {method === "promptpay" && ppWarningTitle && (
+                <div className="mb-4 rounded-xl overflow-hidden border-2 border-red-400 shadow-sm">
+                  <div className="bg-red-500 px-3.5 py-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-white shrink-0">
+                      <path fillRule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                    </svg>
+                    <p className="text-white font-black text-xs leading-snug">{ppWarningTitle}</p>
+                  </div>
+                  {ppWarningDesc && (
+                    <div className="bg-red-50 px-3.5 py-2">
+                      <p className="text-[11px] text-slate-500 leading-relaxed">{ppWarningDesc}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {status === "error" && (
                 <div className="mb-4 bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-4 py-3 rounded-lg flex items-center gap-2">
                   <AlertCircle size={16} className="shrink-0" /> {message}
@@ -519,6 +547,18 @@ export function TopupModal({ isOpen, onClose }: TopupModalProps) {
                   <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">ยอดที่ต้องชำระ</p>
                   <p className="text-2xl font-black text-red-600 leading-none mt-1">฿{Number(amount).toLocaleString(undefined, {minimumFractionDigits:2})}</p>
                 </div>
+
+                {(bankName || bankAccountName) && (
+                  <div className="w-full bg-white border border-slate-100 rounded-xl px-4 py-3 flex items-center gap-3 mt-1">
+                    {bankLogo && (
+                      <img src={bankLogo} alt={bankName} className="w-8 h-8 object-contain rounded-lg shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0 text-left">
+                      {bankName && <p className="text-xs font-bold text-slate-700 truncate">{bankName}</p>}
+                      {bankAccountName && <p className="text-xs text-slate-500 truncate">{bankAccountName}</p>}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-dashed border-slate-200 pt-4">

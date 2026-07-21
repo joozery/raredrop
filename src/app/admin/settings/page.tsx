@@ -80,6 +80,14 @@ export default function SettingsPage() {
   const [sidebarHoverBgColor, setSidebarHoverBgColor] = useState("");
   const [sidebarSaving, setSidebarSaving] = useState(false);
   const [sidebarSaved, setSidebarSaved] = useState(false);
+  const [bankName, setBankName] = useState("");
+  const [bankAccountName, setBankAccountName] = useState("");
+  const [bankLogo, setBankLogo] = useState("");
+  const [ppWarningTitle, setPpWarningTitle] = useState("");
+  const [ppWarningDesc, setPpWarningDesc] = useState("");
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankSaved, setBankSaved] = useState(false);
+
   const [popupImage, setPopupImage] = useState("");
   const [popupLink, setPopupLink] = useState("");
   const [popupSaving, setPopupSaving] = useState(false);
@@ -147,6 +155,17 @@ export default function SettingsPage() {
           if (sidebarHoverTextSetting) setSidebarHoverTextColor(String(sidebarHoverTextSetting.value));
           const sidebarHoverBgSetting = d.find((s: SettingItem) => s.key === "sidebar_hover_bg_color");
           if (sidebarHoverBgSetting) setSidebarHoverBgColor(String(sidebarHoverBgSetting.value));
+
+          const bankNameSetting = d.find((s: SettingItem) => s.key === "bank_name");
+          if (bankNameSetting) setBankName(String(bankNameSetting.value));
+          const bankAccountNameSetting = d.find((s: SettingItem) => s.key === "bank_account_name");
+          if (bankAccountNameSetting) setBankAccountName(String(bankAccountNameSetting.value));
+          const bankLogoSetting = d.find((s: SettingItem) => s.key === "bank_logo");
+          if (bankLogoSetting) setBankLogo(String(bankLogoSetting.value));
+          const ppWarnTitle = d.find((s: SettingItem) => s.key === "promptpay_warning_title");
+          if (ppWarnTitle) setPpWarningTitle(String(ppWarnTitle.value));
+          const ppWarnDesc = d.find((s: SettingItem) => s.key === "promptpay_warning_desc");
+          if (ppWarnDesc) setPpWarningDesc(String(ppWarnDesc.value));
 
           const popupImageSetting = d.find((s: SettingItem) => s.key === "popup_image");
           if (popupImageSetting) setPopupImage(String(popupImageSetting.value));
@@ -332,6 +351,23 @@ export default function SettingsPage() {
     }
   };
 
+  const saveBank = async () => {
+    setBankSaving(true);
+    try {
+      await Promise.all([
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "bank_name", value: bankName }) }),
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "bank_account_name", value: bankAccountName }) }),
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "bank_logo", value: bankLogo }) }),
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promptpay_warning_title", value: ppWarningTitle }) }),
+        fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "promptpay_warning_desc", value: ppWarningDesc }) }),
+      ]);
+      setBankSaved(true);
+      setTimeout(() => setBankSaved(false), 2000);
+    } finally {
+      setBankSaving(false);
+    }
+  };
+
   const savePopup = async () => {
     setPopupSaving(true);
     try {
@@ -392,6 +428,7 @@ export default function SettingsPage() {
     "knowledge_hero_image", "knowledge_hero_link", "gemcoin_icon",
     "sidebar_bg", "sidebar_text_color", "sidebar_hover_text_color", "sidebar_hover_bg_color",
     "payment_method", "payment_qr_image", "payment_qr_type", "payment_qr_account_type", "payment_qr_account_number", "payment_qr_shop_name",
+    "bank_name", "bank_account_name", "bank_logo", "promptpay_warning_title", "promptpay_warning_desc",
     "popup_image", "popup_link",
   ];
   const displaySettings = settings.filter((s) => !excludedKeys.includes(s.key));
@@ -436,7 +473,7 @@ export default function SettingsPage() {
             value={logoUrl}
             onChange={setLogoUrl}
             folder="branding"
-            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,video/mp4,video/webm"
             placeholder="/logo/logo.png หรืออัพโหลดโลโก้"
           />
           <div className="flex items-center gap-3">
@@ -470,7 +507,7 @@ export default function SettingsPage() {
             value={ogImageUrl}
             onChange={setOgImageUrl}
             folder="branding"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/webp,image/gif"
             placeholder="รูปภาพเวลาแชร์ลิงก์"
           />
           <div className="flex items-center gap-3">
@@ -526,7 +563,7 @@ export default function SettingsPage() {
                   setHeroBanners(newBanners);
                 }}
                 folder="banner"
-                accept="image/png,image/jpeg,image/webp"
+                accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
                 placeholder="อัพโหลดรูปภาพหน้าหลัก"
               />
               <div className="flex flex-col gap-1.5 -mt-1">
@@ -571,7 +608,7 @@ export default function SettingsPage() {
             value={knowledgeBannerUrl}
             onChange={setKnowledgeBannerUrl}
             folder="banner"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
             placeholder="อัพโหลดรูปภาพหน้าวิธีการเล่น"
           />
           <div className="flex flex-col gap-1.5 -mt-1">
@@ -615,7 +652,7 @@ export default function SettingsPage() {
             value={gemcoinIcon}
             onChange={setGemcoinIcon}
             folder="branding"
-            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
             placeholder="เว้นว่าง = ใช้ไอคอนเหรียญเริ่มต้น"
           />
           <div className="flex items-center gap-3">
@@ -631,6 +668,95 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <span>ตัวอย่าง:</span>
                 <img src={gemcoinIcon} alt="gemcoin icon preview" className="h-7 w-7 object-contain border border-slate-200 rounded p-0.5" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bank Account Info Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">ข้อมูลบัญชีรับเงิน (แสดงใน popup เติมเงิน)</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="โลโก้ธนาคาร"
+            value={bankLogo}
+            onChange={setBankLogo}
+            folder="branding"
+            accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+            placeholder="เว้นว่าง = ไม่แสดงโลโก้"
+          />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-slate-600">ชื่อธนาคาร</label>
+            <input
+              type="text"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+              placeholder="เช่น ธนาคารกสิกรไทย"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-slate-600">ชื่อเจ้าของบัญชี</label>
+            <input
+              type="text"
+              value={bankAccountName}
+              onChange={(e) => setBankAccountName(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+              placeholder="เช่น นายสมชาย ใจดี"
+            />
+          </div>
+          <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
+            <p className="text-xs font-black text-slate-600">คำเตือนพร้อมเพย์ (แสดงตอนเลือก พร้อมเพย์)</p>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-500">หัวข้อ (สีแดง) — เว้นว่าง = ไม่แสดงกล่องเตือน</label>
+              <input
+                type="text"
+                value={ppWarningTitle}
+                onChange={(e) => setPpWarningTitle(e.target.value)}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+                placeholder="เช่น หลีกเลี่ยงการโอนเงินจากธนาคารกรุงเทพ"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-500">รายละเอียด (สีเทา)</label>
+              <input
+                type="text"
+                value={ppWarningDesc}
+                onChange={(e) => setPpWarningDesc(e.target.value)}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+                placeholder="เช่น เพื่อป้องกันความล่าช้าในการตรวจสอบ..."
+              />
+            </div>
+            {ppWarningTitle && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5">
+                  <path fillRule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="text-[10px] font-black text-red-600">{ppWarningTitle}</p>
+                  {ppWarningDesc && <p className="text-[10px] text-slate-500 mt-0.5">{ppWarningDesc}</p>}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveBank}
+              disabled={bankSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {bankSaving ? <Loader2 size={13} className="animate-spin" /> : bankSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {bankSaved ? "บันทึกแล้ว!" : "บันทึกข้อมูลธนาคาร"}
+            </button>
+            {bankLogo && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>ตัวอย่าง:</span>
+                <img src={bankLogo} alt="bank logo preview" className="h-7 w-7 object-contain border border-slate-200 rounded p-0.5" />
               </div>
             )}
           </div>
@@ -763,7 +889,7 @@ export default function SettingsPage() {
             value={popupImage}
             onChange={setPopupImage}
             folder="popup"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
             placeholder="อัพโหลดรูปภาพ popup"
           />
           <div className="flex flex-col gap-1.5 -mt-1">
