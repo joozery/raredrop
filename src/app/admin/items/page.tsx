@@ -353,7 +353,7 @@ export default function ManageItems() {
                 value={currentItem.image === "coin_reward" ? "" : (currentItem.image || "")}
                 onChange={(url) => setCurrentItem({ ...currentItem, image: url })}
                 folder="items"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/*"
                 placeholder="https://... หรืออัพโหลดรูปภาพ"
               />
 

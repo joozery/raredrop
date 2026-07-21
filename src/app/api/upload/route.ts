@@ -9,6 +9,12 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "vi
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"]; // แปลงเป็น WebP (gif/video คงรูปแบบเดิม)
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
+// fallback MIME type จาก extension กรณี browser ส่ง application/octet-stream
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+  webp: "image/webp", gif: "image/gif", mp4: "video/mp4", webm: "video/webm",
+};
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,7 +30,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "ไม่พบไฟล์" }, { status: 400 });
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    // fallback: ถ้า browser ส่ง application/octet-stream ให้ detect จาก extension แทน
+    const ext0 = file.name.split(".").pop()?.toLowerCase() || "";
+    const resolvedType = (file.type && file.type !== "application/octet-stream")
+      ? file.type
+      : (EXT_TO_MIME[ext0] || file.type);
+
+    if (!ALLOWED_TYPES.includes(resolvedType)) {
       return NextResponse.json({ error: "ประเภทไฟล์ไม่รองรับ (jpg, png, webp, gif, mp4, webm เท่านั้น)" }, { status: 400 });
     }
 
@@ -33,11 +45,11 @@ export async function POST(req: Request) {
     }
 
     let buffer = Buffer.from(await file.arrayBuffer());
-    let contentType = file.type;
-    let ext = file.name.split(".").pop()?.toLowerCase() || "bin";
+    let contentType = resolvedType;
+    let ext = ext0 || "bin";
 
     // แปลง jpg/png/webp → WebP ก่อนอัปโหลด
-    if (IMAGE_TYPES.includes(file.type)) {
+    if (IMAGE_TYPES.includes(resolvedType)) {
       buffer = await sharp(buffer).webp({ quality: 85 }).toBuffer();
       contentType = "image/webp";
       ext = "webp";

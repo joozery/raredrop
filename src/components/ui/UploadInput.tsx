@@ -16,7 +16,7 @@ interface Props {
 export function UploadInput({
   value,
   onChange,
-  accept = "image/jpeg,image/png,image/webp,image/gif",
+  accept = "image/*",
   folder = "uploads",
   label,
   placeholder = "https://... หรืออัพโหลดไฟล์",
