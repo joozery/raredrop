@@ -21,6 +21,7 @@ import {
   Trophy,
   MessageCircle,
   Sparkles,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -30,6 +31,7 @@ const menuItems = [
   { name: "กล่องสุ่ม", icon: Package, href: "/boxes" },
   { name: "สุ่มการ์ดพิเศษ", icon: Sparkles, href: "/cards" },
   { name: "ร้านค้า", icon: Briefcase, href: "/shop" },
+  { name: "ผ่อนไอดีเกม", icon: Calculator, href: "/installment" },
   { name: "ซองแดง", icon: Gift, href: "/red-envelope" },
   { name: "จัดอันดับเติมเงิน", icon: Trophy, href: "/leaderboard" },
   { name: "คอลเลกชันของฉัน", icon: LibrarySquare, href: "/inventory" },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Search, X, ShieldAlert } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, X, ShieldAlert, PlusCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Admin {
@@ -9,6 +9,7 @@ interface Admin {
   name: string;
   email: string;
   role: string;
+  coins: number;
   createdAt: string;
 }
 
@@ -24,6 +25,12 @@ export default function ManageAdmins() {
   
   // Delete confirm state
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Topup modal
+  const [topupTarget, setTopupTarget] = useState<Admin | null>(null);
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topping, setTopping] = useState(false);
+  const [topupError, setTopupError] = useState("");
 
   useEffect(() => {
     fetchAdmins();
@@ -101,7 +108,31 @@ export default function ManageAdmins() {
     }
   };
 
-  const filteredAdmins = admins.filter(a => 
+  const handleTopup = async () => {
+    if (!topupTarget) return;
+    const amt = parseFloat(topupAmount);
+    if (!amt || amt <= 0) return setTopupError("กรุณากรอกจำนวนที่ถูกต้อง");
+    setTopupError("");
+    setTopping(true);
+    try {
+      const res = await fetch(`/api/admin/users/${topupTarget._id}/topup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: amt }),
+      });
+      const data = await res.json();
+      if (!res.ok) return setTopupError(data.error || "เกิดข้อผิดพลาด");
+      setAdmins((prev) => prev.map((a) => a._id === topupTarget._id ? { ...a, coins: data.coins } : a));
+      setTopupTarget(null);
+      setTopupAmount("");
+    } catch {
+      setTopupError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setTopping(false);
+    }
+  };
+
+  const filteredAdmins = admins.filter(a =>
     a.name.toLowerCase().includes(search.toLowerCase()) || 
     a.email.toLowerCase().includes(search.toLowerCase())
   );
@@ -179,6 +210,14 @@ export default function ManageAdmins() {
                       </div>
                     ) : (
                       <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => { setTopupTarget(admin); setTopupAmount(""); setTopupError(""); }}
+                          className="flex items-center gap-1 text-emerald-600 hover:text-emerald-800 p-1 text-xs font-bold transition-colors"
+                          title="เติมเงิน"
+                        >
+                          <PlusCircle size={15} />
+                          เติมเงิน
+                        </button>
                         <button onClick={() => openEditModal(admin)} className="text-blue-500 hover:text-blue-700 p-1" title="แก้ไข">
                           <Edit2 size={16} />
                         </button>
@@ -269,6 +308,70 @@ export default function ManageAdmins() {
         </div>
       )}
 
+      {/* Topup Modal */}
+      {topupTarget && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-800">เติมเงินให้ {topupTarget.name}</h2>
+              <button onClick={() => setTopupTarget(null)} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4">
+              <div className="bg-emerald-50 rounded-xl px-4 py-3 text-sm flex justify-between items-center border border-emerald-100">
+                <span className="text-emerald-700 font-medium">ยอดปัจจุบัน</span>
+                <span className="font-black text-emerald-800">
+                  ฿{(topupTarget.coins || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">จำนวนเงินที่จะเติม (฿)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={topupAmount}
+                  onChange={(e) => setTopupAmount(e.target.value)}
+                  placeholder="เช่น 100, 500, 1000"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-lg font-mono font-bold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
+                  autoFocus
+                />
+              </div>
+
+              {topupAmount && parseFloat(topupAmount) > 0 && (
+                <div className="bg-slate-50 rounded-xl px-4 py-2.5 text-sm flex justify-between items-center">
+                  <span className="text-slate-500">ยอดหลังเติม</span>
+                  <span className="font-black text-slate-900">
+                    ฿{((topupTarget.coins || 0) + parseFloat(topupAmount)).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {topupError && <p className="text-sm text-red-600 font-semibold text-center">{topupError}</p>}
+            </div>
+
+            <div className="px-6 pb-6 flex gap-3 border-t border-slate-100 pt-4">
+              <button
+                onClick={() => setTopupTarget(null)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleTopup}
+                disabled={topping || !topupAmount || parseFloat(topupAmount) <= 0}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {topping ? <Loader2 size={14} className="animate-spin" /> : <PlusCircle size={14} />}
+                เติมเงิน
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

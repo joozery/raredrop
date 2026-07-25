@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback, use } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ShoppingBag, Search, RefreshCw, X, AlertCircle,
   ChevronLeft, ChevronRight, Package, History,
-  Play, Flame,
+  Play, Flame, Calendar, CreditCard,
 } from "lucide-react";
 import { TopupModal } from "@/components/payment/TopupModal";
 
@@ -24,6 +25,7 @@ interface ShopItem {
   isFeatured?: boolean;
   requireUid?: boolean;
   uidLabel?: string;
+  installmentEnabled?: boolean;
   createdAt: string;
 }
 
@@ -62,6 +64,7 @@ function ModalCarousel({ images }: { images: string[] }) {
 export default function ShopCategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { data: session, update: updateSession } = useSession();
+  const router = useRouter();
   const balance = (session?.user as any)?.coins || 0;
 
   const [items, setItems] = useState<ShopItem[]>([]);
@@ -72,6 +75,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
   const [notFound, setNotFound] = useState(false);
 
   const [buyModal, setBuyModal] = useState<ShopItem | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"full" | "installment">("full");
   const [buyerUid, setBuyerUid] = useState("");
   const [buyQty, setBuyQty] = useState(1);
   const [isBuying, setIsBuying] = useState(false);
@@ -301,7 +305,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
                   <span className="text-[10px] text-gray-400">สต็อก {item.stock}</span>
                 </div>
                 <button
-                  onClick={() => { item.stock > 0 && setBuyModal(item); setBuyerUid(""); setBuyQty(1); }}
+                  onClick={() => { item.stock > 0 && setBuyModal(item); setBuyerUid(""); setBuyQty(1); setPaymentMethod("full"); }}
                   disabled={item.stock === 0}
                   className="w-full text-[12px] font-black text-white py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:bg-gray-200 disabled:text-gray-400 bg-red-600 hover:bg-red-700"
                 >
@@ -349,11 +353,56 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
                   </div>
                 </div>
               )}
+              {/* Payment Method Selector — แสดงเฉพาะสินค้าที่เปิด installment */}
+              {buyModal.installmentEnabled && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-bold text-gray-700">เลือกวิธีชำระเงิน</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className={`flex items-center gap-2.5 px-3 py-3 rounded-xl border cursor-pointer transition-all ${paymentMethod === "full" ? "border-gray-800 bg-gray-50 ring-1 ring-gray-400/30" : "border-gray-200 hover:border-gray-300"}`}>
+                      <input type="radio" name="paymentMethodSlug" value="full" checked={paymentMethod === "full"} onChange={() => setPaymentMethod("full")} className="accent-gray-800" />
+                      <div className="flex items-center gap-1.5">
+                        <CreditCard size={13} className="text-gray-600 shrink-0" />
+                        <span className="text-xs font-bold text-gray-700">ชำระเต็มจำนวน</span>
+                      </div>
+                    </label>
+                    <label className={`flex items-center gap-2 px-3 py-3 rounded-xl border cursor-pointer transition-all ${paymentMethod === "installment" ? "border-red-500 bg-red-50/60 ring-1 ring-red-400/30" : "border-gray-200 hover:border-red-200"}`}>
+                      <input type="radio" name="paymentMethodSlug" value="installment" checked={paymentMethod === "installment"} onChange={() => setPaymentMethod("installment")} className="accent-red-600" />
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={12} className="text-red-600 shrink-0" />
+                          <span className="text-xs font-bold text-red-600">ผ่อนชำระ</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-red-500 text-white text-[9px] font-bold leading-none">ใหม่!</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400">ผ่อนสบาย จ่ายเป็นงวด</span>
+                      </div>
+                    </label>
+                  </div>
+                  {paymentMethod === "installment" && (
+                    <div
+                      className="flex items-center justify-between gap-2 mt-1 px-4 py-3 rounded-xl bg-red-50 border border-red-100 cursor-pointer hover:bg-red-100 transition-colors"
+                      onClick={() => {
+                        const p = new URLSearchParams({ title: buyModal.title, price: String(buyModal.price), image: buyModal.images?.[0] || "", listingId: buyModal._id });
+                        setBuyModal(null);
+                        router.push(`/installment?${p.toString()}`);
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-red-500 shrink-0" />
+                        <p className="text-xs font-bold text-red-700">กดเพื่อไปหน้าผ่อนชำระ</p>
+                      </div>
+                      <ChevronRight size={14} className="text-red-400 shrink-0" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {paymentMethod === "full" && (
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col gap-2.5">
                 <div className="flex justify-between text-sm"><span className="text-gray-600 font-medium">ราคารวม</span><span className="font-black text-gray-900 text-base">฿{(buyModal.price * buyQty).toLocaleString()}</span></div>
                 <div className="flex justify-between text-sm border-t border-gray-200 pt-2.5"><span className="text-gray-600 font-medium">ยอดเงินของฉัน</span><span className={`font-black ${balance >= buyModal.price * buyQty ? "text-emerald-600" : "text-red-600"}`}>฿{balance.toLocaleString()}</span></div>
               </div>
-              {session && balance < buyModal.price * buyQty && (
+              )}
+              {paymentMethod === "full" && session && balance < buyModal.price * buyQty && (
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3">
                   <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
                   <div>
@@ -365,7 +414,19 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
             </div>
             <div className="p-5 border-t border-gray-100 flex gap-3 shrink-0">
               <button onClick={() => setBuyModal(null)} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors text-sm">ยกเลิก</button>
-              {!session ? (
+              {paymentMethod === "installment" ? (
+                <button
+                  onClick={() => {
+                    const p = new URLSearchParams({ title: buyModal.title, price: String(buyModal.price), image: buyModal.images?.[0] || "", listingId: buyModal._id });
+                    setBuyModal(null);
+                    router.push(`/installment?${p.toString()}`);
+                  }}
+                  className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors text-sm flex items-center justify-center gap-1.5"
+                >
+                  <Calendar size={15} />
+                  ไปหน้าผ่อนชำระ
+                </button>
+              ) : !session ? (
                 <Link href="/profile" className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors text-sm text-center flex items-center justify-center">เข้าสู่ระบบ</Link>
               ) : balance >= buyModal.price * buyQty ? (
                 <button onClick={handleBuy} disabled={isBuying || (buyModal.requireUid && !buyerUid.trim())} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 disabled:bg-gray-400 transition-colors text-sm">

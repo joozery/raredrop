@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, FolderTree, Percent,
   Box, Boxes, Diamond, Users, Wallet, UserPlus,
   ArrowRightLeft, Store, ShoppingCart, BarChart3,
-  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert, BookOpen, Gamepad2, MousePointerClick, Sparkles
+  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert, BookOpen, Gamepad2, MousePointerClick, Sparkles, Calculator, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +51,8 @@ const menuGroups = [
       { name: "โค้ดแลกของ", icon: Ticket, href: "/admin/promo-codes" },
       { name: "ซองแดง", icon: Gift, href: "/admin/red-envelope" },
       { name: "สุ่มการ์ดพิเศษ", icon: Sparkles, href: "/admin/cards" },
+      { name: "ผ่อนไอดีเกม (ตั้งค่า)", icon: Calculator, href: "/admin/installment" },
+      { name: "บิลผ่อนชำระ", icon: FileText, href: "/admin/installment/bills" },
       { name: "Live Chat", icon: MessageCircle, href: "/admin/chat" },
     ]
   },

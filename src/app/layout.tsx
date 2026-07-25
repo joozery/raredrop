@@ -79,7 +79,15 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [ogImage],
     },
     icons: {
-      apple: "/logoluxux.png",
+      icon: [
+        { url: siteLogo || "/logoluxux.png", type: "image/png" },
+        { url: "/favicon.ico", sizes: "any" },
+      ],
+      shortcut: [siteLogo || "/logoluxux.png"],
+      apple: [
+        { url: siteLogo || "/logoluxux.png" },
+        { url: siteLogo || "/logoluxux.png", sizes: "180x180", type: "image/png" },
+      ],
     },
   };
 }

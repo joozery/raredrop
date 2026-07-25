@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ChevronRight, Search, Plus, Edit2, Trash2, Eye, Calendar, Shield, Users, Coins, X, Check, Loader2 } from "lucide-react";
+import { ChevronRight, Search, Plus, Edit2, Trash2, Eye, Calendar, Shield, Users, Coins, X, Check, Loader2, PlusCircle } from "lucide-react";
 
 interface UserData {
   _id: string;
@@ -68,6 +68,12 @@ export default function UserCollectionPage({ params }: { params: Promise<{ id: s
   // View (Eye) modal
   const [viewInv, setViewInv] = useState<InventoryItem | null>(null);
 
+  // Topup modal
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjusting, setAdjusting] = useState(false);
+  const [adjustError, setAdjustError] = useState("");
+
   // Add item modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [itemSearch, setItemSearch] = useState("");
@@ -98,6 +104,29 @@ export default function UserCollectionPage({ params }: { params: Promise<{ id: s
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTopup = async () => {
+    const amt = parseFloat(adjustAmount);
+    if (!amt || amt <= 0) return setAdjustError("กรุณากรอกจำนวนที่ถูกต้อง");
+    setAdjustError("");
+    setAdjusting(true);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/topup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: amt }),
+      });
+      const data = await res.json();
+      if (!res.ok) return setAdjustError(data.error || "เกิดข้อผิดพลาด");
+      setUser((prev) => prev ? { ...prev, coins: data.coins } : prev);
+      setShowAdjustModal(false);
+      setAdjustAmount("");
+    } catch {
+      setAdjustError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
+      setAdjusting(false);
     }
   };
 
@@ -286,6 +315,15 @@ export default function UserCollectionPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
+        <div className="flex flex-col gap-3 xl:w-auto w-full border-t xl:border-t-0 xl:border-l border-slate-100 pt-4 xl:pt-0 xl:pl-8">
+          <button
+            onClick={() => { setShowAdjustModal(true); setAdjustError(""); setAdjustAmount(""); }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors shadow-sm w-full justify-center"
+          >
+            <PlusCircle size={15} />
+            เติมเงินให้ผู้เล่น
+          </button>
+        </div>
         <div className="flex flex-col gap-3 text-sm text-slate-600 xl:w-64 w-full border-t xl:border-t-0 xl:border-l border-slate-100 pt-4 xl:pt-0 xl:pl-8">
           <div className="flex items-center gap-3">
             <Calendar size={16} className="text-slate-400" />
@@ -693,6 +731,70 @@ export default function UserCollectionPage({ params }: { params: Promise<{ id: s
               >
                 {deletingInv ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={14} />}
                 ลบเลย
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Topup Modal ── */}
+      {showAdjustModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900">เติมเงินให้ผู้เล่น</h3>
+              <button onClick={() => setShowAdjustModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4">
+              <div className="bg-emerald-50 rounded-xl px-4 py-3 text-sm flex justify-between items-center border border-emerald-100">
+                <span className="text-emerald-700 font-medium">ยอดปัจจุบัน</span>
+                <span className="font-black text-emerald-800">
+                  ฿{user.coins?.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-2">จำนวนเงินที่จะเติม (฿)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={adjustAmount}
+                  onChange={(e) => setAdjustAmount(e.target.value)}
+                  placeholder="เช่น 100, 500, 1000"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 font-mono text-lg font-bold focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
+                  autoFocus
+                />
+              </div>
+
+              {adjustAmount && parseFloat(adjustAmount) > 0 && (
+                <div className="bg-slate-50 rounded-xl px-4 py-2.5 text-sm flex justify-between items-center">
+                  <span className="text-slate-500">ยอดหลังเติม</span>
+                  <span className="font-black text-slate-900">
+                    ฿{((user.coins || 0) + parseFloat(adjustAmount)).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
+              {adjustError && (
+                <p className="text-sm text-red-600 font-semibold text-center">{adjustError}</p>
+              )}
+            </div>
+
+            <div className="px-6 pb-6 flex gap-3 border-t border-slate-100 pt-4">
+              <button
+                onClick={() => setShowAdjustModal(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleTopup}
+                disabled={adjusting || !adjustAmount || parseFloat(adjustAmount) <= 0}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {adjusting ? <Loader2 size={14} className="animate-spin" /> : <PlusCircle size={14} />}
+                เติมเงิน
               </button>
             </div>
           </div>

@@ -40,6 +40,7 @@ export async function GET(req: Request) {
       isFeatured: !!l.isFeatured,
       requireUid: !!l.requireUid,
       uidLabel: l.uidLabel || "UID / ไอดีผู้เล่น",
+      installmentEnabled: !!l.installmentEnabled,
       order: l.order ?? 0,
       createdAt: l.createdAt,
     }));

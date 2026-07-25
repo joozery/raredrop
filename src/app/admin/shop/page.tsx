@@ -52,11 +52,12 @@ interface ShopListing {
   isFeatured?: boolean;
   requireUid?: boolean;
   uidLabel?: string;
+  installmentEnabled?: boolean;
   createdAt: string;
 }
 
-type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string; categoryId: string; isFeatured: boolean; requireUid: boolean; uidLabel: string };
-const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "", categoryId: "", isFeatured: false, requireUid: false, uidLabel: "UID / ไอดีผู้เล่น" };
+type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string; categoryId: string; isFeatured: boolean; requireUid: boolean; uidLabel: string; installmentEnabled: boolean };
+const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "", categoryId: "", isFeatured: false, requireUid: false, uidLabel: "UID / ไอดีผู้เล่น", installmentEnabled: false };
 
 interface ShopListingCardProps {
   l: ShopListing;
@@ -459,6 +460,7 @@ export default function AdminShopPage() {
       isFeatured: !!l.isFeatured,
       requireUid: !!l.requireUid,
       uidLabel: l.uidLabel || "UID / ไอดีผู้เล่น",
+      installmentEnabled: !!l.installmentEnabled,
     });
     setModal("edit");
   };
@@ -514,6 +516,7 @@ export default function AdminShopPage() {
         isFeatured: form.isFeatured,
         requireUid: form.requireUid,
         uidLabel: form.uidLabel.trim() || "UID / ไอดีผู้เล่น",
+        installmentEnabled: form.installmentEnabled,
       };
       const url = modal === "edit" && editing ? `/api/admin/shop/${editing._id}` : "/api/admin/shop";
       const method = modal === "edit" ? "PUT" : "POST";
@@ -952,6 +955,20 @@ export default function AdminShopPage() {
                   </div>
                 )}
               </div>
+
+              {/* Installment toggle */}
+              <label className="flex items-center gap-2.5 cursor-pointer bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.installmentEnabled}
+                  onChange={(e) => setForm((f) => ({ ...f, installmentEnabled: e.target.checked }))}
+                  className="accent-red-600 w-4 h-4"
+                />
+                <div>
+                  <span className="text-sm font-bold text-red-700">💳 เปิดให้ผ่อนชำระได้</span>
+                  <p className="text-[11px] text-red-500 mt-0.5">ลูกค้าจะเห็นตัวเลือก "ผ่อนชำระ" ในหน้ายืนยันการซื้อ และส่งไปหน้า ผ่อนชำระไอดีเกมโดยอัตโนมัติ</p>
+                </div>
+              </label>
 
               {/* Status */}
               <div className="flex flex-col gap-1.5">

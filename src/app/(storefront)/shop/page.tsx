@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ShoppingBag, Search, RefreshCw, X, AlertCircle,
   ChevronLeft, ChevronRight, Package, History, ChevronDown,
-  Play, MessageCircle, Flame, LayoutGrid, List,
+  Play, MessageCircle, Flame, LayoutGrid, List, CreditCard, Calendar,
 } from "lucide-react";
 import { TopupModal } from "@/components/payment/TopupModal";
 
@@ -24,6 +25,7 @@ interface ShopItem {
   isFeatured?: boolean;
   requireUid?: boolean;
   uidLabel?: string;
+  installmentEnabled?: boolean;
   order?: number;
   createdAt: string;
 }
@@ -304,6 +306,7 @@ export default function ShopPage() {
       .catch(() => {});
   }, []);
 
+  const router = useRouter();
   const [buyModal, setBuyModal] = useState<ShopItem | null>(null);
   const [buyerUid, setBuyerUid] = useState("");
   const [buyQty, setBuyQty] = useState(1);
@@ -311,6 +314,7 @@ export default function ShopPage() {
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [successData, setSuccessData] = useState<{ purchaseId: string } | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"full" | "installment">("full");
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -595,7 +599,7 @@ export default function ShopPage() {
       ) : (
         <div className={`grid gap-4 ${viewMode === "grid" ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"}`}>
           {filtered.map((item) => (
-            <ShopItemCard key={item._id} item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); setBuyQty(1); }} />
+            <ShopItemCard key={item._id} item={item} onBuy={(item) => { setBuyModal(item); setBuyerUid(""); setBuyQty(1); setPaymentMethod("full"); }} />
           ))}
         </div>
       )}
@@ -671,6 +675,102 @@ export default function ShopPage() {
                 </div>
               )}
 
+              {/* Payment Method Selector — แสดงเฉพาะสินค้าที่เปิด installment */}
+              {buyModal.installmentEnabled && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-bold text-gray-700">เลือกวิธีชำระเงิน</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* ชำระเต็มจำนวน */}
+                    <label
+                      className={`flex items-center gap-2.5 px-3 py-3 rounded-xl border cursor-pointer transition-all ${
+                        paymentMethod === "full"
+                          ? "border-gray-800 bg-gray-50 ring-1 ring-gray-400/30"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="full"
+                        checked={paymentMethod === "full"}
+                        onChange={() => setPaymentMethod("full")}
+                        className="accent-gray-800"
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <CreditCard size={13} className="text-gray-600 shrink-0" />
+                        <span className="text-xs font-bold text-gray-700">ชำระเต็มจำนวน</span>
+                      </div>
+                      <span className="text-[10px] text-gray-400 ml-auto">จ่ายครั้งเดียว</span>
+                    </label>
+
+                    {/* ผ่อนชำระ */}
+                    <label
+                      className={`flex items-center gap-2 px-3 py-3 rounded-xl border cursor-pointer transition-all ${
+                        paymentMethod === "installment"
+                          ? "border-red-500 bg-red-50/60 ring-1 ring-red-400/30"
+                          : "border-gray-200 hover:border-red-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="installment"
+                        checked={paymentMethod === "installment"}
+                        onChange={() => setPaymentMethod("installment")}
+                        className="accent-red-600"
+                      />
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={12} className="text-red-600 shrink-0" />
+                          <span className="text-xs font-bold text-red-600">ผ่อนชำระ</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-red-500 text-white text-[9px] font-bold leading-none">ใหม่!</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400">ผ่อนสบาย จ่ายเป็นงวด</span>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* installment hint box */}
+                  {paymentMethod === "installment" && (
+                    <div
+                      className="flex items-center justify-between gap-2 mt-1 px-4 py-3 rounded-xl bg-red-50 border border-red-100 cursor-pointer hover:bg-red-100 transition-colors"
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          title: buyModal.title,
+                          price: String(buyModal.price),
+                          image: buyModal.images?.[0] || "",
+                          listingId: buyModal._id,
+                        });
+                        setBuyModal(null);
+                        router.push(`/installment?${params.toString()}`);
+                      }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <Calendar size={14} className="text-red-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-red-700">รายละเอียดการผ่อนชำระ:</p>
+                          <ul className="mt-1 space-y-0.5">
+                            {[
+                              "ยอดขั้นต่ำในการผ่อน: ฿1,000 ขึ้นไป",
+                              "1,000 - 10,000 บาท: ผ่อนได้ 1 เดือน",
+                              "มากกว่า 10,000 บาท: ผ่อนได้ 2 งวด (2 เดือน)",
+                              "ชำระทุกวันที่ 1 ของเดือน",
+                            ].map((t, i) => (
+                              <li key={i} className="text-[11px] text-red-600 flex items-center gap-1">
+                                <span className="w-1 h-1 rounded-full bg-red-400 shrink-0" />{t}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <ChevronRight size={14} className="text-red-400 shrink-0" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* --- existing price summary (only show for full payment) --- */}
+              {paymentMethod === "full" && (
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col gap-2.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600 font-medium">ราคาต่อชิ้น</span>
@@ -697,13 +797,14 @@ export default function ShopPage() {
                   </div>
                 )}
               </div>
+              )}
 
               {!session && (
                 <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3 text-sm text-yellow-700 font-medium flex items-center gap-2">
                   <AlertCircle size={16} /> กรุณาเข้าสู่ระบบก่อนซื้อ
                 </div>
               )}
-              {session && balance < buyModal.price * buyQty && (
+              {paymentMethod === "full" && session && balance < buyModal.price * buyQty && (
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-start gap-3">
                   <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
                   <div>
@@ -721,6 +822,23 @@ export default function ShopPage() {
                 <Link href="/profile" className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors text-sm text-center flex items-center justify-center">
                   เข้าสู่ระบบ
                 </Link>
+              ) : paymentMethod === "installment" ? (
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams({
+                      title: buyModal.title,
+                      price: String(buyModal.price),
+                      image: buyModal.images?.[0] || "",
+                      listingId: buyModal._id,
+                    });
+                    setBuyModal(null);
+                    router.push(`/installment?${params.toString()}`);
+                  }}
+                  className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors text-sm flex items-center justify-center gap-1.5"
+                >
+                  <Calendar size={15} />
+                  ไปหน้าผ่อนชำระ
+                </button>
               ) : balance >= buyModal.price * buyQty ? (
                 <button
                   onClick={handleBuy}
