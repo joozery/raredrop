@@ -1201,7 +1201,7 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
           {markup > 0 && (
             <p className="mt-3 text-[11px] text-slate-400 flex items-center gap-1.5">
               <Info size={11} className="shrink-0 text-slate-400" />
-              แผนนี้มีค่าบริการ {markup * 100}% จากยอดหลังหักเงินเปิดบิล
+              แผนนี้มีค่าบริการ {parseFloat((markup * 100).toFixed(2))}% จากยอดหลังหักเงินเปิดบิล
             </p>
           )}
 

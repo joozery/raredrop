@@ -106,8 +106,6 @@ export async function GET() {
           return parsed && typeof parsed === "object" ? parsed : DEFAULT_PLAN_COUNT_MARKUPS;
         } catch { return DEFAULT_PLAN_COUNT_MARKUPS; }
       })(),
-    }, {
-      headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=120" },
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
