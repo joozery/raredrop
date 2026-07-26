@@ -674,7 +674,7 @@ function InstallmentDetailModal({
               </p>
             </div>
             <div className="px-1">
-              <p className="text-xs text-slate-400 font-medium">ยอดจัดไฟแนนซ์</p>
+              <p className="text-xs text-slate-400 font-medium">ยอดเริ่มผ่อน</p>
               <p className="text-base sm:text-lg font-black text-slate-900 font-num mt-0.5">
                 ฿{fmt(remaining)}
               </p>
@@ -715,7 +715,7 @@ function InstallmentDetailModal({
                     <div className="flex items-center gap-3 sm:gap-5">
                       <div className="text-right">
                         <span className="text-[11px] text-slate-400 mr-1.5 hidden sm:inline">
-                          ผ่อนเดือนละ
+                          {planType === "daily" ? "ผ่อนวันละ" : planType === "weekly" ? "ผ่อนสัปดาห์ละ" : "ผ่อนเดือนละ"}
                         </span>
                         <span className="text-sm sm:text-base font-black text-red-600 font-num">
                           ฿{fmt(perMonth)}
@@ -762,7 +762,7 @@ function InstallmentDetailModal({
                 </p>
               </div>
               <div className="bg-white p-2 rounded-xl border border-slate-100">
-                <p className="text-[10px] text-slate-400">ยอดจัดไฟแนนซ์</p>
+                <p className="text-[10px] text-slate-400">ยอดเริ่มผ่อน</p>
                 <p className="font-bold text-slate-900 font-num mt-0.5">
                   ฿{fmt(remaining)}
                 </p>
@@ -774,7 +774,9 @@ function InstallmentDetailModal({
                 </p>
               </div>
               <div className="bg-white p-2 rounded-xl border border-slate-100">
-                <p className="text-[10px] text-slate-400">ยอดผ่อนต่อเดือน</p>
+                <p className="text-[10px] text-slate-400">
+                  {planType === "daily" ? "ยอดผ่อนต่อวัน" : planType === "weekly" ? "ยอดผ่อนต่อสัปดาห์" : "ยอดผ่อนต่อเดือน"}
+                </p>
                 <p className="font-black text-red-600 font-num mt-0.5">
                   ฿{fmt(perInstallment)}
                 </p>
