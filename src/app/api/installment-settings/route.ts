@@ -93,6 +93,13 @@ export async function GET() {
         weekly:  parseTiers("installment_late_penalty_tiers_weekly",  DEFAULT_LATE_TIERS_WEEKLY),
         monthly: parseTiers("installment_late_penalty_tiers_monthly", DEFAULT_LATE_TIERS_MONTHLY),
       },
+      planCountMarkups: (() => {
+        try {
+          const v = get("installment_plan_count_markups");
+          const parsed = typeof v === "string" ? JSON.parse(v) : v;
+          return parsed && typeof parsed === "object" ? parsed : { daily: {}, weekly: {}, monthly: {} };
+        } catch { return { daily: {}, weekly: {}, monthly: {} }; }
+      })(),
     }, {
       headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=120" },
     });

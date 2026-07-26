@@ -758,6 +758,14 @@ const DEFAULT_SETTINGS = [
     type: "textarea",
     group: "ผ่อนชำระไอดี",
   },
+  {
+    key: "installment_plan_count_markups",
+    value: JSON.stringify({ daily: { "7":0,"14":2,"21":4,"30":6 }, weekly: { "2":0,"3":2,"4":4,"6":8,"8":12,"12":20 }, monthly: { "2":0,"3":5,"6":15,"12":35 } }),
+    label: "ดอกเบี้ยเพิ่มแต่ละงวด (JSON object)",
+    description: "% ดอกเบี้ยแยกตามจำนวนงวด — แก้ผ่านหน้า Admin Installment",
+    type: "textarea",
+    group: "ผ่อนชำระไอดี",
+  },
 ];
 
 async function seedDefaultSettings() {

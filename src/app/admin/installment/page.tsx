@@ -31,6 +31,8 @@ interface LatePenaltyTier {
   ratePercent: number;
 }
 
+type PlanCountMarkups = { daily: Record<string,number>; weekly: Record<string,number>; monthly: Record<string,number> };
+
 interface FormState {
   enabled: boolean;
   lineUrl: string;
@@ -47,6 +49,7 @@ interface FormState {
   latePenaltyTiersDaily: LatePenaltyTier[];
   latePenaltyTiersWeekly: LatePenaltyTier[];
   latePenaltyTiersMonthly: LatePenaltyTier[];
+  planCountMarkups: PlanCountMarkups;
   howtoSteps: HowToStep[];
 }
 
@@ -66,6 +69,12 @@ const DEFAULT_LATE_TIERS_MONTHLY: LatePenaltyTier[] = [
   { id: "lpm2", fromDay: 8, toDay: 14, ratePercent: 2 },
   { id: "lpm3", fromDay: 15, toDay: 0, ratePercent: 3 },
 ];
+
+const DEFAULT_PLAN_COUNT_MARKUPS: PlanCountMarkups = {
+  daily:   { "7": 0, "14": 2, "21": 4, "30": 6 },
+  weekly:  { "2": 0, "3": 2, "4": 4, "6": 8, "8": 12, "12": 20 },
+  monthly: { "2": 0, "3": 5, "6": 15, "12": 35 },
+};
 
 const DEFAULT_RANGES: PriceRange[] = [
   { id: "r1", priceMin: 1000, priceMax: 2999, markupDaily: 10, markupWeekly: 20, markupMonthly: 25, enableMonthly: false },
@@ -97,6 +106,7 @@ const DEFAULTS: FormState = {
   latePenaltyTiersDaily:   DEFAULT_LATE_TIERS_DAILY,
   latePenaltyTiersWeekly:  DEFAULT_LATE_TIERS_WEEKLY,
   latePenaltyTiersMonthly: DEFAULT_LATE_TIERS_MONTHLY,
+  planCountMarkups: DEFAULT_PLAN_COUNT_MARKUPS,
   howtoSteps: [
     { title: "กรอกราคา & เลือกแผนผ่อน", desc: "ระบุราคาไอดี เลือกเงินเปิดบิล (40%, 50%, 80%) และเลือกระยะเวลาผ่อน (รายวัน/สัปดาห์/เดือน) ระบบจะคำนวณยอดทันที" },
     { title: "กดยืนยัน & แคปรูปบิลผ่อน", desc: "กดยอมรับเงื่อนไขและสร้างบิล จากนั้นถ่ายรูปหรือแคปหน้าจอบิลผ่อนอ้างอิงที่มี QR Code และเลขบิล" },
@@ -273,6 +283,54 @@ function LatePenaltyTierRow({
   );
 }
 
+// ─── Plan Count Markup Column ─────────────────────────────────────────────────
+
+function PlanMarkupCol({
+  planType,
+  label,
+  unit,
+  optionsStr,
+  markups,
+  onChange,
+}: {
+  planType: keyof PlanCountMarkups;
+  label: string;
+  unit: string;
+  optionsStr: string;
+  markups: Record<string, number>;
+  onChange: (key: string, val: number) => void;
+}) {
+  const counts = optionsStr.split(",").map((s) => s.trim()).filter(Boolean);
+  return (
+    <div className="flex-1 min-w-0">
+      <p className="text-xs font-semibold text-gray-600 mb-2">{label}</p>
+      <div className="space-y-2">
+        {counts.map((c) => (
+          <div key={c} className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 w-16 shrink-0">{c} {unit}</span>
+            <div className="relative flex-1">
+              <input
+                type="number"
+                value={markups[c] ?? 0}
+                min={0}
+                max={200}
+                step={0.5}
+                onChange={(e) => onChange(c, Number(e.target.value))}
+                className="w-full px-2.5 py-1.5 pr-8 rounded-lg border border-gray-200 text-sm text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all"
+              />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+            </div>
+            <span className="text-xs text-gray-400 shrink-0">เพิ่ม</span>
+          </div>
+        ))}
+        {counts.length === 0 && (
+          <p className="text-xs text-gray-400 italic">ยังไม่มีตัวเลือก — กรอกในแผนผ่อนด้านบน</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Price Range Row ──────────────────────────────────────────────────────────
 
 function PriceRangeRow({
@@ -430,6 +488,13 @@ export default function AdminInstallmentPage() {
               return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_LATE_TIERS_MONTHLY;
             } catch { return DEFAULT_LATE_TIERS_MONTHLY; }
           })(),
+          planCountMarkups: (() => {
+            try {
+              const v = g("installment_plan_count_markups")?.value;
+              const parsed = typeof v === "string" ? JSON.parse(v) : v;
+              return parsed && typeof parsed === "object" ? parsed : DEFAULT_PLAN_COUNT_MARKUPS;
+            } catch { return DEFAULT_PLAN_COUNT_MARKUPS; }
+          })(),
           howtoSteps: (() => {
             try {
               const v = g("installment_howto_steps")?.value;
@@ -463,6 +528,7 @@ export default function AdminInstallmentPage() {
         patchSetting("installment_late_penalty_tiers_daily",   JSON.stringify(form.latePenaltyTiersDaily)),
         patchSetting("installment_late_penalty_tiers_weekly",  JSON.stringify(form.latePenaltyTiersWeekly)),
         patchSetting("installment_late_penalty_tiers_monthly", JSON.stringify(form.latePenaltyTiersMonthly)),
+        patchSetting("installment_plan_count_markups",         JSON.stringify(form.planCountMarkups)),
         patchSetting("installment_howto_steps",                JSON.stringify(form.howtoSteps)),
       ]);
       setToast({ ok: true, msg: "บันทึกการตั้งค่าเรียบร้อยแล้ว" });
@@ -807,6 +873,54 @@ export default function AdminInstallmentPage() {
               ))}
             </div>
           </div>
+        </div>
+      </Card>
+
+      {/* ── 4b. Per-count markup ── */}
+      <Card
+        title="ดอกเบี้ยเพิ่มแต่ละงวด (%)"
+        subtitle="กำหนด % ดอกเบี้ยแยกตามจำนวนงวดที่เลือก — ถ้ามีค่าตรงนี้จะใช้แทนค่าบริการจากช่วงราคา"
+        icon={Percent}
+      >
+        <div className="flex gap-6 flex-wrap">
+          <PlanMarkupCol
+            planType="daily"
+            label="รายวัน"
+            unit="วัน"
+            optionsStr={form.dailyOptions}
+            markups={form.planCountMarkups?.daily ?? {}}
+            onChange={(c, v) => set("planCountMarkups", {
+              ...form.planCountMarkups,
+              daily: { ...(form.planCountMarkups?.daily ?? {}), [c]: v },
+            })}
+          />
+          <div className="w-px bg-gray-200 self-stretch hidden sm:block" />
+          <PlanMarkupCol
+            planType="weekly"
+            label="รายสัปดาห์"
+            unit="สัปดาห์"
+            optionsStr={form.weeklyOptions}
+            markups={form.planCountMarkups?.weekly ?? {}}
+            onChange={(c, v) => set("planCountMarkups", {
+              ...form.planCountMarkups,
+              weekly: { ...(form.planCountMarkups?.weekly ?? {}), [c]: v },
+            })}
+          />
+          <div className="w-px bg-gray-200 self-stretch hidden sm:block" />
+          <PlanMarkupCol
+            planType="monthly"
+            label="รายเดือน"
+            unit="เดือน"
+            optionsStr={form.monthlyOptions}
+            markups={form.planCountMarkups?.monthly ?? {}}
+            onChange={(c, v) => set("planCountMarkups", {
+              ...form.planCountMarkups,
+              monthly: { ...(form.planCountMarkups?.monthly ?? {}), [c]: v },
+            })}
+          />
+        </div>
+        <div className="mt-4 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-700">
+          <span className="font-semibold">วิธีคำนวณ:</span> ถ้างวด = 14 วัน และตั้งค่า 2% → ยอดรวม = ราคา × 1.02 — ถ้าไม่ได้ตั้ง (หรือ = 0) ระบบใช้ % จากช่วงราคาด้านบนแทน
         </div>
       </Card>
 
