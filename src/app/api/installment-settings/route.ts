@@ -9,6 +9,23 @@ const parseNums = (v: unknown, fallback: number[]) => {
   } catch { return fallback; }
 };
 
+const DEFAULT_LATE_TIERS_DAILY   = [
+  { fromDay: 1, toDay: 3,  ratePercent: 1 },
+  { fromDay: 4, toDay: 7,  ratePercent: 2 },
+  { fromDay: 8, toDay: 14, ratePercent: 3 },
+  { fromDay: 15, toDay: 0, ratePercent: 5 },
+];
+const DEFAULT_LATE_TIERS_WEEKLY  = [
+  { fromDay: 1, toDay: 3, ratePercent: 1 },
+  { fromDay: 4, toDay: 7, ratePercent: 2 },
+  { fromDay: 8, toDay: 0, ratePercent: 3 },
+];
+const DEFAULT_LATE_TIERS_MONTHLY = [
+  { fromDay: 1,  toDay: 7,  ratePercent: 1 },
+  { fromDay: 8,  toDay: 14, ratePercent: 2 },
+  { fromDay: 15, toDay: 0,  ratePercent: 3 },
+];
+
 const DEFAULT_PRICE_RANGES = [
   { id: "r1", priceMin: 1000, priceMax: 2999, markupDaily: 10, markupWeekly: 20, markupMonthly: 25, enableMonthly: false },
   { id: "r2", priceMin: 3000, priceMax: 3999, markupDaily: 35, markupWeekly: 25, markupMonthly: 20, enableMonthly: false },
@@ -45,6 +62,14 @@ export async function GET() {
       } catch { return null; }
     })();
 
+    const parseTiers = (key: string, fallback: object[]) => {
+      try {
+        const v = get(key);
+        const parsed = typeof v === "string" ? JSON.parse(v) : v;
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback;
+      } catch { return fallback; }
+    };
+
     return NextResponse.json({
       enabled:       get("installment_enabled") ?? true,
       lineUrl:       get("installment_line_url") ?? "https://line.me/ti/p/~@352eusln",
@@ -63,6 +88,11 @@ export async function GET() {
       terms,
       priceRanges,
       howtoSteps,
+      latePenaltyTiers: {
+        daily:   parseTiers("installment_late_penalty_tiers_daily",   DEFAULT_LATE_TIERS_DAILY),
+        weekly:  parseTiers("installment_late_penalty_tiers_weekly",  DEFAULT_LATE_TIERS_WEEKLY),
+        monthly: parseTiers("installment_late_penalty_tiers_monthly", DEFAULT_LATE_TIERS_MONTHLY),
+      },
     }, {
       headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=120" },
     });

@@ -100,15 +100,22 @@ const DEFAULT_PRICE_RANGES: PriceRangeAPI[] = [
 
 interface HowToStep { title: string; desc: string; }
 
+interface LatePenaltyTier {
+  fromDay: number;
+  toDay: number;   // 0 = ขึ้นไป
+  ratePercent: number;
+}
+
 interface PageSettings {
-  lineUrl:     string;
-  coverImage:  string;
-  terms:       string[];
-  downOptions: { pct: number; label: string }[];
-  planMeta:    Record<PlanType, { name: string; unit: string; markup: number }>;
-  planOptions: Record<PlanType, { count: number; label: string }[]>;
-  priceRanges: PriceRangeAPI[];
-  howtoSteps:  HowToStep[];
+  lineUrl:          string;
+  coverImage:       string;
+  terms:            string[];
+  downOptions:      { pct: number; label: string }[];
+  planMeta:         Record<PlanType, { name: string; unit: string; markup: number }>;
+  planOptions:      Record<PlanType, { count: number; label: string }[]>;
+  priceRanges:      PriceRangeAPI[];
+  howtoSteps:       HowToStep[];
+  latePenaltyTiers: Record<PlanType, LatePenaltyTier[]>;
 }
 
 const DEFAULT_HOWTO_STEPS: HowToStep[] = [
@@ -118,15 +125,22 @@ const DEFAULT_HOWTO_STEPS: HowToStep[] = [
   { title: "รับไอดีเล่นทันที!", desc: "แอดมินตรวจสอบการโอนและอนุมัติบิล พร้อมส่งมอบข้อมูลไอดีเกมให้คุณนำไปเล่นได้ทันที" },
 ];
 
+const DEFAULT_LATE_PENALTY_TIERS: Record<PlanType, LatePenaltyTier[]> = {
+  daily:   [{ fromDay: 1, toDay: 3, ratePercent: 1 }, { fromDay: 4, toDay: 7, ratePercent: 2 }, { fromDay: 8, toDay: 14, ratePercent: 3 }, { fromDay: 15, toDay: 0, ratePercent: 5 }],
+  weekly:  [{ fromDay: 1, toDay: 3, ratePercent: 1 }, { fromDay: 4, toDay: 7, ratePercent: 2 }, { fromDay: 8, toDay: 0, ratePercent: 3 }],
+  monthly: [{ fromDay: 1, toDay: 7, ratePercent: 1 }, { fromDay: 8, toDay: 14, ratePercent: 2 }, { fromDay: 15, toDay: 0, ratePercent: 3 }],
+};
+
 const DEFAULT_PAGE_SETTINGS: PageSettings = {
-  lineUrl:     LINE_ADMIN,
-  coverImage:  "",
-  terms:       TERMS,
-  downOptions: DOWN_OPTIONS,
-  planMeta:    PLAN_META,
-  planOptions: PLAN_OPTIONS,
-  priceRanges: DEFAULT_PRICE_RANGES,
-  howtoSteps:  DEFAULT_HOWTO_STEPS,
+  lineUrl:          LINE_ADMIN,
+  coverImage:       "",
+  terms:            TERMS,
+  downOptions:      DOWN_OPTIONS,
+  planMeta:         PLAN_META,
+  planOptions:      PLAN_OPTIONS,
+  priceRanges:      DEFAULT_PRICE_RANGES,
+  howtoSteps:       DEFAULT_HOWTO_STEPS,
+  latePenaltyTiers: DEFAULT_LATE_PENALTY_TIERS,
 };
 
 const SettingsCtx = createContext<PageSettings>(DEFAULT_PAGE_SETTINGS);
@@ -272,8 +286,13 @@ function StepBadge({ n }: { n: number }) {
 // ─── Terms Modal ─────────────────────────────────────────────────────────────
 
 function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { terms } = useContext(SettingsCtx);
+  const { terms, latePenaltyTiers } = useContext(SettingsCtx);
   if (!open) return null;
+
+  const planLabels: Record<PlanType, string> = {
+    daily: "รายวัน", weekly: "รายสัปดาห์", monthly: "รายเดือน",
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
       <div className="w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
@@ -293,6 +312,38 @@ function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               <p className="text-sm text-slate-600 leading-relaxed">{term}</p>
             </div>
           ))}
+
+          {/* ── ค่าปรับล่าช้า ── */}
+          <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 overflow-hidden">
+            <div className="px-4 py-2.5 bg-orange-100 border-b border-orange-200 flex items-center gap-2">
+              <span className="text-sm">⚠️</span>
+              <p className="text-xs font-bold text-orange-800">ค่าปรับกรณีชำระล่าช้า</p>
+            </div>
+            <div className="px-4 py-3 space-y-3">
+              {(["daily", "weekly", "monthly"] as PlanType[]).map((plan) => {
+                const tiers = latePenaltyTiers?.[plan] ?? [];
+                if (!tiers.length) return null;
+                return (
+                  <div key={plan}>
+                    <p className="text-[11px] font-bold text-orange-700 mb-1.5">แผน{planLabels[plan]}</p>
+                    <div className="space-y-1">
+                      {tiers.map((t, i) => (
+                        <div key={i} className="flex items-center justify-between text-xs">
+                          <span className="text-orange-600">
+                            เลย Due Date {t.toDay === 0 ? `${t.fromDay} วันขึ้นไป` : `${t.fromDay}–${t.toDay} วัน`}
+                          </span>
+                          <span className="font-bold text-orange-800">+{t.ratePercent}%/วัน</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-[10px] text-orange-500 pt-1 border-t border-orange-200">
+                คำนวณจากยอดงวดที่ค้างชำระ × จำนวนวันที่เลยกำหนด
+              </p>
+            </div>
+          </div>
         </div>
         <div className="px-5 py-4 border-t border-slate-100">
           <button
@@ -945,7 +996,7 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
   onBalanceChanged?: () => void;
   noMonthly?: boolean;
 }) {
-  const { downOptions, planOptions, planMeta, priceRanges } = useContext(SettingsCtx);
+  const { downOptions, planOptions, planMeta, priceRanges, latePenaltyTiers } = useContext(SettingsCtx);
   const [productCode, setProductCode] = useState(initialTitle || "");
   const [price,       setPrice]       = useState(initialPrice || "");
   const [downPct,     setDownPct]     = useState<number | null>(null);
@@ -1126,6 +1177,23 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
               <Info size={11} className="shrink-0 text-slate-400" />
               แผนนี้มีค่าบริการ {markup * 100}% จากยอดหลังหักเงินเปิดบิล
             </p>
+          )}
+
+          {/* Late penalty notice */}
+          {(latePenaltyTiers?.[planType]?.length ?? 0) > 0 && (
+            <div className="mt-3 p-2.5 rounded-xl bg-orange-50 border border-orange-100 space-y-1">
+              <p className="text-[10px] font-bold text-orange-700 flex items-center gap-1">
+                <span>⚠️</span> ค่าปรับกรณีชำระล่าช้า
+              </p>
+              {latePenaltyTiers[planType].map((t, i) => (
+                <div key={i} className="flex justify-between text-[10px]">
+                  <span className="text-orange-600">
+                    เลย {t.toDay === 0 ? `${t.fromDay} วันขึ้นไป` : `${t.fromDay}–${t.toDay} วัน`}
+                  </span>
+                  <span className="font-bold text-orange-800">+{t.ratePercent}%/วัน</span>
+                </div>
+              ))}
+            </div>
           )}
         </SectionCard>
 
@@ -1627,8 +1695,9 @@ export default function InstallmentPage() {
             weekly:  parseOpts(d.planOptions?.weekly  ?? [2, 3, 4, 6, 8, 12], "สัปดาห์"),
             monthly: parseOpts(d.planOptions?.monthly ?? [2, 3, 4, 6, 12], "เดือน"),
           },
-          priceRanges: Array.isArray(d.priceRanges) ? d.priceRanges : DEFAULT_PRICE_RANGES,
-          howtoSteps:  Array.isArray(d.howtoSteps) ? d.howtoSteps : DEFAULT_HOWTO_STEPS,
+          priceRanges:      Array.isArray(d.priceRanges) ? d.priceRanges : DEFAULT_PRICE_RANGES,
+          howtoSteps:       Array.isArray(d.howtoSteps) ? d.howtoSteps : DEFAULT_HOWTO_STEPS,
+          latePenaltyTiers: d.latePenaltyTiers ?? DEFAULT_LATE_PENALTY_TIERS,
         });
       })
       .catch(() => {}); // fallback ใช้ defaults

@@ -709,6 +709,43 @@ const DEFAULT_SETTINGS = [
     group: "ผ่อนชำระไอดี",
   },
   {
+    key: "installment_late_penalty_tiers_daily",
+    value: JSON.stringify([
+      { id: "lpd1", fromDay: 1,  toDay: 3,  ratePercent: 1 },
+      { id: "lpd2", fromDay: 4,  toDay: 7,  ratePercent: 2 },
+      { id: "lpd3", fromDay: 8,  toDay: 14, ratePercent: 3 },
+      { id: "lpd4", fromDay: 15, toDay: 0,  ratePercent: 5 },
+    ]),
+    label: "ค่าปรับดอกเบี้ยล่าช้า — รายวัน (JSON array)",
+    description: "อัตรา % ต่อวัน แยกช่วงวัน สำหรับแผนรายวัน — แก้ผ่านหน้า Admin Installment",
+    type: "textarea",
+    group: "ผ่อนชำระไอดี",
+  },
+  {
+    key: "installment_late_penalty_tiers_weekly",
+    value: JSON.stringify([
+      { id: "lpw1", fromDay: 1, toDay: 3, ratePercent: 1 },
+      { id: "lpw2", fromDay: 4, toDay: 7, ratePercent: 2 },
+      { id: "lpw3", fromDay: 8, toDay: 0, ratePercent: 3 },
+    ]),
+    label: "ค่าปรับดอกเบี้ยล่าช้า — รายสัปดาห์ (JSON array)",
+    description: "อัตรา % ต่อวัน แยกช่วงวัน สำหรับแผนรายสัปดาห์ — แก้ผ่านหน้า Admin Installment",
+    type: "textarea",
+    group: "ผ่อนชำระไอดี",
+  },
+  {
+    key: "installment_late_penalty_tiers_monthly",
+    value: JSON.stringify([
+      { id: "lpm1", fromDay: 1,  toDay: 7,  ratePercent: 1 },
+      { id: "lpm2", fromDay: 8,  toDay: 14, ratePercent: 2 },
+      { id: "lpm3", fromDay: 15, toDay: 0,  ratePercent: 3 },
+    ]),
+    label: "ค่าปรับดอกเบี้ยล่าช้า — รายเดือน (JSON array)",
+    description: "อัตรา % ต่อวัน แยกช่วงวัน สำหรับแผนรายเดือน — แก้ผ่านหน้า Admin Installment",
+    type: "textarea",
+    group: "ผ่อนชำระไอดี",
+  },
+  {
     key: "installment_howto_steps",
     value: JSON.stringify([
       { title: "กรอกราคา & เลือกแผนผ่อน", desc: "ระบุราคาไอดี เลือกเงินเปิดบิล (40%, 50%, 80%) และเลือกระยะเวลาผ่อน (รายวัน/สัปดาห์/เดือน) ระบบจะคำนวณยอดทันที" },
