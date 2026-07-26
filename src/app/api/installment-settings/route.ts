@@ -26,6 +26,12 @@ const DEFAULT_LATE_TIERS_MONTHLY = [
   { fromDay: 15, toDay: 0,  ratePercent: 3 },
 ];
 
+const DEFAULT_PLAN_COUNT_MARKUPS = {
+  daily:   { "7": 0, "14": 2, "21": 4, "30": 6 },
+  weekly:  { "2": 0, "3": 2, "4": 4, "6": 8, "8": 12, "12": 20 },
+  monthly: { "2": 0, "3": 5, "6": 15, "12": 35 },
+};
+
 const DEFAULT_PRICE_RANGES = [
   { id: "r1", priceMin: 1000, priceMax: 2999, markupDaily: 10, markupWeekly: 20, markupMonthly: 25, enableMonthly: false },
   { id: "r2", priceMin: 3000, priceMax: 3999, markupDaily: 35, markupWeekly: 25, markupMonthly: 20, enableMonthly: false },
@@ -97,8 +103,8 @@ export async function GET() {
         try {
           const v = get("installment_plan_count_markups");
           const parsed = typeof v === "string" ? JSON.parse(v) : v;
-          return parsed && typeof parsed === "object" ? parsed : { daily: {}, weekly: {}, monthly: {} };
-        } catch { return { daily: {}, weekly: {}, monthly: {} }; }
+          return parsed && typeof parsed === "object" ? parsed : DEFAULT_PLAN_COUNT_MARKUPS;
+        } catch { return DEFAULT_PLAN_COUNT_MARKUPS; }
       })(),
     }, {
       headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=120" },
