@@ -70,13 +70,11 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName,
       title,
       description: siteDesc,
-      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: siteDesc,
-      images: [ogImage],
     },
     icons: {
       icon: [
