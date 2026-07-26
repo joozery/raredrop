@@ -130,3 +130,19 @@ export async function PATCH(req: NextRequest) {
 
   return NextResponse.json({ error: "action ไม่ถูกต้อง" }, { status: 400 });
 }
+
+// DELETE /api/admin/installment/bills  { billId }
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  const err = requireAdmin(session);
+  if (err) return err;
+
+  const { billId } = await req.json();
+  if (!billId) return NextResponse.json({ error: "ไม่มี billId" }, { status: 400 });
+
+  await connectToDatabase();
+  const deleted = await InstallmentBill.findOneAndDelete({ billId });
+  if (!deleted) return NextResponse.json({ error: "ไม่พบบิล" }, { status: 404 });
+
+  return NextResponse.json({ ok: true });
+}

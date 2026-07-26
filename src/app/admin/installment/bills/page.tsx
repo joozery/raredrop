@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, RefreshCw, ChevronLeft, ChevronRight,
   FileText, CheckCircle2, XCircle, Clock, PlayCircle,
-  Upload, Check, ImageIcon, X, Bell,
+  Upload, Check, ImageIcon, X, Bell, Trash2, AlertTriangle,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -38,10 +38,34 @@ interface Bill {
   createdAt: string;
 }
 
+interface LatePenaltyTier {
+  fromDay: number;
+  toDay: number;
+  ratePercent: number;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
   n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function calcDueDate(createdAt: string, planType: string, installmentNo: number): Date {
+  const due = new Date(createdAt);
+  if (planType === "daily")        due.setDate(due.getDate() + installmentNo);
+  else if (planType === "weekly")  due.setDate(due.getDate() + installmentNo * 7);
+  else { due.setMonth(due.getMonth() + installmentNo); due.setDate(1); }
+  return due;
+}
+
+function getOverdueDays(dueDate: Date): number {
+  const diff = Date.now() - dueDate.getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
+}
+
+function getPenaltyRate(tiers: LatePenaltyTier[], days: number): number {
+  if (days === 0) return 0;
+  return tiers.find((t) => days >= t.fromDay && (t.toDay === 0 || days <= t.toDay))?.ratePercent ?? 0;
+}
 
 const PLAN_NAME: Record<string, string> = {
   daily: "รายวัน", weekly: "รายสัปดาห์", monthly: "รายเดือน",
@@ -68,12 +92,21 @@ function StatusBadge({ status }: { status: BillStatus }) {
 function InstallmentRow({
   inst,
   billId,
+  penaltyTiers,
+  dueDate,
   onPaid,
 }: {
   inst: InstallmentItem;
   billId: string;
+  penaltyTiers: LatePenaltyTier[];
+  dueDate: Date;
   onPaid: (installmentNo: number, updated: InstallmentItem) => void;
 }) {
+  const overdueDays   = inst.status === "pending" ? getOverdueDays(dueDate) : 0;
+  const penaltyRate   = getPenaltyRate(penaltyTiers, overdueDays);
+  const penaltyAmount = overdueDays > 0 && penaltyRate > 0
+    ? Math.ceil(inst.amount * (penaltyRate / 100) * overdueDays)
+    : 0;
   const [slipFile,    setSlipFile]    = useState<File | null>(null);
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [confirming,  setConfirming]  = useState(false);
@@ -155,6 +188,21 @@ function InstallmentRow({
           )}
         </div>
       </div>
+
+      {/* Overdue badge */}
+      {!isPaid && overdueDays > 0 && (
+        <div className="mx-3.5 mb-2.5 px-3 py-2 rounded-lg bg-red-50 border border-red-200 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5 text-red-700 font-semibold">
+            <AlertTriangle size={12} />
+            เลยกำหนด {overdueDays} วัน
+          </div>
+          {penaltyAmount > 0 && (
+            <span className="text-red-800 font-bold">
+              ค่าปรับ +฿{fmt(penaltyAmount)} ({penaltyRate}%/วัน)
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Paid info */}
       {isPaid && (
@@ -254,16 +302,21 @@ function InstallmentRow({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminInstallmentBillsPage() {
-  const [bills,    setBills]    = useState<Bill[]>([]);
-  const [total,    setTotal]    = useState(0);
-  const [pages,    setPages]    = useState(1);
-  const [page,     setPage]     = useState(1);
-  const [q,        setQ]        = useState("");
-  const [status,   setStatus]   = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [updating,  setUpdating]  = useState<string | null>(null);
-  const [resending, setResending] = useState<string | null>(null);
-  const [expanded,  setExpanded]  = useState<string | null>(null);
+  const [bills,       setBills]       = useState<Bill[]>([]);
+  const [total,       setTotal]       = useState(0);
+  const [pages,       setPages]       = useState(1);
+  const [page,        setPage]        = useState(1);
+  const [q,           setQ]           = useState("");
+  const [status,      setStatus]      = useState("");
+  const [loading,     setLoading]     = useState(false);
+  const [updating,    setUpdating]    = useState<string | null>(null);
+  const [resending,   setResending]   = useState<string | null>(null);
+  const [expanded,    setExpanded]    = useState<string | null>(null);
+  const [deleting,    setDeleting]    = useState<string | null>(null);
+  const [confirmDel,  setConfirmDel]  = useState<string | null>(null);
+  const [penaltyTiers, setPenaltyTiers] = useState<Record<string, LatePenaltyTier[]>>({
+    daily: [], weekly: [], monthly: [],
+  });
 
   const load = useCallback(async (p = 1) => {
     setLoading(true);
@@ -283,6 +336,13 @@ export default function AdminInstallmentBillsPage() {
   }, [q, status]);
 
   useEffect(() => { load(1); }, [load]);
+
+  useEffect(() => {
+    fetch("/api/installment-settings")
+      .then((r) => r.json())
+      .then((d) => { if (d.latePenaltyTiers) setPenaltyTiers(d.latePenaltyTiers); })
+      .catch(() => {});
+  }, []);
 
   const updateBillStatus = async (billId: string, newStatus: BillStatus) => {
     setUpdating(billId);
@@ -318,6 +378,27 @@ export default function AdminInstallmentBillsPage() {
       alert(e.message);
     } finally {
       setResending(null);
+    }
+  };
+
+  const deleteBill = async (billId: string) => {
+    setDeleting(billId);
+    try {
+      const res = await fetch("/api/admin/installment/bills", {
+        method:  "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ billId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "เกิดข้อผิดพลาด");
+      setBills((prev) => prev.filter((b) => b.billId !== billId));
+      setTotal((t) => t - 1);
+      setExpanded(null);
+      setConfirmDel(null);
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -473,6 +554,8 @@ export default function AdminInstallmentBillsPage() {
                               key={inst.installmentNo}
                               inst={inst}
                               billId={bill.billId}
+                              penaltyTiers={penaltyTiers[bill.planType] ?? []}
+                              dueDate={calcDueDate(bill.createdAt, bill.planType, inst.installmentNo)}
                               onPaid={(no, updated) => handleInstallmentPaid(bill.billId, no, updated)}
                             />
                           ))}
@@ -515,6 +598,42 @@ export default function AdminInstallmentBillsPage() {
                             : <Bell size={13} />}
                           {resending === bill.billId ? "กำลังส่ง..." : "ส่งแจ้งเตือน Discord อีกครั้ง"}
                         </button>
+                      </div>
+
+                      {/* ลบบิล */}
+                      <div className="pt-1 border-t border-gray-200">
+                        {confirmDel === bill.billId ? (
+                          <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50 border border-red-200">
+                            <AlertTriangle size={15} className="text-red-600 shrink-0" />
+                            <p className="text-xs text-red-700 font-semibold flex-1">
+                              ยืนยันลบบิล <span className="font-mono">{bill.billId}</span> ? ไม่สามารถกู้คืนได้
+                            </p>
+                            <button
+                              onClick={() => setConfirmDel(null)}
+                              className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs text-gray-600 hover:bg-white transition-colors cursor-pointer"
+                            >
+                              ยกเลิก
+                            </button>
+                            <button
+                              onClick={() => deleteBill(bill.billId)}
+                              disabled={deleting === bill.billId}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-60"
+                            >
+                              {deleting === bill.billId
+                                ? <RefreshCw size={11} className="animate-spin" />
+                                : <Trash2 size={11} />}
+                              {deleting === bill.billId ? "กำลังลบ..." : "ลบเลย"}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDel(bill.billId)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-red-200 bg-white text-red-600 text-xs font-semibold hover:bg-red-50 transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            ลบบิลนี้
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

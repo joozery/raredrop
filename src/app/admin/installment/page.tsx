@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Calculator, Save, Plus, Trash2, ToggleLeft, ToggleRight,
   Link, Image, Percent, Calendar, CheckCircle2, AlertCircle,
-  RefreshCw, DollarSign, BookOpen,
+  RefreshCw, DollarSign, BookOpen, AlertTriangle,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -24,6 +24,13 @@ interface PriceRange {
   enableMonthly: boolean;
 }
 
+interface LatePenaltyTier {
+  id: string;
+  fromDay: number;
+  toDay: number;   // 0 = ขึ้นไป (ไม่มีสิ้นสุด)
+  ratePercent: number;
+}
+
 interface FormState {
   enabled: boolean;
   lineUrl: string;
@@ -37,8 +44,28 @@ interface FormState {
   monthlyOptions: string;
   terms: string[];
   priceRanges: PriceRange[];
+  latePenaltyTiersDaily: LatePenaltyTier[];
+  latePenaltyTiersWeekly: LatePenaltyTier[];
+  latePenaltyTiersMonthly: LatePenaltyTier[];
   howtoSteps: HowToStep[];
 }
+
+const DEFAULT_LATE_TIERS_DAILY: LatePenaltyTier[] = [
+  { id: "lpd1", fromDay: 1, toDay: 3,  ratePercent: 1 },
+  { id: "lpd2", fromDay: 4, toDay: 7,  ratePercent: 2 },
+  { id: "lpd3", fromDay: 8, toDay: 14, ratePercent: 3 },
+  { id: "lpd4", fromDay: 15, toDay: 0, ratePercent: 5 },
+];
+const DEFAULT_LATE_TIERS_WEEKLY: LatePenaltyTier[] = [
+  { id: "lpw1", fromDay: 1, toDay: 3,  ratePercent: 1 },
+  { id: "lpw2", fromDay: 4, toDay: 7,  ratePercent: 2 },
+  { id: "lpw3", fromDay: 8, toDay: 0,  ratePercent: 3 },
+];
+const DEFAULT_LATE_TIERS_MONTHLY: LatePenaltyTier[] = [
+  { id: "lpm1", fromDay: 1, toDay: 7,  ratePercent: 1 },
+  { id: "lpm2", fromDay: 8, toDay: 14, ratePercent: 2 },
+  { id: "lpm3", fromDay: 15, toDay: 0, ratePercent: 3 },
+];
 
 const DEFAULT_RANGES: PriceRange[] = [
   { id: "r1", priceMin: 1000, priceMax: 2999, markupDaily: 10, markupWeekly: 20, markupMonthly: 25, enableMonthly: false },
@@ -67,6 +94,9 @@ const DEFAULTS: FormState = {
     "เงื่อนไขเพิ่มเติมให้เป็นไปตามที่ร้านแจ้งในแชทและหน้าประกาศของร้าน",
   ],
   priceRanges: DEFAULT_RANGES,
+  latePenaltyTiersDaily:   DEFAULT_LATE_TIERS_DAILY,
+  latePenaltyTiersWeekly:  DEFAULT_LATE_TIERS_WEEKLY,
+  latePenaltyTiersMonthly: DEFAULT_LATE_TIERS_MONTHLY,
   howtoSteps: [
     { title: "กรอกราคา & เลือกแผนผ่อน", desc: "ระบุราคาไอดี เลือกเงินเปิดบิล (40%, 50%, 80%) และเลือกระยะเวลาผ่อน (รายวัน/สัปดาห์/เดือน) ระบบจะคำนวณยอดทันที" },
     { title: "กดยืนยัน & แคปรูปบิลผ่อน", desc: "กดยอมรับเงื่อนไขและสร้างบิล จากนั้นถ่ายรูปหรือแคปหน้าจอบิลผ่อนอ้างอิงที่มี QR Code และเลขบิล" },
@@ -162,6 +192,83 @@ function NumberInput({ value, onChange, min = 0, max = 100, suffix }: {
       {suffix && (
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{suffix}</span>
       )}
+    </div>
+  );
+}
+
+// ─── Late Penalty Tier Row ────────────────────────────────────────────────────
+
+function LatePenaltyTierRow({
+  tier,
+  index,
+  onUpdate,
+  onDelete,
+}: {
+  tier: LatePenaltyTier;
+  index: number;
+  onUpdate: (updated: LatePenaltyTier) => void;
+  onDelete: () => void;
+}) {
+  const up = (field: keyof LatePenaltyTier, val: unknown) =>
+    onUpdate({ ...tier, [field]: val });
+
+  return (
+    <div className="rounded-2xl border border-orange-200 bg-white overflow-hidden">
+      <div className="grid grid-cols-3 divide-x divide-orange-100">
+        <div className="p-3">
+          <p className="text-xs text-gray-400 font-medium mb-1.5">เกินกำหนด (วัน)</p>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              value={tier.fromDay}
+              min={1}
+              onChange={(e) => up("fromDay", Number(e.target.value))}
+              className="w-full px-2.5 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all"
+            />
+            <span className="text-xs text-gray-400 shrink-0">—</span>
+            <input
+              type="number"
+              value={tier.toDay}
+              min={0}
+              onChange={(e) => up("toDay", Number(e.target.value))}
+              placeholder="∞"
+              className="w-full px-2.5 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all"
+            />
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1">0 ช่อง "ถึง" = ขึ้นไปไม่มีสิ้นสุด</p>
+        </div>
+        <div className="p-3">
+          <p className="text-xs text-gray-400 font-medium mb-1.5">อัตราดอกเบี้ย (%/วัน)</p>
+          <div className="relative">
+            <input
+              type="number"
+              value={tier.ratePercent}
+              min={0}
+              max={100}
+              step={0.1}
+              onChange={(e) => up("ratePercent", Number(e.target.value))}
+              className="w-full px-2.5 py-2 pr-8 rounded-lg border border-gray-200 text-sm text-gray-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all"
+            />
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+          </div>
+        </div>
+        <div className="p-3 flex flex-col justify-between">
+          <p className="text-xs text-gray-400 font-medium mb-1.5">สรุป</p>
+          <p className="text-sm font-semibold text-orange-600">
+            {tier.toDay === 0
+              ? `เกิน ${tier.fromDay} วันขึ้นไป → ${tier.ratePercent}%/วัน`
+              : `${tier.fromDay}–${tier.toDay} วัน → ${tier.ratePercent}%/วัน`}
+          </p>
+        </div>
+      </div>
+      <div className="px-3 py-2 bg-orange-50/40 border-t border-orange-100 flex justify-end">
+        <button
+          onClick={onDelete}
+          className="text-xs font-semibold text-red-500 hover:text-red-700 transition-colors cursor-pointer"
+        >
+          ลบช่วง
+        </button>
+      </div>
     </div>
   );
 }
@@ -262,10 +369,11 @@ function PriceRangeRow({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminInstallmentPage() {
-  const [form,    setForm]    = useState<FormState>(DEFAULTS);
-  const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
-  const [toast,   setToast]   = useState<{ ok: boolean; msg: string } | null>(null);
+  const [form,       setForm]       = useState<FormState>(DEFAULTS);
+  const [loading,    setLoading]    = useState(true);
+  const [saving,     setSaving]     = useState(false);
+  const [toast,      setToast]      = useState<{ ok: boolean; msg: string } | null>(null);
+  const [penaltyTab, setPenaltyTab] = useState<"daily" | "weekly" | "monthly">("daily");
 
   const set = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -301,6 +409,27 @@ export default function AdminInstallmentPage() {
             try { return JSON.parse(g("installment_terms")?.value ?? "[]"); } catch { return DEFAULTS.terms; }
           })(),
           priceRanges: loadedRanges,
+          latePenaltyTiersDaily: (() => {
+            try {
+              const v = g("installment_late_penalty_tiers_daily")?.value ?? g("installment_late_penalty_tiers")?.value;
+              const parsed = typeof v === "string" ? JSON.parse(v) : v;
+              return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_LATE_TIERS_DAILY;
+            } catch { return DEFAULT_LATE_TIERS_DAILY; }
+          })(),
+          latePenaltyTiersWeekly: (() => {
+            try {
+              const v = g("installment_late_penalty_tiers_weekly")?.value;
+              const parsed = typeof v === "string" ? JSON.parse(v) : v;
+              return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_LATE_TIERS_WEEKLY;
+            } catch { return DEFAULT_LATE_TIERS_WEEKLY; }
+          })(),
+          latePenaltyTiersMonthly: (() => {
+            try {
+              const v = g("installment_late_penalty_tiers_monthly")?.value;
+              const parsed = typeof v === "string" ? JSON.parse(v) : v;
+              return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_LATE_TIERS_MONTHLY;
+            } catch { return DEFAULT_LATE_TIERS_MONTHLY; }
+          })(),
           howtoSteps: (() => {
             try {
               const v = g("installment_howto_steps")?.value;
@@ -330,8 +459,11 @@ export default function AdminInstallmentPage() {
         patchSetting("installment_weekly_options",  form.weeklyOptions),
         patchSetting("installment_monthly_options", form.monthlyOptions),
         patchSetting("installment_terms",           JSON.stringify(form.terms)),
-        patchSetting("installment_price_ranges",    JSON.stringify(form.priceRanges)),
-        patchSetting("installment_howto_steps",     JSON.stringify(form.howtoSteps)),
+        patchSetting("installment_price_ranges",                JSON.stringify(form.priceRanges)),
+        patchSetting("installment_late_penalty_tiers_daily",   JSON.stringify(form.latePenaltyTiersDaily)),
+        patchSetting("installment_late_penalty_tiers_weekly",  JSON.stringify(form.latePenaltyTiersWeekly)),
+        patchSetting("installment_late_penalty_tiers_monthly", JSON.stringify(form.latePenaltyTiersMonthly)),
+        patchSetting("installment_howto_steps",                JSON.stringify(form.howtoSteps)),
       ]);
       setToast({ ok: true, msg: "บันทึกการตั้งค่าเรียบร้อยแล้ว" });
     } catch (e: any) {
@@ -340,6 +472,23 @@ export default function AdminInstallmentPage() {
       setSaving(false);
       setTimeout(() => setToast(null), 3500);
     }
+  };
+
+  type PenaltyKey = "latePenaltyTiersDaily" | "latePenaltyTiersWeekly" | "latePenaltyTiersMonthly";
+
+  const addPenaltyTier = (key: PenaltyKey) => {
+    const tiers = form[key] ?? [];
+    const last = tiers[tiers.length - 1];
+    const newFrom = last ? (last.toDay > 0 ? last.toDay + 1 : last.fromDay + 10) : 1;
+    set(key, [...tiers, { id: genId(), fromDay: newFrom, toDay: 0, ratePercent: 5 }]);
+  };
+
+  const updatePenaltyTier = (key: PenaltyKey, id: string, updated: LatePenaltyTier) => {
+    set(key, (form[key] ?? []).map((t) => t.id === id ? updated : t));
+  };
+
+  const deletePenaltyTier = (key: PenaltyKey, id: string) => {
+    set(key, (form[key] ?? []).filter((t) => t.id !== id));
   };
 
   const addRange = () => {
@@ -473,6 +622,82 @@ export default function AdminInstallmentPage() {
             เพิ่มช่วงราคา
           </button>
         </div>
+
+        {/* ── Divider ── */}
+        <div className="my-5 border-t border-dashed border-gray-200" />
+
+        {/* ── Late Penalty Tiers ── */}
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle size={14} className="text-orange-500 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-gray-900">ค่าปรับดอกเบี้ยล่าช้า</p>
+            <p className="text-xs text-gray-400">% ต่อวัน บนยอดงวดที่เลย Due Date — ตั้งแยกตามแผน</p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        {(() => {
+          const tabs = [
+            { key: "daily"   as const, label: "รายวัน",    fk: "latePenaltyTiersDaily"   as PenaltyKey },
+            { key: "weekly"  as const, label: "รายสัปดาห์", fk: "latePenaltyTiersWeekly"  as PenaltyKey },
+            { key: "monthly" as const, label: "รายเดือน",  fk: "latePenaltyTiersMonthly" as PenaltyKey },
+          ];
+          const active = tabs.find((t) => t.key === penaltyTab)!;
+          const tiers  = (form[active.fk] ?? []) as LatePenaltyTier[];
+          return (
+            <>
+              <div className="flex gap-1.5 mb-4 p-1 bg-gray-100 rounded-xl w-fit">
+                {tabs.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setPenaltyTab(t.key)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      penaltyTab === t.key
+                        ? "bg-white text-orange-600 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="space-y-3">
+                {tiers.length === 0 && (
+                  <div className="text-center py-6 text-sm text-gray-400">
+                    ยังไม่มีอัตราค่าปรับ — กดเพิ่มช่วงวันด้านล่าง
+                  </div>
+                )}
+                {tiers.map((tier, i) => (
+                  <LatePenaltyTierRow
+                    key={tier.id}
+                    tier={tier}
+                    index={i}
+                    onUpdate={(updated) => updatePenaltyTier(active.fk, tier.id, updated)}
+                    onDelete={() => deletePenaltyTier(active.fk, tier.id)}
+                  />
+                ))}
+                <button
+                  onClick={() => addPenaltyTier(active.fk)}
+                  className="mt-1 flex items-center gap-2 text-sm text-orange-500 font-semibold hover:text-orange-700 transition-colors cursor-pointer"
+                >
+                  <Plus size={15} />
+                  เพิ่มช่วงวัน
+                </button>
+              </div>
+              {tiers.length > 0 && (
+                <div className="mt-4 p-3 rounded-xl bg-orange-50 border border-orange-100 text-xs text-orange-700 space-y-1">
+                  <p className="font-semibold">ตัวอย่าง — {active.label}</p>
+                  {tiers.map((t) => (
+                    <p key={t.id}>
+                      • เลย Due Date {t.toDay === 0 ? `${t.fromDay} วันขึ้นไป` : `${t.fromDay}–${t.toDay} วัน`}:{" "}
+                      <span className="font-bold">บวก {t.ratePercent}% × จำนวนวันที่เลย</span> บนยอดงวดนั้น
+                    </p>
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </Card>
 
       {/* ── 3. Down options ── */}
