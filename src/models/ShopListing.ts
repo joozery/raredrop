@@ -21,6 +21,7 @@ export interface IShopListing extends Document {
   requireUid: boolean;
   uidLabel: string;
   installmentEnabled: boolean;
+  installmentMonthlyDisabled: boolean;
   order: number;
   createdAt: Date;
   updatedAt: Date;
@@ -53,6 +54,7 @@ const ShopListingSchema: Schema = new Schema({
   uidLabel: { type: String, default: "UID / ไอดีผู้เล่น" },
   // เปิดให้สินค้านี้ผ่อนชำระได้ — แสดงตัวเลือก "ผ่อนชำระ" ในหน้าร้านค้า
   installmentEnabled: { type: Boolean, default: false },
+  installmentMonthlyDisabled: { type: Boolean, default: false },
   // ลำดับการแสดงผล — เรียงจากน้อยไปมาก, ค่าเริ่มต้น 0 ทุกตัว (จะ tiebreak ด้วย createdAt จนกว่าแอดมินจะลากจัดเรียงจริง)
   order: { type: Number, default: 0 },
 }, { timestamps: true });

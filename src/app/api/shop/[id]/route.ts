@@ -10,6 +10,26 @@ import RecentActivity from "@/models/RecentActivity";
 import { emitRecentActivity } from "@/lib/realtime";
 import { randomUUID } from "crypto";
 
+// GET /api/shop/[id] — ดึงข้อมูล listing (สำหรับหน้า installment ตรวจสอบ installmentMonthlyDisabled)
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await connectToDatabase();
+    const listing = await ShopListing.findById(id)
+      .select("title price images installmentEnabled installmentMonthlyDisabled status")
+      .lean();
+    if (!listing || (listing as any).status !== "active") {
+      return NextResponse.json({ error: "ไม่พบสินค้า" }, { status: 404 });
+    }
+    return NextResponse.json(listing);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 // POST /api/shop/[id] — buy listing
 export async function POST(
   req: Request,

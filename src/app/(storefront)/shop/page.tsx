@@ -26,6 +26,7 @@ interface ShopItem {
   requireUid?: boolean;
   uidLabel?: string;
   installmentEnabled?: boolean;
+  installmentMonthlyDisabled?: boolean;
   order?: number;
   createdAt: string;
 }
@@ -740,6 +741,7 @@ export default function ShopPage() {
                           price: String(buyModal.price),
                           image: buyModal.images?.[0] || "",
                           listingId: buyModal._id,
+                          ...(buyModal.installmentMonthlyDisabled ? { noMonthly: "1" } : {}),
                         });
                         setBuyModal(null);
                         router.push(`/installment?${params.toString()}`);
@@ -830,6 +832,7 @@ export default function ShopPage() {
                       price: String(buyModal.price),
                       image: buyModal.images?.[0] || "",
                       listingId: buyModal._id,
+                      ...(buyModal.installmentMonthlyDisabled ? { noMonthly: "1" } : {}),
                     });
                     setBuyModal(null);
                     router.push(`/installment?${params.toString()}`);

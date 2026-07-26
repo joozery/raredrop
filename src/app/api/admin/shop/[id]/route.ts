@@ -18,7 +18,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await req.json();
-    const { title, description, images, price, status, liveChatEnabled, youtubeUrl, categoryId, isFeatured, requireUid, uidLabel, installmentEnabled } = body;
+    const { title, description, images, price, status, liveChatEnabled, youtubeUrl, categoryId, isFeatured, requireUid, uidLabel, installmentEnabled, installmentMonthlyDisabled } = body;
 
     const update: any = { title, description, images, price: Number(price), status };
     // อัปเดตเฉพาะเมื่อส่งมา (toggleStatus ไม่ได้ส่ง → คงค่าเดิม)
@@ -29,6 +29,7 @@ export async function PUT(
     if (requireUid !== undefined) update.requireUid = !!requireUid;
     if (uidLabel !== undefined) update.uidLabel = uidLabel || "UID / ไอดีผู้เล่น";
     if (installmentEnabled !== undefined) update.installmentEnabled = !!installmentEnabled;
+    if (installmentMonthlyDisabled !== undefined) update.installmentMonthlyDisabled = !!installmentMonthlyDisabled;
 
     await connectToDatabase();
     const listing = await ShopListing.findByIdAndUpdate(

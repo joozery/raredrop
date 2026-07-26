@@ -412,14 +412,21 @@ function InstallmentDetailModal({
   const { data: session } = useSession();
   const displayImage = initialImage || coverImage;
   const [selectedCount, setSelectedCount] = useState<number>(planCount);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [confirmError, setConfirmError] = useState("");
+  const [isSaving,          setIsSaving]          = useState(false);
+  const [isConfirming,      setIsConfirming]      = useState(false);
+  const [confirmError,      setConfirmError]      = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [paymentSuccess,    setPaymentSuccess]    = useState(false);
+  const [paidBill,          setPaidBill]          = useState<Bill | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
       setSelectedCount(planCount);
+      setShowConfirmDialog(false);
+      setPaymentSuccess(false);
+      setPaidBill(null);
+      setConfirmError("");
     }
   }, [open, planCount]);
 
@@ -582,8 +589,10 @@ function InstallmentDetailModal({
           }
         } catch { /* ไม่ block flow ถ้า chat ล้มเหลว */ }
 
+        // ไม่ปิด modal ทันที — โชว์ success state ให้บันทึกภาพก่อน
+        setPaidBill(bill);
+        setPaymentSuccess(true);
         onConfirmViewBill(bill);
-        onClose();
       } catch {
         setConfirmError("เกิดข้อผิดพลาด กรุณาลองใหม่");
       } finally {
@@ -599,10 +608,17 @@ function InstallmentDetailModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex sm:items-center sm:justify-center sm:p-5 bg-black/60 backdrop-blur-sm sm:overflow-y-auto">
-      <div className="bg-white w-full h-full sm:h-auto sm:rounded-3xl sm:shadow-2xl sm:max-w-xl sm:max-h-[92vh] flex flex-col overflow-hidden text-slate-800 sm:my-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+      <div className="relative bg-white w-full h-full sm:h-auto sm:rounded-3xl sm:shadow-2xl sm:max-w-xl sm:max-h-[92vh] flex flex-col overflow-hidden text-slate-800 sm:my-auto animate-in fade-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
         {/* Modal Header */}
         <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-white shrink-0">
-          <h2 className="text-xl font-bold text-slate-900">บันทึกภาพ</h2>
+          {paymentSuccess ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xl">✅</span>
+              <h2 className="text-xl font-bold text-green-700">ชำระเงินสำเร็จ</h2>
+            </div>
+          ) : (
+            <h2 className="text-xl font-bold text-slate-900">บันทึกภาพ</h2>
+          )}
           <button
             onClick={onClose}
             className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
@@ -723,9 +739,6 @@ function InstallmentDetailModal({
                       </div>
 
                       <div className="flex items-center gap-2.5">
-                        <span className="text-xs text-slate-400 hidden sm:inline font-medium">
-                          ดอกเบี้ย 0%
-                        </span>
                         <div
                           className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
                             isSelected
@@ -796,38 +809,125 @@ function InstallmentDetailModal({
         </div>
 
         {/* Modal Footer */}
-        {fromShop && (
-          <div className="px-5 py-3 bg-amber-50 border-t border-amber-100 shrink-0">
-            <p className="text-xs text-amber-800 text-center">
-              ระบบจะหัก <strong>฿{fmt(downAmount)}</strong> จาก wallet ของคุณทันทีเมื่อกดยืนยัน
-            </p>
-            {confirmError && (
-              <p className="text-xs text-red-600 text-center mt-1 font-semibold">{confirmError}</p>
+        {paymentSuccess ? (
+          <>
+            <div className="px-5 py-3 bg-green-50 border-t border-green-100 shrink-0">
+              <p className="text-xs text-green-700 text-center font-semibold">
+                บันทึกภาพเอาไว้เพื่อยืนยันการผ่อนชำระกับแอดมิน
+              </p>
+            </div>
+            <div className="px-5 py-3.5 bg-white border-t border-slate-100 grid grid-cols-2 gap-3 shrink-0">
+              <button
+                onClick={handleSaveImage}
+                disabled={isSaving}
+                className="col-span-1 w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <Download size={16} />
+                {isSaving ? "กำลังบันทึก..." : "บันทึกภาพ"}
+              </button>
+              <button
+                onClick={onClose}
+                className="col-span-1 w-full py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                ปิด
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {fromShop && (
+              <div className="px-5 py-3 bg-amber-50 border-t border-amber-100 shrink-0">
+                <p className="text-xs text-amber-800 text-center">
+                  ระบบจะหัก <strong>฿{fmt(downAmount)}</strong> จาก wallet ของคุณทันทีเมื่อกดยืนยัน
+                </p>
+                {confirmError && (
+                  <p className="text-xs text-red-600 text-center mt-1 font-semibold">{confirmError}</p>
+                )}
+              </div>
             )}
+            <div className="px-5 py-3.5 bg-white border-t border-slate-100 grid grid-cols-2 gap-3 shrink-0">
+              <button
+                onClick={handleSaveImage}
+                disabled={isSaving}
+                className="w-full py-3 rounded-xl border border-red-500 bg-white hover:bg-red-50 text-red-600 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <Download size={16} />
+                {isSaving ? "กำลังบันทึก..." : "บันทึกภาพ"}
+              </button>
+              <button
+                onClick={fromShop ? () => setShowConfirmDialog(true) : handleConfirm}
+                disabled={isConfirming}
+                className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 cursor-pointer"
+              >
+                <FileText size={16} />
+                {isConfirming
+                  ? "กำลังชำระ..."
+                  : fromShop
+                    ? `ชำระเงินเปิดบิล ฿${fmt(downAmount)}`
+                    : "ดูรายละเอียดการผ่อน"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Confirmation Dialog Overlay */}
+        {showConfirmDialog && (
+          <div className="absolute inset-0 z-10 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:rounded-3xl">
+            <div className="bg-white w-full sm:rounded-3xl rounded-t-3xl shadow-2xl p-6 sm:mx-4 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <FileText size={20} className="text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">ยืนยันการชำระเงิน</h3>
+                  <p className="text-xs text-slate-500">ตรวจสอบรายละเอียดก่อนยืนยัน</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-5 bg-slate-50 rounded-2xl p-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">รหัสสินค้า</span>
+                  <span className="font-semibold text-slate-900 font-mono">{productCode}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">ยอดเปิดบิล</span>
+                  <span className="font-bold text-red-600 text-base">฿{fmt(downAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">แผนผ่อน</span>
+                  <span className="font-semibold text-slate-700">
+                    {PLAN_TYPES.find((p) => p.id === planType)?.label || planType} × {selectedCount} งวด
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-xl p-3 mb-5 text-center">
+                ระบบจะหัก <strong>฿{fmt(downAmount)}</strong> จาก wallet ของคุณทันที
+              </p>
+
+              {confirmError && (
+                <p className="text-xs text-red-600 text-center mb-3 font-semibold">{confirmError}</p>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setShowConfirmDialog(false)}
+                  disabled={isConfirming}
+                  className="w-full py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={() => { setShowConfirmDialog(false); handleConfirm(); }}
+                  disabled={isConfirming}
+                  className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60"
+                >
+                  {isConfirming ? "กำลังชำระ..." : "ยืนยันชำระเงิน"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
-        <div className="px-5 py-3.5 bg-white border-t border-slate-100 grid grid-cols-2 gap-3 shrink-0">
-          <button
-            onClick={handleSaveImage}
-            disabled={isSaving}
-            className="w-full py-3 rounded-xl border border-red-500 bg-white hover:bg-red-50 text-red-600 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
-          >
-            <Download size={16} />
-            {isSaving ? "กำลังบันทึก..." : "บันทึกภาพ"}
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={isConfirming}
-            className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 cursor-pointer"
-          >
-            <FileText size={16} />
-            {isConfirming
-              ? "กำลังชำระ..."
-              : fromShop
-                ? `ชำระเงินเปิดบิล ฿${fmt(downAmount)}`
-                : "ดูรายละเอียดการผ่อน"}
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -835,7 +935,7 @@ function InstallmentDetailModal({
 
 // ─── Calculator Form ──────────────────────────────────────────────────────────
 
-function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromShop, listingId, onBalanceChanged }: {
+function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromShop, listingId, onBalanceChanged, noMonthly }: {
   onCreated: (bill: Bill) => void;
   initialTitle?: string;
   initialPrice?: string;
@@ -843,6 +943,7 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
   fromShop?: boolean;
   listingId?: string;
   onBalanceChanged?: () => void;
+  noMonthly?: boolean;
 }) {
   const { downOptions, planOptions, planMeta, priceRanges } = useContext(SettingsCtx);
   const [productCode, setProductCode] = useState(initialTitle || "");
@@ -858,7 +959,7 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
   const totalPrice      = parseFloat(price);
   const validPrice      = !isNaN(totalPrice) && totalPrice > 0;
   const markup          = resolveMarkup(priceRanges, validPrice ? totalPrice : 0, planType, planMeta[planType].markup);
-  const monthlyEnabled  = !validPrice || isMonthlyEnabled(priceRanges, totalPrice);
+  const monthlyEnabled  = !noMonthly && (!validPrice || isMonthlyEnabled(priceRanges, totalPrice));
   const availablePlanTypes = PLAN_TYPES.filter((pt) => pt.id !== "monthly" || monthlyEnabled);
   const downAmount   = validPrice && downPct != null ? Math.round(totalPrice * downPct / 100) : 0;
   const remaining    = validPrice && downPct != null ? totalPrice - downAmount : 0;
@@ -1538,6 +1639,19 @@ export default function InstallmentPage() {
   const initialPrice   = searchParams.get("price")     || "";
   const initialImage   = searchParams.get("image")     || "";
   const initialListing = searchParams.get("listingId") || "";
+  const noMonthlyParam = searchParams.get("noMonthly") === "1";
+
+  // fetch installmentMonthlyDisabled จาก DB โดยตรง (ป้องกัน bypass ด้วย URL)
+  const [noMonthlyFromDB, setNoMonthlyFromDB] = useState(false);
+  useEffect(() => {
+    if (!initialListing) return;
+    fetch(`/api/shop/${initialListing}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setNoMonthlyFromDB(!!d.installmentMonthlyDisabled))
+      .catch(() => {});
+  }, [initialListing]);
+
+  const noMonthly = noMonthlyParam || noMonthlyFromDB;
 
   // มาจาก shop redirect — ตัดเงิน wallet + stock อัตโนมัติ
   const fromShop = !!(initialTitle && initialPrice);
@@ -1587,7 +1701,7 @@ export default function InstallmentPage() {
       {tab === "calc" && (
         createdBill
           ? <BillView bill={createdBill} onReset={() => setCreatedBill(null)} />
-          : <CalcForm onCreated={setCreatedBill} initialTitle={initialTitle} initialPrice={initialPrice} initialImage={initialImage} fromShop={fromShop} listingId={initialListing} onBalanceChanged={refreshBalance} />
+          : <CalcForm onCreated={setCreatedBill} initialTitle={initialTitle} initialPrice={initialPrice} initialImage={initialImage} fromShop={fromShop} listingId={initialListing} onBalanceChanged={refreshBalance} noMonthly={noMonthly} />
       )}
       {tab === "search" && <SearchTab />}
       {tab === "howto"  && <HowToTab onGoCalc={() => setTab("calc")} />}

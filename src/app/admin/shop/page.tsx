@@ -56,8 +56,8 @@ interface ShopListing {
   createdAt: string;
 }
 
-type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string; categoryId: string; isFeatured: boolean; requireUid: boolean; uidLabel: string; installmentEnabled: boolean };
-const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "", categoryId: "", isFeatured: false, requireUid: false, uidLabel: "UID / ไอดีผู้เล่น", installmentEnabled: false };
+type ShopForm = { title: string; description: string; images: string[]; price: string; status: "active" | "hidden"; liveChatEnabled: boolean; youtubeUrl: string; categoryId: string; isFeatured: boolean; requireUid: boolean; uidLabel: string; installmentEnabled: boolean; installmentMonthlyDisabled: boolean };
+const EMPTY_FORM: ShopForm = { title: "", description: "", images: [""], price: "", status: "active", liveChatEnabled: false, youtubeUrl: "", categoryId: "", isFeatured: false, requireUid: false, uidLabel: "UID / ไอดีผู้เล่น", installmentEnabled: false, installmentMonthlyDisabled: false };
 
 interface ShopListingCardProps {
   l: ShopListing;
@@ -461,6 +461,7 @@ export default function AdminShopPage() {
       requireUid: !!l.requireUid,
       uidLabel: l.uidLabel || "UID / ไอดีผู้เล่น",
       installmentEnabled: !!l.installmentEnabled,
+      installmentMonthlyDisabled: !!l.installmentMonthlyDisabled,
     });
     setModal("edit");
   };
@@ -517,6 +518,7 @@ export default function AdminShopPage() {
         requireUid: form.requireUid,
         uidLabel: form.uidLabel.trim() || "UID / ไอดีผู้เล่น",
         installmentEnabled: form.installmentEnabled,
+        installmentMonthlyDisabled: form.installmentMonthlyDisabled,
       };
       const url = modal === "edit" && editing ? `/api/admin/shop/${editing._id}` : "/api/admin/shop";
       const method = modal === "edit" ? "PUT" : "POST";
@@ -969,6 +971,22 @@ export default function AdminShopPage() {
                   <p className="text-[11px] text-red-500 mt-0.5">ลูกค้าจะเห็นตัวเลือก "ผ่อนชำระ" ในหน้ายืนยันการซื้อ และส่งไปหน้า ผ่อนชำระไอดีเกมโดยอัตโนมัติ</p>
                 </div>
               </label>
+
+              {/* ปิดรายเดือนสำหรับสินค้านี้ */}
+              {form.installmentEnabled && (
+                <label className="flex items-center gap-2.5 cursor-pointer bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={form.installmentMonthlyDisabled}
+                    onChange={(e) => setForm((f) => ({ ...f, installmentMonthlyDisabled: e.target.checked }))}
+                    className="accent-orange-500 w-4 h-4"
+                  />
+                  <div>
+                    <span className="text-sm font-bold text-orange-700">🚫 ปิดตัวเลือกผ่อนรายเดือน</span>
+                    <p className="text-[11px] text-orange-500 mt-0.5">ลูกค้าจะเห็นแค่รายวัน / รายสัปดาห์ ไม่มีตัวเลือกรายเดือนสำหรับสินค้านี้</p>
+                  </div>
+                </label>
+              )}
 
               {/* Status */}
               <div className="flex flex-col gap-1.5">
