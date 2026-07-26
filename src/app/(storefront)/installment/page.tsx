@@ -438,52 +438,56 @@ function InstallmentDetailModal({
     if (!cardRef.current) return;
     setIsSaving(true);
 
+    const source = cardRef.current;
+
+    // Walk ขึ้น ancestor chain — ลบ overflow/height ทุกชั้นชั่วคราว
+    type Saved = { el: HTMLElement; overflow: string; overflowY: string; maxHeight: string; height: string; flex: string; minHeight: string };
+    const saved: Saved[] = [];
+    let cur: HTMLElement | null = source;
+    while (cur && cur !== document.body) {
+      saved.push({
+        el: cur,
+        overflow:  cur.style.overflow,
+        overflowY: cur.style.overflowY,
+        maxHeight: cur.style.maxHeight,
+        height:    cur.style.height,
+        flex:      cur.style.flex,
+        minHeight: cur.style.minHeight,
+      });
+      cur.style.overflow  = "visible";
+      cur.style.overflowY = "visible";
+      cur.style.maxHeight = "none";
+      cur.style.height    = "auto";
+      cur.style.flex      = "none";
+      cur.style.minHeight = "0";
+      cur = cur.parentElement;
+    }
+    // กำหนด height ของ source ให้ = scrollHeight ทั้งหมด
+    source.style.height = `${source.scrollHeight}px`;
+    source.scrollTop = 0;
+
+    // รอ 2 frame ให้ browser layout เสร็จ
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
     try {
       const filename = `บิลผ่อนชำระ-${productCode || "LUXUSX"}.png`;
 
-      // clone content ไปใส่ wrapper นอก viewport
-      // เพื่อให้ Safari จับได้ทั้งหมด ไม่แค่ส่วนที่ scroll อยู่
-      const source = cardRef.current;
-      const clone  = source.cloneNode(true) as HTMLElement;
-
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText = [
-        "position:fixed",
-        "top:0",
-        "left:-9999px",
-        `width:${source.offsetWidth}px`,
-        "height:auto",
-        "overflow:visible",
-        "background:#ffffff",
-        "z-index:-1",
-        "padding:20px",
-      ].join(";");
-
-      clone.style.overflow  = "visible";
-      clone.style.maxHeight = "none";
-      clone.style.height    = "auto";
-      clone.style.flex      = "none";
-
-      wrapper.appendChild(clone);
-      document.body.appendChild(wrapper);
-
-      // รอ render เสร็จ
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-      const blob = await toBlob(wrapper, {
+      const blob = await toBlob(source, {
         pixelRatio: 2,
         skipAutoScale: true,
         cacheBust: true,
         fetchRequestInit: { cache: "no-cache" },
       }).catch(async () => {
-        // fallback: ซ่อนรูปที่ CORS บล็อก แล้วลองใหม่
-        clone.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+        // fallback: ซ่อนรูป CORS แล้วลองใหม่
+        source.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
           img.style.visibility = "hidden";
         });
-        return toBlob(wrapper, { pixelRatio: 2, skipAutoScale: true, skipFonts: true });
+        const b = await toBlob(source, { pixelRatio: 2, skipAutoScale: true });
+        source.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+          img.style.visibility = "";
+        });
+        return b;
       });
-
-      document.body.removeChild(wrapper);
 
       if (!blob) throw new Error("ไม่สามารถสร้างภาพได้");
 
@@ -500,11 +504,10 @@ function InstallmentDetailModal({
           return;
         } catch (e: any) {
           if (e?.name === "AbortError") return;
-          // share ล้มเหลว — fall through ไป download
         }
       }
 
-      // Desktop / fallback: ดาวน์โหลดผ่าน blob URL
+      // Desktop / fallback: download
       const url = URL.createObjectURL(blob);
       const a   = document.createElement("a");
       a.href     = url;
@@ -517,6 +520,15 @@ function InstallmentDetailModal({
       console.error("Failed to save image:", err);
       alert(`บันทึกภาพไม่สำเร็จ: ${err?.message ?? "กรุณาลองใหม่"}`);
     } finally {
+      // คืนค่า style ทุกชั้น
+      for (const s of saved) {
+        s.el.style.overflow  = s.overflow;
+        s.el.style.overflowY = s.overflowY;
+        s.el.style.maxHeight = s.maxHeight;
+        s.el.style.height    = s.height;
+        s.el.style.flex      = s.flex;
+        s.el.style.minHeight = s.minHeight;
+      }
       setIsSaving(false);
     }
   };
