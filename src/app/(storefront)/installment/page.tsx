@@ -106,6 +106,8 @@ interface LatePenaltyTier {
   ratePercent: number;
 }
 
+type PlanCountMarkups = { daily: Record<string,number>; weekly: Record<string,number>; monthly: Record<string,number> };
+
 interface PageSettings {
   lineUrl:          string;
   coverImage:       string;
@@ -116,6 +118,7 @@ interface PageSettings {
   priceRanges:      PriceRangeAPI[];
   howtoSteps:       HowToStep[];
   latePenaltyTiers: Record<PlanType, LatePenaltyTier[]>;
+  planCountMarkups: PlanCountMarkups;
 }
 
 const DEFAULT_HOWTO_STEPS: HowToStep[] = [
@@ -131,6 +134,12 @@ const DEFAULT_LATE_PENALTY_TIERS: Record<PlanType, LatePenaltyTier[]> = {
   monthly: [{ fromDay: 1, toDay: 7, ratePercent: 1 }, { fromDay: 8, toDay: 14, ratePercent: 2 }, { fromDay: 15, toDay: 0, ratePercent: 3 }],
 };
 
+const DEFAULT_PLAN_COUNT_MARKUPS: PlanCountMarkups = {
+  daily:   { "7": 0, "14": 2, "21": 4, "30": 6 },
+  weekly:  { "2": 0, "3": 2, "4": 4, "6": 8, "8": 12, "12": 20 },
+  monthly: { "2": 0, "3": 5, "6": 15, "12": 35 },
+};
+
 const DEFAULT_PAGE_SETTINGS: PageSettings = {
   lineUrl:          LINE_ADMIN,
   coverImage:       "",
@@ -141,6 +150,7 @@ const DEFAULT_PAGE_SETTINGS: PageSettings = {
   priceRanges:      DEFAULT_PRICE_RANGES,
   howtoSteps:       DEFAULT_HOWTO_STEPS,
   latePenaltyTiers: DEFAULT_LATE_PENALTY_TIERS,
+  planCountMarkups: DEFAULT_PLAN_COUNT_MARKUPS,
 };
 
 const SettingsCtx = createContext<PageSettings>(DEFAULT_PAGE_SETTINGS);
@@ -162,6 +172,22 @@ function resolveMarkup(
     monthly: range.markupMonthly,
   };
   return pct[planType] / 100;
+}
+
+function resolveMarkupWithCount(
+  markups: PlanCountMarkups,
+  ranges: PriceRangeAPI[],
+  price: number,
+  planType: PlanType,
+  planCount: number | null,
+  fallback: number,
+): number {
+  const base = resolveMarkup(ranges, price, planType, fallback);
+  if (planCount != null) {
+    const extra = markups[planType]?.[String(planCount)] ?? 0;
+    return base + extra / 100;
+  }
+  return base;
 }
 
 function isMonthlyEnabled(ranges: PriceRangeAPI[], price: number): boolean {
@@ -459,7 +485,7 @@ function InstallmentDetailModal({
   onConfirmViewBill: (bill: Bill) => void;
   onBalanceChanged?: () => void;
 }) {
-  const { planMeta, planOptions, coverImage, priceRanges } = useContext(SettingsCtx);
+  const { planMeta, planOptions, coverImage, priceRanges, planCountMarkups } = useContext(SettingsCtx);
   const { data: session } = useSession();
   const displayImage = initialImage || coverImage;
   const [selectedCount, setSelectedCount] = useState<number>(planCount);
@@ -483,7 +509,7 @@ function InstallmentDetailModal({
 
   if (!open) return null;
 
-  const markup = resolveMarkup(priceRanges, totalPrice, planType, planMeta[planType].markup);
+  const markup = resolveMarkupWithCount(planCountMarkups ?? DEFAULT_PLAN_COUNT_MARKUPS, priceRanges, totalPrice, planType, selectedCount, planMeta[planType].markup);
   const unitName = planMeta[planType].unit;
   const downAmount = Math.round((totalPrice * downPct) / 100);
   const remaining = totalPrice - downAmount;
@@ -996,7 +1022,7 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
   onBalanceChanged?: () => void;
   noMonthly?: boolean;
 }) {
-  const { downOptions, planOptions, planMeta, priceRanges, latePenaltyTiers } = useContext(SettingsCtx);
+  const { downOptions, planOptions, planMeta, priceRanges, latePenaltyTiers, planCountMarkups } = useContext(SettingsCtx);
   const [productCode, setProductCode] = useState(initialTitle || "");
   const [price,       setPrice]       = useState(initialPrice || "");
   const [downPct,     setDownPct]     = useState<number | null>(null);
@@ -1009,7 +1035,7 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
 
   const totalPrice      = parseFloat(price);
   const validPrice      = !isNaN(totalPrice) && totalPrice > 0;
-  const markup          = resolveMarkup(priceRanges, validPrice ? totalPrice : 0, planType, planMeta[planType].markup);
+  const markup          = resolveMarkupWithCount(planCountMarkups ?? DEFAULT_PLAN_COUNT_MARKUPS, priceRanges, validPrice ? totalPrice : 0, planType, planCount, planMeta[planType].markup);
   const monthlyEnabled  = !noMonthly && (!validPrice || isMonthlyEnabled(priceRanges, totalPrice));
   const availablePlanTypes = PLAN_TYPES.filter((pt) => pt.id !== "monthly" || monthlyEnabled);
   const downAmount   = validPrice && downPct != null ? Math.round(totalPrice * downPct / 100) : 0;
@@ -1175,7 +1201,7 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
           {markup > 0 && (
             <p className="mt-3 text-[11px] text-slate-400 flex items-center gap-1.5">
               <Info size={11} className="shrink-0 text-slate-400" />
-              แผนนี้มีค่าบริการ {markup * 100}% จากยอดหลังหักเงินเปิดบิล
+              แผนนี้มีค่าบริการ {parseFloat((markup * 100).toFixed(2))}% จากยอดหลังหักเงินเปิดบิล
             </p>
           )}
 
@@ -1698,6 +1724,7 @@ export default function InstallmentPage() {
           priceRanges:      Array.isArray(d.priceRanges) ? d.priceRanges : DEFAULT_PRICE_RANGES,
           howtoSteps:       Array.isArray(d.howtoSteps) ? d.howtoSteps : DEFAULT_HOWTO_STEPS,
           latePenaltyTiers: d.latePenaltyTiers ?? DEFAULT_LATE_PENALTY_TIERS,
+          planCountMarkups: d.planCountMarkups ?? DEFAULT_PLAN_COUNT_MARKUPS,
         });
       })
       .catch(() => {}); // fallback ใช้ defaults
