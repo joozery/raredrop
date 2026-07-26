@@ -994,7 +994,7 @@ export default function AdminInstallmentPage() {
           />
         </div>
         <div className="mt-4 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-700">
-          <span className="font-semibold">วิธีคำนวณ:</span> ถ้างวด = 14 วัน และตั้งค่า 2% → ยอดรวม = ราคา × 1.02 — ถ้าไม่ได้ตั้ง (หรือ = 0) ระบบใช้ % จากช่วงราคาด้านบนแทน
+          <span className="font-semibold">วิธีคำนวณ:</span> ค่าบริการรวม = % จากช่วงราคา <span className="font-bold">+</span> % จากงวดที่เลือก — เช่น ช่วงราคา 25% + งวด 4 สัปดาห์ 4% = รวม 29% บนยอดที่เหลือหลังดาวน์
         </div>
       </Card>
 

@@ -182,11 +182,12 @@ function resolveMarkupWithCount(
   planCount: number | null,
   fallback: number,
 ): number {
+  const base = resolveMarkup(ranges, price, planType, fallback);
   if (planCount != null) {
-    const pct = markups[planType]?.[String(planCount)];
-    if (pct != null && pct > 0) return pct / 100;
+    const extra = markups[planType]?.[String(planCount)] ?? 0;
+    return base + extra / 100;
   }
-  return resolveMarkup(ranges, price, planType, fallback);
+  return base;
 }
 
 function isMonthlyEnabled(ranges: PriceRangeAPI[], price: number): boolean {
