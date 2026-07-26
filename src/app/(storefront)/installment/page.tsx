@@ -485,7 +485,7 @@ function InstallmentDetailModal({
   onConfirmViewBill: (bill: Bill) => void;
   onBalanceChanged?: () => void;
 }) {
-  const { planMeta, planOptions, coverImage, priceRanges } = useContext(SettingsCtx);
+  const { planMeta, planOptions, coverImage, priceRanges, planCountMarkups } = useContext(SettingsCtx);
   const { data: session } = useSession();
   const displayImage = initialImage || coverImage;
   const [selectedCount, setSelectedCount] = useState<number>(planCount);
@@ -509,7 +509,7 @@ function InstallmentDetailModal({
 
   if (!open) return null;
 
-  const markup = resolveMarkup(priceRanges, totalPrice, planType, planMeta[planType].markup);
+  const markup = resolveMarkupWithCount(planCountMarkups ?? DEFAULT_PLAN_COUNT_MARKUPS, priceRanges, totalPrice, planType, selectedCount, planMeta[planType].markup);
   const unitName = planMeta[planType].unit;
   const downAmount = Math.round((totalPrice * downPct) / 100);
   const remaining = totalPrice - downAmount;
