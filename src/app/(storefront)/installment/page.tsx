@@ -1205,22 +1205,6 @@ function CalcForm({ onCreated, initialTitle, initialPrice, initialImage, fromSho
             </p>
           )}
 
-          {/* Late penalty notice */}
-          {(latePenaltyTiers?.[planType]?.length ?? 0) > 0 && (
-            <div className="mt-3 p-2.5 rounded-xl bg-orange-50 border border-orange-100 space-y-1">
-              <p className="text-[10px] font-bold text-orange-700 flex items-center gap-1">
-                <span>⚠️</span> ค่าปรับกรณีชำระล่าช้า
-              </p>
-              {latePenaltyTiers[planType].map((t, i) => (
-                <div key={i} className="flex justify-between text-[10px]">
-                  <span className="text-orange-600">
-                    เลย {t.toDay === 0 ? `${t.fromDay} วันขึ้นไป` : `${t.fromDay}–${t.toDay} วัน`}
-                  </span>
-                  <span className="font-bold text-orange-800">+{t.ratePercent}%/วัน</span>
-                </div>
-              ))}
-            </div>
-          )}
         </SectionCard>
 
         {/* Terms + Submit */}
