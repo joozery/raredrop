@@ -590,9 +590,9 @@ function InstallmentDetailModal({
         } catch { /* ไม่ block flow ถ้า chat ล้มเหลว */ }
 
         // ไม่ปิด modal ทันที — โชว์ success state ให้บันทึกภาพก่อน
+        // onConfirmViewBill จะถูกเรียกตอนกดปิด เพื่อไม่ให้ parent unmount modal ทันที
         setPaidBill(bill);
         setPaymentSuccess(true);
-        onConfirmViewBill(bill);
       } catch {
         setConfirmError("เกิดข้อผิดพลาด กรุณาลองใหม่");
       } finally {
@@ -826,7 +826,7 @@ function InstallmentDetailModal({
                 {isSaving ? "กำลังบันทึก..." : "บันทึกภาพ"}
               </button>
               <button
-                onClick={onClose}
+                onClick={() => { if (paidBill) onConfirmViewBill(paidBill); onClose(); }}
                 className="col-span-1 w-full py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
               >
                 ปิด
