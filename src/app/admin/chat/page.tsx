@@ -260,14 +260,13 @@ export default function AdminChatPage() {
             <p className="text-sm font-bold text-slate-700">ข้อความต้อนรับ Livechat</p>
             <p className="text-xs text-slate-400 mt-0.5">แสดงเป็น bubble เมื่อ user เปิดแชทครั้งแรก</p>
           </div>
-          <div className="flex items-center gap-2 flex-1">
-            <input
-              type="text"
+          <div className="flex gap-2 flex-1 flex-col sm:flex-row sm:items-start">
+            <textarea
               value={welcomeMsgInput}
               onChange={(e) => setWelcomeMsgInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") saveWelcomeMsg(); }}
-              placeholder="เช่น สวัสดีครับ มีอะไรให้ช่วยไหมครับ?"
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-700"
+              placeholder={"เช่น สวัสดีครับ มีอะไรให้ช่วยไหมครับ?\nกด Shift+Enter ขึ้นบรรทัดใหม่"}
+              rows={3}
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/10 font-medium text-slate-700 resize-none"
             />
             <button
               onClick={saveWelcomeMsg}
