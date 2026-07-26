@@ -142,7 +142,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         items: g.items.filter(i =>
           i.href === "/admin/shop" ||
           i.href === "/admin/chat" ||
-          i.href.startsWith("/admin/installment")
+          i.href === "/admin/installment/bills"
         )
       };
     }
