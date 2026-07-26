@@ -106,5 +106,27 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true, bill: bill.toObject() });
   }
 
+  // ── ส่งแจ้งเตือน Discord อีกครั้ง ──
+  if (action === "resend_notification") {
+    const { billId } = body;
+    if (!billId) return NextResponse.json({ error: "ไม่มี billId" }, { status: 400 });
+
+    const bill = await InstallmentBill.findOne({ billId }).lean() as any;
+    if (!bill) return NextResponse.json({ error: "ไม่พบบิล" }, { status: 404 });
+
+    await sendDiscordInstallmentNotification({
+      billId:               bill.billId,
+      productCode:          bill.productCode,
+      totalPrice:           bill.totalPrice,
+      downAmount:           bill.downAmount,
+      planType:             bill.planType,
+      planCount:            bill.planCount,
+      amountPerInstallment: bill.amountPerInstallment,
+      paidViaWallet:        !!bill.userId,
+    });
+
+    return NextResponse.json({ ok: true });
+  }
+
   return NextResponse.json({ error: "action ไม่ถูกต้อง" }, { status: 400 });
 }

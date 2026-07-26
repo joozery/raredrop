@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, RefreshCw, ChevronLeft, ChevronRight,
   FileText, CheckCircle2, XCircle, Clock, PlayCircle,
-  Upload, Check, ImageIcon, X,
+  Upload, Check, ImageIcon, X, Bell,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -261,8 +261,9 @@ export default function AdminInstallmentBillsPage() {
   const [q,        setQ]        = useState("");
   const [status,   setStatus]   = useState("");
   const [loading,  setLoading]  = useState(false);
-  const [updating, setUpdating] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [updating,  setUpdating]  = useState<string | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
+  const [expanded,  setExpanded]  = useState<string | null>(null);
 
   const load = useCallback(async (p = 1) => {
     setLoading(true);
@@ -299,6 +300,24 @@ export default function AdminInstallmentBillsPage() {
       }
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const resendNotification = async (billId: string) => {
+    setResending(billId);
+    try {
+      const res = await fetch("/api/admin/installment/bills", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action: "resend_notification", billId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "เกิดข้อผิดพลาด");
+      alert(`ส่งแจ้งเตือน Discord สำเร็จ`);
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setResending(null);
     }
   };
 
@@ -475,6 +494,21 @@ export default function AdminInstallmentBillsPage() {
                             );
                           })}
                         </div>
+                      </div>
+
+                      {/* ส่งแจ้งเตือน Discord อีกครั้ง */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">แจ้งเตือน</p>
+                        <button
+                          onClick={() => resendNotification(bill.billId)}
+                          disabled={resending === bill.billId}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 transition-colors cursor-pointer disabled:opacity-60"
+                        >
+                          {resending === bill.billId
+                            ? <RefreshCw size={13} className="animate-spin" />
+                            : <Bell size={13} />}
+                          {resending === bill.billId ? "กำลังส่ง..." : "ส่งแจ้งเตือน Discord อีกครั้ง"}
+                        </button>
                       </div>
                     </div>
                   )}
