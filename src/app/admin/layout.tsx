@@ -133,13 +133,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isSuperAdmin = role === "super_admin";
   const isAdmin = role === "admin";
 
-  const isRestrictedPath = isAdmin && pathname !== "/admin" && !pathname.startsWith("/admin/shop") && !pathname.startsWith("/admin/chat");
+  const isRestrictedPath = isAdmin && pathname !== "/admin" && !pathname.startsWith("/admin/shop") && !pathname.startsWith("/admin/chat") && !pathname.startsWith("/admin/installment");
 
   const filteredMenuGroups = isSuperAdmin ? menuGroups : menuGroups.map(g => {
     if (g.title === "ร้านค้า") {
       return {
         ...g,
-        items: g.items.filter(i => i.href === "/admin/shop" || i.href === "/admin/chat")
+        items: g.items.filter(i =>
+          i.href === "/admin/shop" ||
+          i.href === "/admin/chat" ||
+          i.href.startsWith("/admin/installment")
+        )
       };
     }
     return null;
