@@ -437,25 +437,59 @@ function InstallmentDetailModal({
   const handleSaveImage = async () => {
     if (!cardRef.current) return;
     setIsSaving(true);
-    const el = cardRef.current;
-
-    // ปิด overflow ชั่วคราวเพื่อจับ content ทั้งหมด (ไม่แค่ส่วนที่เห็น)
-    const prevOverflow  = el.style.overflow;
-    const prevMaxHeight = el.style.maxHeight;
-    el.style.overflow  = "visible";
-    el.style.maxHeight = "none";
-    el.scrollTop = 0;
 
     try {
       const filename = `บิลผ่อนชำระ-${productCode || "LUXUSX"}.png`;
 
-      // html-to-image ใช้ browser renderer ผ่าน SVG — รองรับ oklch/lab ได้
-      const blob = await toBlob(el, { pixelRatio: 2, skipAutoScale: true });
-      if (!blob) throw new Error("blob is null");
+      // clone content ไปใส่ wrapper นอก viewport
+      // เพื่อให้ Safari จับได้ทั้งหมด ไม่แค่ส่วนที่ scroll อยู่
+      const source = cardRef.current;
+      const clone  = source.cloneNode(true) as HTMLElement;
+
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText = [
+        "position:fixed",
+        "top:0",
+        "left:-9999px",
+        `width:${source.offsetWidth}px`,
+        "height:auto",
+        "overflow:visible",
+        "background:#ffffff",
+        "z-index:-1",
+        "padding:20px",
+      ].join(";");
+
+      clone.style.overflow  = "visible";
+      clone.style.maxHeight = "none";
+      clone.style.height    = "auto";
+      clone.style.flex      = "none";
+
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      // รอ render เสร็จ
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      const blob = await toBlob(wrapper, {
+        pixelRatio: 2,
+        skipAutoScale: true,
+        cacheBust: true,
+        fetchRequestInit: { cache: "no-cache" },
+      }).catch(async () => {
+        // fallback: ซ่อนรูปที่ CORS บล็อก แล้วลองใหม่
+        clone.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+          img.style.visibility = "hidden";
+        });
+        return toBlob(wrapper, { pixelRatio: 2, skipAutoScale: true, skipFonts: true });
+      });
+
+      document.body.removeChild(wrapper);
+
+      if (!blob) throw new Error("ไม่สามารถสร้างภาพได้");
 
       const file = new File([blob], filename, { type: "image/png" });
 
-      // มือถือ: ใช้ Web Share API (iOS 14+ / Android Chrome)
+      // มือถือ: Web Share API (iOS Safari / Android Chrome)
       if (
         typeof navigator.share === "function" &&
         typeof navigator.canShare === "function" &&
@@ -464,12 +498,13 @@ function InstallmentDetailModal({
         try {
           await navigator.share({ files: [file], title: "บิลผ่อนชำระ LUXUSX" });
           return;
-        } catch {
-          return;
+        } catch (e: any) {
+          if (e?.name === "AbortError") return;
+          // share ล้มเหลว — fall through ไป download
         }
       }
 
-      // Desktop: ดาวน์โหลดผ่าน blob URL
+      // Desktop / fallback: ดาวน์โหลดผ่าน blob URL
       const url = URL.createObjectURL(blob);
       const a   = document.createElement("a");
       a.href     = url;
@@ -478,11 +513,10 @@ function InstallmentDetailModal({
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save image:", err);
+      alert(`บันทึกภาพไม่สำเร็จ: ${err?.message ?? "กรุณาลองใหม่"}`);
     } finally {
-      el.style.overflow  = prevOverflow;
-      el.style.maxHeight = prevMaxHeight;
       setIsSaving(false);
     }
   };

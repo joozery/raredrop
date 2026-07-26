@@ -434,6 +434,12 @@ export default function AdminInstallmentBillsPage() {
                           <span className="text-gray-400">แผน </span>
                           <span className="font-semibold">{PLAN_NAME[bill.planType]} × {bill.planCount}</span>
                         </div>
+                        <div>
+                          <span className="text-gray-400">คงเหลือ </span>
+                          <span className={`font-semibold ${bill.remainingAmount > 0 ? "text-orange-600" : "text-green-600"}`}>
+                            ฿{fmt(Math.max(0, bill.remainingAmount - bill.installments.filter(i => i.status === "paid").length * bill.amountPerInstallment))}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2 text-xs text-gray-500">
