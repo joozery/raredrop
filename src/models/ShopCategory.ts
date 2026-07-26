@@ -22,9 +22,8 @@ const ShopCategorySchema: Schema = new Schema({
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 
-ShopCategorySchema.pre("save", function (next) {
+ShopCategorySchema.pre("save", function () {
   if (!this.slug) this.slug = toSlug(this.name as string);
-  next();
 });
 
 if (mongoose.models.ShopCategory) {

@@ -24,9 +24,8 @@ const CategorySchema: Schema = new Schema({
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 
-CategorySchema.pre("save", function (next) {
+CategorySchema.pre("save", function () {
   if (!this.slug) this.slug = toSlug(this.name as string);
-  next();
 });
 
 export default mongoose.models.Category || mongoose.model<ICategory>("Category", CategorySchema);

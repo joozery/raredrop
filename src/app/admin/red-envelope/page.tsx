@@ -27,6 +27,7 @@ interface Round {
   totalAmount?: number;
   totalGemCoins?: number;
   itemId?: { _id: string; name: string; image?: string } | null;
+  winnerCount?: number;
   conditionAmount: number;
   conditionLevel: number;
   maxPeople: number;

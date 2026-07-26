@@ -31,7 +31,7 @@ interface RecentEntry {
   vipLevel?: number;
   tagImage?: string;
   time: string;
-  rewardType: "cash" | "item";
+  rewardType: "cash" | "item" | "gemcoin";
   pending?: boolean;
   rewardAmount?: number;
   isWinner?: boolean;

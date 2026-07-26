@@ -73,7 +73,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     convo.unreadByAdmin += 1;
     await convo.save();
 
-    const user = session.user as any;
+    const user = session?.user as any;
     notifyDiscordChat({
       userName: user.name,
       userEmail: user.email,

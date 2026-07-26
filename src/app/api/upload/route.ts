@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "ไฟล์ใหญ่เกิน 50MB" }, { status: 400 });
     }
 
-    let buffer = Buffer.from(await file.arrayBuffer());
+    let buffer: Buffer<ArrayBufferLike> = Buffer.from(await file.arrayBuffer());
     let contentType = resolvedType;
     let ext = ext0 || "bin";
 

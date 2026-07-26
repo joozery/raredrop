@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       await appendUserMessage(convo, firstText, imageUrl);
     }
 
-    const user = session.user as any;
+    const user = session?.user as any;
     notifyDiscordChat({
       userName: user.name,
       userEmail: user.email,
