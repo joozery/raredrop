@@ -339,37 +339,7 @@ function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             </div>
           ))}
 
-          {/* ── ค่าปรับล่าช้า ── */}
-          <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 overflow-hidden">
-            <div className="px-4 py-2.5 bg-orange-100 border-b border-orange-200 flex items-center gap-2">
-              <span className="text-sm">⚠️</span>
-              <p className="text-xs font-bold text-orange-800">ค่าปรับกรณีชำระล่าช้า</p>
-            </div>
-            <div className="px-4 py-3 space-y-3">
-              {(["daily", "weekly", "monthly"] as PlanType[]).map((plan) => {
-                const tiers = latePenaltyTiers?.[plan] ?? [];
-                if (!tiers.length) return null;
-                return (
-                  <div key={plan}>
-                    <p className="text-[11px] font-bold text-orange-700 mb-1.5">แผน{planLabels[plan]}</p>
-                    <div className="space-y-1">
-                      {tiers.map((t, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs">
-                          <span className="text-orange-600">
-                            เลย Due Date {t.toDay === 0 ? `${t.fromDay} วันขึ้นไป` : `${t.fromDay}–${t.toDay} วัน`}
-                          </span>
-                          <span className="font-bold text-orange-800">+{t.ratePercent}%/วัน</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              <p className="text-[10px] text-orange-500 pt-1 border-t border-orange-200">
-                คำนวณจากยอดงวดที่ค้างชำระ × จำนวนวันที่เลยกำหนด
-              </p>
-            </div>
-          </div>
+
         </div>
         <div className="px-5 py-4 border-t border-slate-100">
           <button
