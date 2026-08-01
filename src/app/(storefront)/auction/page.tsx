@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { io, type Socket } from "socket.io-client";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
@@ -212,6 +213,7 @@ interface EndedWinner { name: string; amount: number; title: string }
 export default function AuctionPage() {
   const { data: session } = useSession();
   const { refreshBalance } = useBalance();
+  const router = useRouter();
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
   const [bidAmount, setBidAmount] = useState(0);
@@ -384,9 +386,7 @@ export default function AuctionPage() {
       const data = await res.json();
       if (!res.ok) { showToast(data.error || "เกิดข้อผิดพลาด", false); return; }
       setWinnerPopup(null);
-      if (data.conversationId) {
-        window.dispatchEvent(new CustomEvent("open-livechat", { detail: { conversationId: data.conversationId } }));
-      }
+      router.push(data.conversationId ? `/chat?c=${data.conversationId}` : "/chat");
     } catch {
       showToast("เกิดข้อผิดพลาด กรุณาลองใหม่", false);
     } finally {
