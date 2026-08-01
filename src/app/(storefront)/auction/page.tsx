@@ -294,6 +294,9 @@ export default function AuctionPage() {
         return prev <= data.amount ? newMin : prev;
       });
 
+      // อัปเดตยอดเครดิตทุกคนที่เปิดหน้าอยู่ (คนแพ้จะได้เห็นเครดิตคืนทันที)
+      refreshBalance();
+
       setRtActivity(data.displayName);
       setTimeout(() => setRtActivity(null), 2500);
     });

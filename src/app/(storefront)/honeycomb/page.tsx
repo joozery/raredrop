@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Sparkles, Trophy, History, Hexagon, Flame, ArrowRight, HelpCircle, X } from "lucide-react";
+import { Sparkles, Trophy, History, Hexagon, Flame, ArrowRight, HelpCircle, X, Wallet, ShieldCheck, Ticket, Gift } from "lucide-react";
+import { TopupModal } from "@/components/payment/TopupModal";
 
 interface HoneyReward {
   id: string;
@@ -334,6 +335,8 @@ export default function HoneycombPage() {
   const [winModal, setWinModal] = useState<HoneyReward[] | null>(null);
   const [showHowTo, setShowHowTo] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isTopupOpen, setIsTopupOpen] = useState(false);
 
   const showToastMsg = (msg: string, ok: boolean = true) => {
     setToast({ msg, ok });
@@ -524,14 +527,14 @@ export default function HoneycombPage() {
   return (
     <div className="max-w-7xl mx-auto p-3 sm:p-6 pb-52 xl:pb-36 min-h-screen">
       {/* Navigation Top Bar */}
-      <div className="flex items-end justify-end gap-3 mb-5">
-        <div className="flex flex-col items-end gap-1.5">
-          <button
-            onClick={() => setShowHowTo(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
-          >
-            <HelpCircle size={15} /> กฎและวิธีเล่น
-          </button>
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <button
+          onClick={() => setShowHowTo(true)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+        >
+          <HelpCircle size={15} /> กฎและวิธีเล่น
+        </button>
+        <div className="flex items-center gap-2">
           {session?.user && (
             <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5 shadow-sm">
               {globalCoinIcon ? (
@@ -550,6 +553,12 @@ export default function HoneycombPage() {
               )}
             </div>
           )}
+          <Link
+            href="/honeycomb-exchange"
+            className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-white font-black text-xs px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm whitespace-nowrap"
+          >
+            <Gift size={13} /> แลกรางวัล
+          </Link>
         </div>
       </div>
 
@@ -725,7 +734,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -737,7 +746,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -749,7 +758,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -761,7 +770,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -773,7 +782,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -843,9 +852,9 @@ export default function HoneycombPage() {
                 return (
                   <div key={idx} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3">
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-slate-200 shrink-0 flex items-center justify-center">
-                      {r.image
-                        ? <img src={r.image} alt={r.name} className="w-full h-full object-contain p-0.5" />
-                        : <span className="text-lg">{r.type === "coin" ? "🍯" : "📦"}</span>}
+                      {(r.image || ((r.type === "coin" || r.type === "coin_reward") && globalCoinIcon))
+                        ? <img src={r.image || globalCoinIcon || ""} alt={r.name} className="w-full h-full object-contain p-0.5" />
+                        : <span className="text-lg">{(r.type === "coin" || r.type === "coin_reward") ? "🍯" : "📦"}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-800 text-xs truncate">{r.name}</p>
@@ -944,6 +953,81 @@ export default function HoneycombPage() {
         </div>
       )}
 
+      {/* Payment Confirmation Modal */}
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsPaymentModalOpen(false)}>
+          <div className="bg-[#F8F8F8] w-full max-w-md sm:rounded-2xl rounded-t-2xl overflow-hidden flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 flex items-center justify-between bg-white border-b border-gray-100">
+              <h3 className="font-bold text-lg text-gray-900">ยืนยันการชำระเงิน</h3>
+              <button onClick={() => setIsPaymentModalOpen(false)} className="p-1.5 rounded-xl text-gray-400 hover:bg-gray-100 transition-colors cursor-pointer">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-3">
+              {/* Balance card */}
+              <div className="bg-gray-900 text-white rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden shadow-lg border border-gray-800">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                <div className="flex items-center gap-2 mb-2 relative z-10">
+                  <Wallet size={16} className="text-gray-400" />
+                  <span className="text-sm font-bold text-gray-300">ยอดเงินคงเหลือ</span>
+                </div>
+                <div className="flex items-end justify-between mt-2 relative z-10">
+                  <span className="text-3xl font-black tracking-tight text-white flex items-center gap-2">
+                    <span className="font-sans">฿</span> {userCoins.toLocaleString()}
+                  </span>
+                  <button onClick={() => { setIsPaymentModalOpen(false); setIsTopupOpen(true); }} className="bg-white text-gray-900 font-bold text-sm px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors flex items-center gap-1 shadow-sm cursor-pointer">
+                    + เติมเงิน
+                  </button>
+                </div>
+              </div>
+              {/* Coupon */}
+              <div className="bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="bg-red-50 text-red-600 p-2 rounded-xl"><Ticket size={20} /></div>
+                  <span className="font-bold text-gray-800 text-sm">คูปอง</span>
+                </div>
+                <span className="text-sm font-bold text-gray-400">ไม่มีคูปอง ›</span>
+              </div>
+              <div className="flex items-start gap-2 px-2 mt-1">
+                <ShieldCheck size={16} className="text-gray-400 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-gray-500 leading-relaxed font-semibold">
+                  ระบบการสุ่มของเราใช้ Weighted Random Algorithm มาตรฐาน ยุติธรรม โปร่งใส 100%
+                </p>
+              </div>
+            </div>
+            <div className="bg-white p-5 border-t border-gray-100 flex flex-col gap-4">
+              <div className="flex items-end gap-2 px-1">
+                <span className="text-sm font-bold text-gray-500">
+                  ทั้งหมด <span className="text-gray-900 text-lg mx-1">{selectedDraw}</span> ครั้ง
+                </span>
+                <span className="text-2xl font-black text-red-600 ml-auto flex items-center gap-1">
+                  <span className="font-sans">฿</span> {(costPerCell * selectedDraw).toLocaleString()}
+                </span>
+              </div>
+              {userCoins >= costPerCell * selectedDraw ? (
+                <button
+                  onClick={() => {
+                    setIsPaymentModalOpen(false);
+                    if (selectedDraw === 1) openSingleCell();
+                    else openBatchCells(selectedDraw);
+                  }}
+                  disabled={isSpinning}
+                  className="w-full bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400 font-black py-4 rounded-xl text-sm transition-colors shadow-sm cursor-pointer"
+                >
+                  {isSpinning ? "กำลังดำเนินการ..." : "ยืนยันการชำระเงิน"}
+                </button>
+              ) : (
+                <button onClick={() => { setIsPaymentModalOpen(false); setIsTopupOpen(true); }} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 font-black py-4 rounded-xl text-sm transition-colors cursor-pointer">
+                  ยอดเงินไม่เพียงพอ (โปรดเติมเงิน)
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <TopupModal isOpen={isTopupOpen} onClose={() => setIsTopupOpen(false)} />
+
       {/* Fixed Bottom Draw Bar */}
       <div className="fixed bottom-0 left-0 lg:left-[17rem] xl:left-[18rem] right-0 z-[60] bg-white border-t border-slate-200 shadow-[0_-10px_40px_rgba(0,0,0,0.06)]">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col xl:flex-row items-center gap-4 xl:gap-6">
@@ -977,11 +1061,10 @@ export default function HoneycombPage() {
               </button>
             ))}
           </div>
-          <div className="flex flex-col items-center w-full xl:flex-1">
+          <div className="flex flex-col items-center w-full xl:flex-1 gap-2">
             <button
               onClick={() => {
-                if (selectedDraw === 1) openSingleCell();
-                else openBatchCells(selectedDraw);
+                if (!isEventBlocked) setIsPaymentModalOpen(true);
               }}
               disabled={isSpinning || isEventBlocked}
               className={`w-full font-black text-xl lg:text-2xl py-3 lg:py-4 rounded-xl transition-all flex flex-col items-center justify-center group ${
