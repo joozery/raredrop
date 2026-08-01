@@ -235,7 +235,8 @@ export default function AdminAuctionPage() {
 
   const openEdit = (a: Auction) => {
     setEditing(a);
-    const local = new Date(a.endsAt).toISOString().slice(0, 16);
+    const d = new Date(a.endsAt);
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     const imgs = (a as any).gameImages?.length
       ? (a as any).gameImages
       : a.gameImage ? [a.gameImage] : [];
