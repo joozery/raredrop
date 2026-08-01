@@ -527,14 +527,14 @@ export default function HoneycombPage() {
   return (
     <div className="max-w-7xl mx-auto p-3 sm:p-6 pb-52 xl:pb-36 min-h-screen">
       {/* Navigation Top Bar */}
-      <div className="flex items-end justify-end gap-3 mb-5">
-        <div className="flex flex-col items-end gap-1.5">
-          <button
-            onClick={() => setShowHowTo(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
-          >
-            <HelpCircle size={15} /> กฎและวิธีเล่น
-          </button>
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <button
+          onClick={() => setShowHowTo(true)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+        >
+          <HelpCircle size={15} /> กฎและวิธีเล่น
+        </button>
+        <div className="flex items-center gap-2">
           {session?.user && (
             <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5 shadow-sm">
               {globalCoinIcon ? (
@@ -553,6 +553,12 @@ export default function HoneycombPage() {
               )}
             </div>
           )}
+          <Link
+            href="/honeycomb-exchange"
+            className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-white font-black text-xs px-3 py-2 rounded-xl transition-all active:scale-95 shadow-sm whitespace-nowrap"
+          >
+            <Gift size={13} /> แลกรางวัล
+          </Link>
         </div>
       </div>
 
@@ -728,7 +734,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -740,7 +746,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -752,7 +758,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -764,7 +770,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -776,7 +782,7 @@ export default function HoneycombPage() {
                         cell={cell}
                         isHighlighted={highlightedCellId === cell.id}
                         isSpinning={isSpinning}
-                        onClick={openSingleCell}
+                        onClick={() => { if (!isEventBlocked) setIsPaymentModalOpen(true); }}
                       />
                     ))}
                   </div>
@@ -1073,13 +1079,6 @@ export default function HoneycombPage() {
               </div>
               {!isEventBlocked && <span className="text-xs font-semibold text-red-100 mt-1 opacity-90 drop-shadow-sm">ลุ้นของหายากระดับตำนาน</span>}
             </button>
-            <Link
-              href="/honeycomb-exchange"
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-amber-400 bg-amber-50 hover:bg-amber-100 text-amber-700 font-black text-sm transition-all active:scale-95"
-            >
-              <Gift size={16} className="text-amber-500" />
-              🍯 แลกรางวัลด้วยเหรียญรังผึ้ง
-            </Link>
           </div>
         </div>
       </div>
