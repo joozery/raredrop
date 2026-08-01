@@ -9,6 +9,7 @@ const PUBLIC_KEYS = [
   "hero_banner_image", "hero_banner_link", "hero_banner_title1", "hero_banner_title2", "hero_banner_subtitle",
   "hero_banner_icon", "hero_banner_button1", "hero_banner_button2", "hero_banner_carousel",
   "knowledge_hero_label", "knowledge_hero_image", "knowledge_hero_link", "knowledge_hero_title", "knowledge_hero_subtitle",
+  "honeycomb_hero_image", "honeycomb_hero_link", "honeycomb_bg_animation", "honeycomb_how_to_play", "honeycomb_coin_icon", "honeycomb_coin_expiry_date", "honeycomb_coin_name",
   "red_envelope_help_text", "gemcoin_icon",
   "sidebar_bg", "sidebar_text_color", "sidebar_hover_text_color", "sidebar_hover_bg_color",
   "payment_method", "payment_qr_image", "min_topup_amount",
@@ -16,7 +17,8 @@ const PUBLIC_KEYS = [
   "promptpay_warning_title", "promptpay_warning_desc",
   "popup_enabled", "popup_image", "popup_link", "popup_dismiss_hours",
   "crypto_enabled", "crypto_wallet_address", "crypto_network", "crypto_rate_per_unit",
-  "livechat_welcome_message", "livechat_case_closed_text", "livechat_case_open_text", "livechat_contact_text"
+  "livechat_welcome_message", "livechat_case_closed_text", "livechat_case_open_text", "livechat_contact_text",
+  "announcements",
 ];
 
 export async function GET() {

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, CheckCheck, Lock, Gift, Zap } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, CheckCheck, Lock, Gift, Zap, Package, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 
 interface LevelItem { _id: string; name: string; image: string }
 interface LevelConfig {
@@ -32,16 +33,51 @@ export default function LevelsPage() {
   const router = useRouter();
   const [xp, setXp] = useState(0);
   const [currentLevel, setCurrentLevel] = useState(1);
+  const [claimedLevels, setClaimedLevels] = useState<number[]>([]);
   const [levels, setLevels] = useState<LevelConfig[]>([]);
   const [loading, setLoading] = useState(true);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean; claimedMsg?: boolean } | null>(null);
 
   useEffect(() => {
     fetch("/api/user/levels")
       .then((r) => r.json())
-      .then((d) => { setXp(d.xp || 0); setCurrentLevel(d.currentLevel || 1); setLevels(d.levels || []); })
+      .then((d) => {
+        setXp(d.xp || 0);
+        setCurrentLevel(d.currentLevel || 1);
+        setClaimedLevels(d.claimedLevels || []);
+        setLevels(d.levels || []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const handleClaimReward = async (lv: LevelConfig) => {
+    if (claimingId) return;
+    setClaimingId(lv._id);
+    try {
+      const res = await fetch("/api/user/levels/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ levelId: lv._id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToast({ msg: data.error || "เกิดข้อผิดพลาดในการกดรับรางวัล", ok: false });
+        setTimeout(() => setToast(null), 3500);
+        return;
+      }
+
+      setClaimedLevels((prev) => [...prev, lv.level]);
+      setToast({ msg: data.message || `รับของรางวัลเลเวล ${lv.level} สำเร็จ!`, ok: true, claimedMsg: true });
+      setTimeout(() => setToast(null), 5000);
+    } catch {
+      setToast({ msg: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง", ok: false });
+      setTimeout(() => setToast(null), 3500);
+    } finally {
+      setClaimingId(null);
+    }
+  };
 
   const curIdx = levels.reduce((acc, l, i) => (xp >= l.xpRequired ? i : acc), -1);
   const curLv = levels[curIdx] ?? null;
@@ -53,11 +89,10 @@ export default function LevelsPage() {
   const t = theme(curLv?.colorTheme);
 
   return (
-    <div className="flex flex-col min-h-full bg-gray-50 pb-24">
+    <div className="flex flex-col min-h-full bg-gray-50 pb-24 relative">
 
       {/* ── Hero ── */}
       <div className="relative overflow-hidden bg-white border-b border-gray-100">
-        {/* gradient stripe */}
         <div
           className="absolute top-0 left-0 right-0 h-1"
           style={{ background: `linear-gradient(to right, ${t.from}, ${t.to})` }}
@@ -66,13 +101,12 @@ export default function LevelsPage() {
         <div className="px-4 pt-5 pb-6">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1 text-gray-400 hover:text-gray-700 text-sm font-medium mb-5 transition-colors"
+            className="flex items-center gap-1 text-gray-400 hover:text-gray-700 text-sm font-medium mb-5 transition-colors cursor-pointer"
           >
             <ChevronLeft size={17} /> กลับ
           </button>
 
           <div className="flex items-center gap-4 mb-5">
-            {/* level badge */}
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-md relative"
               style={{ background: `linear-gradient(135deg, ${t.from}, ${t.to})` }}
@@ -125,7 +159,7 @@ export default function LevelsPage() {
       </div>
 
       {/* ── List ── */}
-      <div className="px-4 pt-4 flex flex-col gap-2">
+      <div className="px-4 pt-4 flex flex-col gap-2 max-w-4xl mx-auto w-full">
         <div className="flex items-center justify-between mb-1">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
             ทั้งหมด {levels.length} เลเวล
@@ -143,6 +177,8 @@ export default function LevelsPage() {
               const next = levels[idx + 1];
               const unlocked = xp >= lv.xpRequired;
               const isCur = unlocked && (!next || xp < next.xpRequired);
+              const isClaimed = claimedLevels.includes(lv.level);
+              const hasRewards = lv.rewardItems?.length > 0;
               const xpRange = next ? next.xpRequired - lv.xpRequired : null;
               const lvPct = isCur && xpRange
                 ? Math.min(100, ((xp - lv.xpRequired) / xpRange) * 100)
@@ -163,7 +199,7 @@ export default function LevelsPage() {
                     <div className="h-[3px] w-full" style={{ background: `linear-gradient(to right, ${ltheme.from}, ${ltheme.to})` }} />
                   )}
 
-                  <div className={`p-3.5 flex items-center gap-3`}>
+                  <div className="p-3.5 flex items-center gap-3">
                     {/* badge */}
                     <div
                       className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
@@ -220,14 +256,15 @@ export default function LevelsPage() {
                       )}
                     </div>
 
-                    {/* rewards */}
-                    {lv.rewardItems?.length > 0 && (
+                    {/* rewards & claim action */}
+                    {hasRewards && (
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <div className="flex items-center gap-1">
                           <Gift size={10} className="text-amber-500" />
                           <span className="text-[9px] font-bold text-gray-500">รางวัล</span>
                         </div>
-                        <div className="flex gap-1">
+
+                        <div className="flex gap-1 mb-1">
                           {lv.rewardItems.slice(0, 3).map((r, i) => (
                             <div key={i} className="relative w-9 h-9 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
                               <img src={r.itemId?.image} alt={r.itemId?.name} className="w-full h-full object-contain p-0.5" />
@@ -242,6 +279,28 @@ export default function LevelsPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* Claim Button Logic */}
+                        {unlocked ? (
+                          isClaimed ? (
+                            <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                              <CheckCheck size={12} /> รับแล้ว
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleClaimReward(lv)}
+                              disabled={claimingId === lv._id}
+                              className="text-xs font-extrabold text-white bg-red-600 hover:bg-red-700 active:scale-95 px-3 py-1.5 rounded-xl shadow-md shadow-red-600/20 flex items-center gap-1 transition-all cursor-pointer"
+                            >
+                              <Gift size={13} />
+                              {claimingId === lv._id ? "กำลังรับ..." : "กดรับรางวัล"}
+                            </button>
+                          )
+                        ) : (
+                          <span className="text-[10px] text-gray-400 font-semibold flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-md">
+                            <Lock size={10} /> ล็อก
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -249,6 +308,23 @@ export default function LevelsPage() {
               );
             })}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs text-white flex items-center gap-3 whitespace-nowrap border ${toast.ok ? "bg-slate-900 border-slate-800" : "bg-red-600 border-red-500"}`}>
+          {toast.ok ? <CheckCircle2 size={16} className="text-emerald-400" /> : <AlertCircle size={16} />}
+          <span>{toast.msg}</span>
+
+          {toast.claimedMsg && (
+            <Link
+              href="/inventory"
+              className="ml-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[11px] font-black flex items-center gap-1 transition-colors"
+            >
+              <Package size={12} /> ไปที่ Inventory <ArrowRight size={11} />
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ export interface ICategory extends Document {
   image?: string;
   order: number;
   isActive: boolean;
+  type: "box" | "auction";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,17 +17,18 @@ function toSlug(name: string) {
 }
 
 const CategorySchema: Schema = new Schema({
-  name: { type: String, required: true },
-  slug: { type: String, unique: true, sparse: true },
+  name:        { type: String, required: true },
+  slug:        { type: String, unique: true, sparse: true },
   description: { type: String },
-  image: { type: String },
-  order: { type: Number, default: 0 },
-  isActive: { type: Boolean, default: true },
+  image:       { type: String },
+  order:       { type: Number, default: 0 },
+  isActive:    { type: Boolean, default: true },
+  type:        { type: String, enum: ["box", "auction"], default: "box" },
 }, { timestamps: true });
 
-CategorySchema.pre("save", function (next) {
+CategorySchema.pre("save", async function () {
   if (!this.slug) this.slug = toSlug(this.name as string);
-  next();
 });
 
-export default mongoose.models.Category || mongoose.model<ICategory>("Category", CategorySchema);
+if (mongoose.models.Category) delete (mongoose as any).models.Category;
+export default mongoose.model<ICategory>("Category", CategorySchema);

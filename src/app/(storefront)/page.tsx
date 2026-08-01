@@ -1,5 +1,6 @@
 "use client";
 
+import AnnouncementTicker from "@/components/home/AnnouncementTicker";
 import HeroBanner from "@/components/home/HeroBanner";
 
 import FlashSale from "@/components/home/FlashSale";
@@ -14,6 +15,7 @@ export default function Home() {
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6 pb-20 lg:pb-6">
       {/* Left Main Content */}
       <div className="flex-1 flex flex-col gap-3 lg:gap-5 min-w-0">
+        <AnnouncementTicker />
         <HeroBanner />
         <MenuShortcuts />
         <FlashSale />

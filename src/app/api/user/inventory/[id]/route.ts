@@ -9,6 +9,7 @@ import Transaction from "@/models/Transaction";
 import Order from "@/models/Order";
 import Rarity from "@/models/Rarity";
 import Box from "@/models/Box";
+import HoneycombItem from "@/models/HoneycombItem";
 import { getOrCreateConversation, appendUserMessage } from "@/lib/chat";
 import { notify } from "@/lib/notify";
 import { createDeliveryTicket } from "@/lib/discordBot";
@@ -40,7 +41,26 @@ export async function PATCH(
 
     if (!inv) return NextResponse.json({ error: "ไม่พบไอเทมนี้" }, { status: 404 });
 
-    const item = inv.itemId as any;
+    let item = inv.itemId as any;
+
+    // Fallback if item is missing (might be a HoneycombItem)
+    if (!item) {
+      const rawInv = await Inventory.findById(inv._id).select("itemId");
+      if (rawInv && rawInv.itemId) {
+        const hcItem = await HoneycombItem.findById(rawInv.itemId);
+        if (hcItem) {
+          item = {
+            _id: hcItem._id,
+            name: hcItem.name,
+            price: hcItem.value || 0,
+            sellPrice: hcItem.value || 0,
+            image: hcItem.image || "/product/pokemon.webp",
+          };
+        }
+      }
+    }
+
+    if (!item) return NextResponse.json({ error: "ไม่พบข้อมูลไอเทมต้นฉบับ" }, { status: 404 });
 
     if (action === "sell") {
       // ขายคืนระบบ ได้ coins ตามราคาไอเทม

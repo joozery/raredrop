@@ -1,13 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Save, RefreshCw, CheckCircle2, ImageIcon, Loader2, ScanLine, Plus, X } from "lucide-react";
+import { Settings, Save, RefreshCw, CheckCircle2, ImageIcon, Loader2, ScanLine, Plus, X, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadInput } from "@/components/ui/UploadInput";
 
 interface HeroBannerData {
   image: string;
   link: string;
+}
+
+interface AnnouncementItem {
+  id: string;
+  text: string;
+  icon?: string;
+  link?: string;
+  badge?: string;
 }
 
 function ColorField({ label, value, onChange, fallback }: { label: string; value: string; onChange: (v: string) => void; fallback: string }) {
@@ -63,6 +71,11 @@ export default function SettingsPage() {
   const [knowledgeBannerLink, setKnowledgeBannerLink] = useState("");
   const [knowledgeBannerSaving, setKnowledgeBannerSaving] = useState(false);
   const [knowledgeBannerSaved, setKnowledgeBannerSaved] = useState(false);
+  const [honeycombBannerUrl, setHoneycombBannerUrl] = useState("");
+  const [honeycombBannerLink, setHoneycombBannerLink] = useState("");
+  const [honeycombBgAnimation, setHoneycombBgAnimation] = useState("");
+  const [honeycombBannerSaving, setHoneycombBannerSaving] = useState(false);
+  const [honeycombBannerSaved, setHoneycombBannerSaved] = useState(false);
   const [gemcoinIcon, setGemcoinIcon] = useState("");
   const [gemcoinIconSaving, setGemcoinIconSaving] = useState(false);
   const [gemcoinIconSaved, setGemcoinIconSaved] = useState(false);
@@ -93,6 +106,13 @@ export default function SettingsPage() {
   const [popupSaving, setPopupSaving] = useState(false);
   const [popupSaved, setPopupSaved] = useState(false);
 
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([
+    { id: "1", badge: "NEW GAME", icon: "🐝", text: "เปิดตัวเกมรังผึ้งมหาสมบัติ!", link: "/honeycomb" },
+    { id: "2", badge: "PROMOTION", icon: "🎁", text: "โปรโมชันพิเศษ! เติม GemCoins วันนี้", link: "/exchange" },
+  ]);
+  const [announcementsSaving, setAnnouncementsSaving] = useState(false);
+  const [announcementsSaved, setAnnouncementsSaved] = useState(false);
+
   const fetchSettings = () => {
     setLoading(true);
     fetch("/api/admin/settings")
@@ -122,6 +142,15 @@ export default function SettingsPage() {
 
           const knowledgeBannerLinkSetting = d.find((s: SettingItem) => s.key === "knowledge_hero_link");
           if (knowledgeBannerLinkSetting) setKnowledgeBannerLink(String(knowledgeBannerLinkSetting.value));
+
+          const honeycombBannerSetting = d.find((s: SettingItem) => s.key === "honeycomb_hero_image");
+          if (honeycombBannerSetting) setHoneycombBannerUrl(String(honeycombBannerSetting.value));
+
+          const honeycombBannerLinkSetting = d.find((s: SettingItem) => s.key === "honeycomb_hero_link");
+          if (honeycombBannerLinkSetting) setHoneycombBannerLink(String(honeycombBannerLinkSetting.value));
+
+          const honeycombBgAnimationSetting = d.find((s: SettingItem) => s.key === "honeycomb_bg_animation");
+          if (honeycombBgAnimationSetting) setHoneycombBgAnimation(String(honeycombBgAnimationSetting.value));
 
           const gemcoinIconSetting = d.find((s: SettingItem) => s.key === "gemcoin_icon");
           if (gemcoinIconSetting) setGemcoinIcon(String(gemcoinIconSetting.value));
@@ -172,6 +201,16 @@ export default function SettingsPage() {
 
           const popupLinkSetting = d.find((s: SettingItem) => s.key === "popup_link");
           if (popupLinkSetting) setPopupLink(String(popupLinkSetting.value));
+
+          const announcementsSetting = d.find((s: SettingItem) => s.key === "announcements");
+          if (announcementsSetting) {
+            try {
+              const parsed = typeof announcementsSetting.value === "string"
+                ? JSON.parse(announcementsSetting.value)
+                : announcementsSetting.value;
+              if (Array.isArray(parsed) && parsed.length > 0) setAnnouncements(parsed);
+            } catch {}
+          }
         }
       })
       .finally(() => setLoading(false));
@@ -246,6 +285,31 @@ export default function SettingsPage() {
       setTimeout(() => setKnowledgeBannerSaved(false), 2000);
     } finally {
       setKnowledgeBannerSaving(false);
+    }
+  };
+
+  const saveHoneycombBanner = async () => {
+    setHoneycombBannerSaving(true);
+    try {
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "honeycomb_hero_image", value: honeycombBannerUrl }),
+      });
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "honeycomb_hero_link", value: honeycombBannerLink }),
+      });
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "honeycomb_bg_animation", value: honeycombBgAnimation }),
+      });
+      setHoneycombBannerSaved(true);
+      setTimeout(() => setHoneycombBannerSaved(false), 2000);
+    } finally {
+      setHoneycombBannerSaving(false);
     }
   };
 
@@ -388,6 +452,36 @@ export default function SettingsPage() {
     }
   };
 
+  const saveAnnouncements = async () => {
+    setAnnouncementsSaving(true);
+    try {
+      await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "announcements", value: JSON.stringify(announcements) }),
+      });
+      setAnnouncementsSaved(true);
+      setTimeout(() => setAnnouncementsSaved(false), 2000);
+    } finally {
+      setAnnouncementsSaving(false);
+    }
+  };
+
+  const addAnnouncement = () => {
+    setAnnouncements(prev => [
+      ...prev,
+      { id: Date.now().toString(), badge: "", icon: "", text: "", link: "" },
+    ]);
+  };
+
+  const updateAnnouncement = (index: number, field: keyof AnnouncementItem, value: string) => {
+    setAnnouncements(prev => prev.map((a, i) => i === index ? { ...a, [field]: value } : a));
+  };
+
+  const removeAnnouncement = (index: number) => {
+    setAnnouncements(prev => prev.filter((_, i) => i !== index));
+  };
+
   const getValue = (s: SettingItem) =>
     pending[s.key] !== undefined ? pending[s.key] : s.value;
 
@@ -425,11 +519,12 @@ export default function SettingsPage() {
 
   const excludedKeys = [
     "site_logo", "site_og_image", "hero_banner_carousel", "hero_banner_image", "hero_banner_link",
-    "knowledge_hero_image", "knowledge_hero_link", "gemcoin_icon",
+    "knowledge_hero_image", "knowledge_hero_link", "honeycomb_hero_image", "honeycomb_hero_link", "gemcoin_icon",
     "sidebar_bg", "sidebar_text_color", "sidebar_hover_text_color", "sidebar_hover_bg_color",
     "payment_method", "payment_qr_image", "payment_qr_type", "payment_qr_account_type", "payment_qr_account_number", "payment_qr_shop_name",
     "bank_name", "bank_account_name", "bank_logo", "promptpay_warning_title", "promptpay_warning_desc",
     "popup_image", "popup_link",
+    "announcements",
   ];
   const displaySettings = settings.filter((s) => !excludedKeys.includes(s.key));
   const groups = [...new Set(displaySettings.map((s) => s.group))];
@@ -634,6 +729,58 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <span>ตัวอย่าง:</span>
                 <img src={knowledgeBannerUrl} alt="knowledge banner preview" className="h-10 object-cover border border-slate-200 rounded p-0.5" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Honeycomb Hero Banner Upload Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+          <ImageIcon size={15} className="text-slate-400" />
+          <h2 className="text-sm font-bold text-slate-700">รูปภาพแบนเนอร์หน้าเกมรังผึ้ง (Honeycomb Banner)</h2>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <UploadInput
+            label="อัพโหลดรูปภาพแบนเนอร์"
+            value={honeycombBannerUrl}
+            onChange={setHoneycombBannerUrl}
+            folder="banner"
+            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+            placeholder="อัพโหลดรูปภาพแบนเนอร์หน้าเลือกกล่องรังผึ้ง"
+          />
+          <div className="flex flex-col gap-1.5 -mt-1">
+            <label className="text-xs font-bold text-slate-600">ลิงก์เมื่อคลิกรูปแบนเนอร์ (ไม่บังคับ)</label>
+            <input
+              type="text"
+              value={honeycombBannerLink}
+              onChange={(e) => setHoneycombBannerLink(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+              placeholder="เช่น /boxes หรือ https://..."
+            />
+          </div>
+          <UploadInput
+            label="ภาพพื้นหลัง / วิดีโอพื้นหลังขณะสุ่ม (Honeycomb Background)"
+            value={honeycombBgAnimation}
+            onChange={setHoneycombBgAnimation}
+            folder="banner"
+            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+            placeholder="อัพโหลดพื้นหลัง (เว้นว่างไว้หากไม่ต้องการ)"
+          />
+          <div className="flex items-center gap-3 mt-2">
+            <button
+              onClick={saveHoneycombBanner}
+              disabled={honeycombBannerSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {honeycombBannerSaving ? <Loader2 size={13} className="animate-spin" /> : honeycombBannerSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {honeycombBannerSaved ? "บันทึกแล้ว!" : "บันทึกการตั้งค่ารังผึ้ง"}
+            </button>
+            {honeycombBannerUrl && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>ตัวอย่าง:</span>
+                <img src={honeycombBannerUrl} alt="honeycomb banner preview" className="h-10 object-cover border border-slate-200 rounded p-0.5" />
               </div>
             )}
           </div>
@@ -921,6 +1068,103 @@ export default function SettingsPage() {
           <p className="text-xs text-slate-400">
             หมายเหตุ: ต้องเปิด &quot;เปิดใช้งาน Popup หน้าแรก&quot; ในกลุ่ม &quot;Popup หน้าแรก&quot; ด้านล่าง เพื่อให้ popup แสดงผลจริง
           </p>
+        </div>
+      </div>
+
+      {/* Announcement Ticker Management Card */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Megaphone size={15} className="text-slate-400" />
+            <h2 className="text-sm font-bold text-slate-700">ประกาศ Ticker หน้าแรก (Announcement Bar)</h2>
+          </div>
+          <button
+            onClick={addAnnouncement}
+            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+          >
+            <Plus size={14} /> เพิ่มประกาศ
+          </button>
+        </div>
+        <div className="px-6 py-5 flex flex-col gap-4">
+          <p className="text-xs text-slate-500">
+            ข้อความประกาศที่เลื่อนแบบ Ticker อยู่เหนือแบนเนอร์หน้าแรก — เรียงตามลำดับจากบนลงล่าง
+          </p>
+
+          {announcements.map((item, index) => (
+            <div key={item.id} className="relative flex flex-col gap-3 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+              {announcements.length > 1 && (
+                <button
+                  onClick={() => removeAnnouncement(index)}
+                  className="absolute top-2 right-2 text-red-400 hover:text-red-600 p-1"
+                >
+                  <X size={15} />
+                </button>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-600">ป้าย Badge (ไม่บังคับ)</label>
+                  <input
+                    type="text"
+                    value={item.badge || ""}
+                    onChange={(e) => updateAnnouncement(index, "badge", e.target.value)}
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+                    placeholder="เช่น NEW GAME, PROMOTION, EVENT"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-600">ไอคอน Emoji (ไม่บังคับ)</label>
+                  <input
+                    type="text"
+                    value={item.icon || ""}
+                    onChange={(e) => updateAnnouncement(index, "icon", e.target.value)}
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+                    placeholder="เช่น 🐝 🎁 🔨 🧧"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">ข้อความประกาศ *</label>
+                <input
+                  type="text"
+                  value={item.text}
+                  onChange={(e) => updateAnnouncement(index, "text", e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+                  placeholder="ข้อความที่แสดงในแถบประกาศ"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-600">ลิงก์เมื่อคลิก (ไม่บังคับ)</label>
+                <input
+                  type="text"
+                  value={item.link || ""}
+                  onChange={(e) => updateAnnouncement(index, "link", e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 font-medium text-slate-800"
+                  placeholder="เช่น /honeycomb หรือ /auction"
+                />
+              </div>
+              {/* Preview */}
+              {item.text && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-dashed border-slate-200 text-xs text-slate-600">
+                  <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-bold">{item.badge || "–"}</span>
+                  <span>{item.icon || ""}</span>
+                  <span className="font-medium truncate">{item.text}</span>
+                  {item.link && <span className="text-indigo-500 shrink-0">→ {item.link}</span>}
+                </div>
+              )}
+            </div>
+          ))}
+
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              onClick={saveAnnouncements}
+              disabled={announcementsSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {announcementsSaving ? <Loader2 size={13} className="animate-spin" /> : announcementsSaved ? <CheckCircle2 size={13} /> : <Save size={13} />}
+              {announcementsSaved ? "บันทึกแล้ว!" : "บันทึกประกาศทั้งหมด"}
+            </button>
+            <p className="text-xs text-slate-400">การเปลี่ยนแปลงจะมีผลทันทีบนหน้าแรกของเว็บไซต์</p>
+          </div>
         </div>
       </div>
 

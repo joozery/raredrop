@@ -214,6 +214,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
   const [isOpening, setIsOpening] = useState(false);
   const [results, setResults] = useState<DrawResult[]>([]);
   const [showResult, setShowResult] = useState(false);
+  const [rouletteKey, setRouletteKey] = useState<number>(0);
   const [pityCount, setPityCount] = useState(0);
   const [freeCredits, setFreeCredits] = useState(0);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
@@ -302,6 +303,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
       }
 
       setResults(data.results);
+      setRouletteKey(Date.now());
       setPityCount(data.pityCount);
       setFreeCredits((prev) => Math.max(0, prev - (data.freeOpensUsed || 0)));
       await updateSession(); // refresh coins in session
@@ -455,7 +457,7 @@ export default function BoxDetailPage({ params }: { params: Promise<{ id: string
 
                 {isAnimating ? (
                   <RouletteAnimation
-                    key={String(results[0]?.itemId)+String(Date.now())}
+                    key={rouletteKey || String(results[0]?.itemId)}
                     boxItems={box.items}
                     resultItem={results[0]}
                     onEnded={() => { setIsAnimating(false); setShowResult(true); }}

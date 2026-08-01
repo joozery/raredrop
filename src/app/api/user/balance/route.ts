@@ -11,10 +11,14 @@ export async function GET() {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     await connectToDatabase();
-    const user = await User.findById(userId).select("coins gemCoins");
+    const user = await User.findById(userId).select("coins gemCoins honeyCoins");
     if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    return NextResponse.json({ coins: user.coins, gemCoins: user.gemCoins });
+    return NextResponse.json({
+      coins: user.coins ?? 0,
+      gemCoins: user.gemCoins ?? 0,
+      honeyCoins: user.honeyCoins ?? 0,
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

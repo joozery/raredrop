@@ -152,7 +152,7 @@ export default function RedEnvelopePage() {
     setParticipantsLoading(true);
     const url = activeTab === "today"
       ? `/api/red-envelope/recent?day=today&roundId=${activeRoundId}&t=${Date.now()}`
-      : `/api/red-envelope/recent?day=yesterday&matchScheduledAt=${encodeURIComponent(round?.scheduledAt || "")}&t=${Date.now()}`;
+      : `/api/red-envelope/recent?day=yesterday&roundId=${activeRoundId}&matchScheduledAt=${encodeURIComponent(round?.scheduledAt || "")}&t=${Date.now()}`;
     fetch(url)
       .then((r) => r.json())
       .then((d) => { setParticipants(d.entries || []); setParticipantsTotal(d.total || 0); })
