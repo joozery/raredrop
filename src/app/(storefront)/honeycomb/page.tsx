@@ -852,9 +852,9 @@ export default function HoneycombPage() {
                 return (
                   <div key={idx} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3">
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-slate-200 shrink-0 flex items-center justify-center">
-                      {r.image
-                        ? <img src={r.image} alt={r.name} className="w-full h-full object-contain p-0.5" />
-                        : <span className="text-lg">{r.type === "coin" ? "🍯" : "📦"}</span>}
+                      {(r.image || ((r.type === "coin" || r.type === "coin_reward") && globalCoinIcon))
+                        ? <img src={r.image || globalCoinIcon || ""} alt={r.name} className="w-full h-full object-contain p-0.5" />
+                        : <span className="text-lg">{(r.type === "coin" || r.type === "coin_reward") ? "🍯" : "📦"}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-800 text-xs truncate">{r.name}</p>
