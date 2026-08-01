@@ -22,6 +22,8 @@ import {
   MessageCircle,
   Sparkles,
   Calculator,
+  Gavel,
+  Hexagon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -30,12 +32,15 @@ const menuItems = [
   { name: "หน้าหลัก", icon: Home, href: "/" },
   { name: "กล่องสุ่ม", icon: Package, href: "/boxes" },
   { name: "สุ่มการ์ดพิเศษ", icon: Sparkles, href: "/cards" },
+  { name: "เกมรังผึ้ง", icon: Hexagon, href: "/honeycomb" },
   { name: "ร้านค้า", icon: Briefcase, href: "/shop" },
   { name: "ผ่อนไอดีเกม", icon: Calculator, href: "/installment" },
+  { name: "ประมูลไอดีเกม", icon: Gavel, href: "/auction" },
   { name: "ซองแดง", icon: Gift, href: "/red-envelope" },
   { name: "จัดอันดับเติมเงิน", icon: Trophy, href: "/leaderboard" },
   { name: "คอลเลกชันของฉัน", icon: LibrarySquare, href: "/inventory" },
   { name: "แลก GemCoin", icon: Coins, href: "/exchange" },
+  { name: "แลกเหรียญรังผึ้ง", icon: Hexagon, href: "/honeycomb-exchange" },
   { name: "วิธีการเล่น", icon: Gamepad2, href: "/knowledge-base" },
   { name: "ช่วยเหลือ", icon: HelpCircle, href: "/help" },
   { name: "แชท", icon: MessageCircle, href: "/chat" },
@@ -52,6 +57,7 @@ export function Sidebar() {
   const [logoUrl, setLogoUrl] = useState("");
   const [siteName, setSiteName] = useState("LuxusX");
   const [gemcoinIcon, setGemcoinIcon] = useState("");
+  const [honeycombCoinIcon, setHoneycombCoinIcon] = useState("");
   const [sidebarBg, setSidebarBg] = useState("");
   const [textColor, setTextColor] = useState("");
   const [hoverTextColor, setHoverTextColor] = useState("");
@@ -69,6 +75,7 @@ export function Sidebar() {
         setTiktokUrl(d.help_tiktok_url || "");
         setYoutubeUrl(d.help_youtube_url || "");
         setGemcoinIcon(d.gemcoin_icon || "");
+        setHoneycombCoinIcon(d.honeycomb_coin_icon || "");
         setSidebarBg(d.sidebar_bg || "");
         setTextColor(d.sidebar_text_color || "");
         setHoverTextColor(d.sidebar_hover_text_color || "");
@@ -133,6 +140,10 @@ export function Sidebar() {
                 {item.href === "/exchange" && gemcoinIcon ? (
                   <div className="w-[22px] h-[22px] flex items-center justify-center shrink-0">
                     <img src={gemcoinIcon} alt="" className="w-8 h-8 object-contain max-w-none" />
+                  </div>
+                ) : item.href === "/honeycomb-exchange" && honeycombCoinIcon ? (
+                  <div className="w-[22px] h-[22px] flex items-center justify-center shrink-0">
+                    <img src={honeycombCoinIcon} alt="" className="w-8 h-8 object-contain max-w-none" />
                   </div>
                 ) : (
                   <Icon size={22} className={cn(isActive ? "text-white" : "text-current opacity-80", "shrink-0")} strokeWidth={isActive ? 2 : 1.5} />

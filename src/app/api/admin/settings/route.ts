@@ -511,6 +511,38 @@ const DEFAULT_SETTINGS = [
     group: "วิธีการเล่น (Hero Banner)",
   },
   {
+    key: "honeycomb_hero_image",
+    value: "https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/banner/cover/cover.png",
+    label: "รูปภาพแบนเนอร์เกมรังผึ้ง",
+    description: "URL รูปภาพแบนเนอร์แสดงบนสุดของหน้าเลือกกล่องรังผึ้ง",
+    type: "text",
+    group: "เกมรังผึ้ง (Honeycomb Banner)",
+  },
+  {
+    key: "honeycomb_hero_link",
+    value: "",
+    label: "ลิงก์เมื่อคลิกแบนเนอร์รังผึ้ง (ไม่บังคับ)",
+    description: "URL ลิงก์เมื่อคลิกรูปภาพแบนเนอร์หน้าเกมรังผึ้ง",
+    type: "text",
+    group: "เกมรังผึ้ง (Honeycomb Banner)",
+  },
+  {
+    key: "honeycomb_coin_name",
+    value: "เหรียญรังผึ้ง",
+    label: "ชื่อเหรียญรังผึ้ง",
+    description: "ชื่อที่แสดงแทนเหรียญในเกมรังผึ้ง เช่น HoneyCoin, เหรียญทอง",
+    type: "text",
+    group: "เกมรังผึ้ง (Honeycomb Banner)",
+  },
+  {
+    key: "honeycomb_coin_expiry_date",
+    value: "",
+    label: "วันหมดอายุเหรียญรังผึ้ง",
+    description: "รูปแบบ YYYY-MM-DD HH:mm (เช่น 2024-12-31 23:59) เมื่อถึงเวลานี้ เหรียญรังผึ้งผู้เล่นจะกลายเป็น 0 ทันที — เว้นว่าง = ไม่มีวันหมดอายุ",
+    type: "text",
+    group: "เกมรังผึ้ง (Honeycomb Banner)",
+  },
+  {
     key: "knowledge_hero_title",
     value: "วิธีการเล่น",
     label: "ข้อความหลัก",
@@ -765,6 +797,19 @@ const DEFAULT_SETTINGS = [
     description: "% ดอกเบี้ยแยกตามจำนวนงวด — แก้ผ่านหน้า Admin Installment",
     type: "textarea",
     group: "ผ่อนชำระไอดี",
+  },
+  {
+    key: "announcements",
+    value: JSON.stringify([
+      { id: "1", badge: "NEW GAME", icon: "🐝", text: "เปิดตัวเกมรังผึ้งมหาสมบัติ! ลุ้นรับไอดี ROV Conqueror และ GemCoins สูงสุด 5,000 🪙", link: "/honeycomb" },
+      { id: "2", badge: "PROMOTION", icon: "🎁", text: "โปรโมชันพิเศษ! เติม GemCoins วันนี้ รับโบนัสเพิ่มทันที 10%", link: "/exchange" },
+      { id: "3", badge: "LIVE AUCTION", icon: "🔨", text: "ประมูลไอดีเกมระดับท็อป เรียลไทม์ การันตีความปลอดภัย 100%", link: "/auction" },
+      { id: "4", badge: "EVENT", icon: "🧧", text: "กิจกรรมแจกซองอั่งเปานำโชค! กดรับรางวัลฟรีได้ทุกวัน", link: "/red-envelope" },
+    ]),
+    label: "ข้อความประกาศ Ticker หน้าแรก (JSON)",
+    description: "รายการประกาศแบบสไลด์ที่แสดงเหนือแบนเนอร์หน้าแรก — จัดการผ่านหน้าตั้งค่าประกาศ",
+    type: "textarea",
+    group: "ประกาศหน้าแรก (Announcement Ticker)",
   },
 ];
 

@@ -16,7 +16,7 @@ export async function GET() {
         model: Item,
         populate: { path: "rarityId", model: Rarity, select: "name color" },
       })
-      .populate("shopListingId", "title images price accounts")
+      .populate({ path: "shopListingId", model: ShopListing, select: "title images price accounts" })
       .sort({ gemCost: 1 });
 
     // คำนวณ stock จริงสำหรับ type=shop (นับ account ที่ยังไม่ขาย)

@@ -44,5 +44,13 @@ app.prepare().then(() => {
         headers: { "x-internal-key": process.env.NEXTAUTH_SECRET || "" },
       }).catch(() => {});
     }, 5000);
+
+    // Poller ปิดการประมูลที่หมดเวลาอัตโนมัติ — ทำงานทุก 30 วินาที
+    setInterval(() => {
+      fetch(`http://127.0.0.1:${port}/api/internal/auction/auto-end`, {
+        method: "POST",
+        headers: { "x-internal-key": process.env.NEXTAUTH_SECRET || "" },
+      }).catch(() => {});
+    }, 30000);
   });
 });

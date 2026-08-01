@@ -25,8 +25,9 @@ export async function GET() {
 
     const xp = (user as any).xp || 0;
     const currentLevel = (user as any).vipLevel || 1;
+    const claimedLevels = (user as any).claimedLevels || [];
 
-    return NextResponse.json({ xp, currentLevel, levels });
+    return NextResponse.json({ xp, currentLevel, claimedLevels, levels });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

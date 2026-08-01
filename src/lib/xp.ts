@@ -52,9 +52,12 @@ export async function awardXp(userId: string, xpToAdd: number) {
     await Inventory.insertMany(inventoryEntries);
   }
 
+  const gainedLevelNums = levelsGained.map((l: any) => l.level);
+
   await User.findByIdAndUpdate(userId, {
     $inc: { xp: xpToAdd },
     $set: { vipLevel: newLevel },
+    ...(gainedLevelNums.length > 0 ? { $addToSet: { claimedLevels: { $each: gainedLevelNums } } } : {}),
   });
 
   if (levelsGained.length > 0) {

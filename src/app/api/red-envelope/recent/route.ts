@@ -15,40 +15,89 @@ export async function GET(req: Request) {
 
     await connectToDatabase();
 
-    const todayStart = startOfTodayThai();
-    const rangeStart = day === "today" ? todayStart : new Date(todayStart.getTime() - 24 * 60 * 60 * 1000);
-    const rangeEnd = day === "today" ? new Date(todayStart.getTime() + 24 * 60 * 60 * 1000) : todayStart;
-
-    const matchQuery: any = { "participants.joinedAt": { $gte: rangeStart, $lt: rangeEnd } };
-
-    if (day === "today" && roundId) {
-      // today: กรองเฉพาะ round นั้น
-      matchQuery._id = roundId;
-    } else if (day === "yesterday" && matchScheduledAt) {
-      // yesterday: หา round เมื่อวานที่ scheduledAt ตรงกับ round วันนี้ (±60 นาที)
-      const todayTime = new Date(matchScheduledAt);
-      if (!isNaN(todayTime.getTime())) {
-        const yesterdayTime = new Date(todayTime.getTime() - 24 * 60 * 60 * 1000);
-        const window = 60 * 60 * 1000;
-        matchQuery.scheduledAt = { $gte: new Date(yesterdayTime.getTime() - window), $lte: new Date(yesterdayTime.getTime() + window) };
-      }
-    }
-
-    const rounds = await RedEnvelopeRound.find(matchQuery)
-      .populate("itemId", "name")
-      .populate("participants.userId", "name avatar vipLevel")
-      .lean();
-
     const levelConfigs = await LevelConfig.find({}, "level tagImage").lean();
     const tagImageMap = new Map(levelConfigs.map((c: any) => [c.level, c.tagImage]));
 
+    let targetRounds: any[] = [];
+
+    if (day === "today") {
+      const todayStart = startOfTodayThai();
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+      const matchQuery: any = {};
+      if (roundId) {
+        matchQuery._id = roundId;
+      } else {
+        matchQuery["participants.joinedAt"] = { $gte: todayStart, $lt: todayEnd };
+      }
+
+      targetRounds = await RedEnvelopeRound.find(matchQuery)
+        .populate("itemId", "name")
+        .populate("participants.userId", "name avatar vipLevel")
+        .lean();
+    } else {
+      // day === "yesterday" / รอบก่อนหน้าของสล็อตเวลานั้น
+      let currentScheduledAt: Date | null = null;
+
+      if (matchScheduledAt) {
+        const parsed = new Date(matchScheduledAt);
+        if (!isNaN(parsed.getTime())) currentScheduledAt = parsed;
+      }
+
+      if (!currentScheduledAt && roundId) {
+        const currentRound = await RedEnvelopeRound.findById(roundId, "scheduledAt").lean();
+        if (currentRound?.scheduledAt) currentScheduledAt = new Date(currentRound.scheduledAt);
+      }
+
+      let prevRound: any = null;
+
+      if (currentScheduledAt) {
+        const curHour = currentScheduledAt.getHours();
+
+        // 1. หา round ก่อนหน้าที่ scheduledAt < currentScheduledAt และมีผู้เข้าร่วม
+        const allPrevRounds = await RedEnvelopeRound.find({
+          scheduledAt: { $lt: currentScheduledAt },
+          "participants.0": { $exists: true },
+        })
+          .sort({ scheduledAt: -1 })
+          .populate("itemId", "name")
+          .populate("participants.userId", "name avatar vipLevel")
+          .lean();
+
+        if (allPrevRounds.length > 0) {
+          // พยายามหา round ที่เวลาใกล้เคียงช่วงเวลาเดียวกัน (เช่น 12:00 ±2 ชั่วโมง)
+          const sameSlotRound = allPrevRounds.find((r: any) => {
+            const h = new Date(r.scheduledAt).getHours();
+            return Math.abs(h - curHour) <= 2;
+          });
+
+          prevRound = sameSlotRound || allPrevRounds[0];
+        }
+      }
+
+      // ถ้ายังหาไม่เจอ (เช่น ไม่มี currentScheduledAt หรือไม่เจอรอบย้อนหลังที่มีผู้เข้าร่วม)
+      if (!prevRound) {
+        const fallbackQuery: any = { "participants.0": { $exists: true } };
+        if (roundId) fallbackQuery._id = { $ne: roundId };
+
+        prevRound = await RedEnvelopeRound.findOne(fallbackQuery)
+          .sort({ scheduledAt: -1 })
+          .populate("itemId", "name")
+          .populate("participants.userId", "name avatar vipLevel")
+          .lean();
+      }
+
+      if (prevRound) {
+        targetRounds = [prevRound];
+      }
+    }
+
     const entries: any[] = [];
-    for (const r of rounds as any[]) {
+    for (const r of targetRounds) {
+      if (!r.participants) continue;
       for (const p of r.participants) {
         if (!p.userId) continue;
-        if (!p.joinedAt) continue;
-        const joinedAt = new Date(p.joinedAt);
-        if (joinedAt < rangeStart || joinedAt >= rangeEnd) continue;
+        const joinedAt = p.joinedAt ? new Date(p.joinedAt) : new Date(r.scheduledAt);
         const pending = p.rewardAmount === undefined && p.isWinner === undefined;
         entries.push({
           userId: p.userId._id,

@@ -59,9 +59,9 @@ export default function MenuShortcuts() {
           <Link
             key={item._id}
             href={item.url}
-            className="flex flex-col items-center justify-center min-w-[80px] sm:min-w-[100px] bg-white rounded-2xl p-3 sm:p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all snap-start flex-1 shrink-0 hover:-translate-y-0.5"
+            className="flex flex-col items-center justify-center flex-none w-[calc(20%-9.6px)] sm:w-[calc(20%-12.8px)] bg-white rounded-xl py-2 px-1 sm:py-3 sm:px-2 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all snap-start hover:-translate-y-0.5"
           >
-            <div className="w-12 h-12 sm:w-14 sm:h-14 mb-2 overflow-hidden transition-transform group-hover:scale-105">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 mb-1.5 overflow-hidden transition-transform group-hover:scale-105">
               <img src={item.imageUrl} alt={item.title} className="w-full h-full object-contain" />
             </div>
             <span className="text-[11px] sm:text-xs font-bold text-slate-800 text-center whitespace-nowrap">

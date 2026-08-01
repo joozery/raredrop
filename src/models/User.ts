@@ -10,6 +10,7 @@ export interface IUser extends Document {
   role: "user" | "admin" | "super_admin";
   coins: number;
   gemCoins: number;
+  honeyCoins: number;
   vipLevel: number;
   xp: number;
   discordJoinClaimed?: boolean;
@@ -18,6 +19,7 @@ export interface IUser extends Document {
   referralFlagged?: boolean;
   signupIp?: string;
   hideFromLeaderboard?: boolean;
+  claimedLevels?: number[];
   createdAt: Date;
 }
 
@@ -31,6 +33,7 @@ const UserSchema: Schema = new Schema({
   role: { type: String, enum: ["user", "admin", "super_admin"], default: "user" },
   coins: { type: Number, default: 0 },
   gemCoins: { type: Number, default: 0 },
+  honeyCoins: { type: Number, default: 0 },
   vipLevel: { type: Number, default: 1 },
   xp: { type: Number, default: 0 },
   discordJoinClaimed: { type: Boolean, default: false },
@@ -40,6 +43,7 @@ const UserSchema: Schema = new Schema({
   referralFlagged: { type: Boolean, default: false },
   signupIp: { type: String },
   hideFromLeaderboard: { type: Boolean, default: false },
+  claimedLevels: { type: [Number], default: [] },
   createdAt: { type: Date, default: Date.now },
 });
 
