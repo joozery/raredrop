@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Sparkles, Trophy, History, Hexagon, Flame, ArrowRight, HelpCircle, X, Wallet, ShieldCheck, Ticket } from "lucide-react";
+import { Sparkles, Trophy, History, Hexagon, Flame, ArrowRight, HelpCircle, X, Wallet, ShieldCheck, Ticket, Gift } from "lucide-react";
 import { TopupModal } from "@/components/payment/TopupModal";
 
 interface HoneyReward {
@@ -1055,7 +1055,7 @@ export default function HoneycombPage() {
               </button>
             ))}
           </div>
-          <div className="flex flex-col items-center w-full xl:flex-1">
+          <div className="flex flex-col items-center w-full xl:flex-1 gap-2">
             <button
               onClick={() => {
                 if (!isEventBlocked) setIsPaymentModalOpen(true);
@@ -1073,6 +1073,13 @@ export default function HoneycombPage() {
               </div>
               {!isEventBlocked && <span className="text-xs font-semibold text-red-100 mt-1 opacity-90 drop-shadow-sm">ลุ้นของหายากระดับตำนาน</span>}
             </button>
+            <Link
+              href="/honeycomb-exchange"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-amber-400 bg-amber-50 hover:bg-amber-100 text-amber-700 font-black text-sm transition-all active:scale-95"
+            >
+              <Gift size={16} className="text-amber-500" />
+              🍯 แลกรางวัลด้วยเหรียญรังผึ้ง
+            </Link>
           </div>
         </div>
       </div>
