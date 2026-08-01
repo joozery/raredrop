@@ -339,24 +339,31 @@ export default function AuctionPage() {
     }).catch(() => {});
   }, [currentRound?.id]);
 
-  // เมื่อ countdown ถึง 0 → ตรวจสอบ winner หลัง 5 วินาที (รอ auto-end poller ทำงาน)
+  // เมื่อ countdown ถึง 0 → trigger end ทันที แล้วเช็ค winner
   const effectiveEndsAt = liveEndsAt ?? currentRound?.endsAt ?? null;
   useEffect(() => {
     if (!effectiveEndsAt) return;
     const diff = effectiveEndsAt.getTime() - Date.now();
     if (diff <= 0) return;
+    const auctionId = currentRoundRef.current?.id;
     const titleSnapshot = currentRoundRef.current?.title || "";
-    const id = setTimeout(() => {
+    const id = setTimeout(async () => {
       // ประกาศผู้ชนะสำหรับทุกคนจาก bids state
       if (bidsRef.current.length > 0) {
         setEndedWinner({ name: bidsRef.current[0].user, amount: currentBidRef.current, title: titleSnapshot });
       }
-      // หลังหมดเวลา 5 วิ เช็ค my-wins (poller 30 วิ อาจยังไม่ทัน)
+      // trigger end บน server (idempotent) → emits auction:winner via Socket.IO
+      if (auctionId) {
+        try {
+          await fetch(`/api/auction/${auctionId}/end`, { method: "POST" });
+        } catch {}
+      }
+      // เช็ค my-wins สำหรับ user ที่ชนะ
       fetch("/api/auction/my-wins")
         .then((r) => r.json())
         .then((data) => { if (Array.isArray(data) && data.length > 0) setWinnerPopup(data[0]); })
         .catch(() => {});
-    }, diff + 5000);
+    }, diff + 2000);
     return () => clearTimeout(id);
   }, [effectiveEndsAt]);
 
