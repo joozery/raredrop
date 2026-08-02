@@ -66,7 +66,7 @@ function Gallery({ images, verified }: { images: string[]; verified?: boolean })
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[16/10] border border-slate-200/80 shadow-md group">
+      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-square lg:aspect-[16/10] border border-slate-200/80 shadow-md group">
         {isVid(imgs[idx])
           ? <video key={imgs[idx]} src={imgs[idx]} className="w-full h-full object-cover" autoPlay loop muted playsInline />
           : <img key={imgs[idx]} src={imgs[idx]} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500" onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }} />}
