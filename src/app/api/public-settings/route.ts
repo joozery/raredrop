@@ -18,7 +18,7 @@ const PUBLIC_KEYS = [
   "popup_enabled", "popup_image", "popup_link", "popup_dismiss_hours",
   "crypto_enabled", "crypto_wallet_address", "crypto_network", "crypto_rate_per_unit",
   "livechat_welcome_message", "livechat_case_closed_text", "livechat_case_open_text", "livechat_contact_text",
-  "announcements",
+  "announcements", "auction_how_to_play",
 ];
 
 export async function GET() {
