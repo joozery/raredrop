@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Sparkles, Trophy, History, Hexagon, Flame, ArrowRight, HelpCircle, X, Wallet, ShieldCheck, Ticket, Gift } from "lucide-react";
+import { Sparkles, Trophy, History, Hexagon, Flame, ArrowRight, HelpCircle, X, Wallet, ShieldCheck, Ticket, Gift, Clock, CalendarX, Timer, AlertTriangle } from "lucide-react";
 import { TopupModal } from "@/components/payment/TopupModal";
 
 interface HoneyReward {
@@ -564,47 +564,56 @@ export default function HoneycombPage() {
 
       {/* Event Status Banners — full-width, prominent */}
       {isEventEnded && (
-        <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-          <div className="bg-gradient-to-r from-red-600 to-rose-500 px-5 py-4 flex items-center gap-4">
-            <span className="text-4xl shrink-0">🔒</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-black text-white text-base sm:text-lg leading-tight">อีเว้นนี้สิ้นสุดแล้ว</p>
-              <p className="text-red-100 text-xs sm:text-sm font-semibold mt-0.5">
-                ปิดรับเมื่อ {boxData.eventEndDate?.toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} น.
-              </p>
+        <div className="mb-6 rounded-2xl p-[1px] bg-gradient-to-r from-red-500/50 to-rose-500/50 shadow-lg">
+          <div className="bg-slate-900 rounded-2xl p-4 sm:p-5 flex items-center gap-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 blur-3xl rounded-full" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center shrink-0">
+              <CalendarX className="text-red-400" size={20} />
             </div>
-            <div className="shrink-0 bg-white/20 rounded-xl px-3 py-2 text-center hidden sm:block">
-              <p className="text-white font-black text-xs">สถานะ</p>
-              <p className="text-white font-black text-sm">ปิดแล้ว</p>
+            <div className="flex-1 min-w-0 z-10">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-black text-white text-base sm:text-lg leading-tight tracking-wide">อีเว้นนี้สิ้นสุดลงแล้ว</p>
+                <span className="bg-red-500/20 text-red-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-red-500/20 hidden sm:inline-block">ปิดรับการเข้าร่วม</span>
+              </div>
+              <p className="text-slate-400 text-xs sm:text-sm font-medium">
+                ปิดรับเมื่อ <span className="text-white font-bold">{boxData.eventEndDate?.toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} น.</span>
+              </p>
             </div>
           </div>
         </div>
       )}
       {isEventNotStarted && (
-        <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-500 px-5 py-4 flex items-center gap-4">
-            <span className="text-4xl shrink-0">⏳</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-black text-white text-base sm:text-lg leading-tight">อีเว้นยังไม่เริ่ม</p>
-              <p className="text-blue-100 text-xs sm:text-sm font-semibold mt-0.5">
-                เปิดรับวันที่ {boxData.eventStartDate?.toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} น.
-              </p>
+        <div className="mb-6 rounded-2xl p-[1px] bg-gradient-to-r from-blue-500/50 to-indigo-500/50 shadow-lg">
+          <div className="bg-slate-900 rounded-2xl p-4 sm:p-5 flex items-center gap-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+              <Timer className="text-blue-400" size={20} />
             </div>
-            <div className="shrink-0 bg-white/20 rounded-xl px-3 py-2 text-center hidden sm:block">
-              <p className="text-white font-black text-xs">สถานะ</p>
-              <p className="text-white font-black text-sm">เร็วๆ นี้</p>
+            <div className="flex-1 min-w-0 z-10">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-black text-white text-base sm:text-lg leading-tight tracking-wide">อีเว้นยังไม่เปิดให้เข้าร่วม</p>
+                <span className="bg-blue-500/20 text-blue-400 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-500/20 hidden sm:inline-block">เร็วๆ นี้</span>
+              </div>
+              <p className="text-slate-400 text-xs sm:text-sm font-medium">
+                เตรียมตัวให้พร้อม! เปิดรับวันที่ <span className="text-white font-bold">{boxData.eventStartDate?.toLocaleDateString("th-TH", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} น.</span>
+              </p>
             </div>
           </div>
         </div>
       )}
       {isHoneyCoinsExpired && session?.user && (
-        <div className="mb-6 rounded-2xl overflow-hidden shadow-md">
-          <div className="bg-gradient-to-r from-amber-500 to-orange-400 px-5 py-3.5 flex items-center gap-3">
-            <span className="text-3xl shrink-0">⚠️</span>
-            <div>
-              <p className="font-black text-white text-sm">{coinName}ของคุณหมดอายุแล้ว</p>
-              <p className="text-amber-100 text-xs font-semibold mt-0.5">
-                ยอดเหรียญถูกรีเซ็ตเป็น 0 — รอรอบอีเว้นถัดไป
+        <div className="mb-6 rounded-2xl p-[1px] bg-gradient-to-r from-orange-500/50 to-red-500/50 shadow-md">
+          <div className="bg-slate-900 rounded-2xl p-4 sm:p-5 flex items-center gap-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shrink-0">
+              <AlertTriangle className="text-orange-400" size={20} />
+            </div>
+            <div className="flex-1 min-w-0 z-10">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-black text-white text-base sm:text-lg leading-tight tracking-wide">{coinName}ของคุณหมดอายุแล้ว</p>
+              </div>
+              <p className="text-slate-400 text-xs sm:text-sm font-medium mt-0.5">
+                ยอดเหรียญถูกรีเซ็ตเป็น 0 กรุณารอรอบกิจกรรมถัดไป
               </p>
             </div>
           </div>

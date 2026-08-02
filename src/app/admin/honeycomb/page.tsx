@@ -356,7 +356,12 @@ export default function AdminHoneycombPage() {
     try {
       const url    = editingBox?._id ? `/api/honeycomb-boxes/${editingBox._id}` : "/api/honeycomb-boxes";
       const method = editingBox?._id ? "PATCH" : "POST";
-      const body   = { ...boxForm, items: undefined }; // items managed separately
+      const body   = { 
+        ...boxForm, 
+        items: undefined,
+        eventStartDate: boxForm.eventStartDate ? new Date(boxForm.eventStartDate).toISOString() : undefined,
+        eventEndDate: boxForm.eventEndDate ? new Date(boxForm.eventEndDate).toISOString() : undefined,
+      }; // items managed separately
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error((await res.json()).error || "Failed");
       showToast(editingBox ? "บันทึกสำเร็จ" : "สร้างกล่องสำเร็จ");
