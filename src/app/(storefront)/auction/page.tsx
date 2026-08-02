@@ -278,7 +278,11 @@ export default function AuctionPage() {
       setTotalBids(data.totalBids);
 
       // อัปเดตเวลาสิ้นสุดถ้ามีการต่อเวลา (anti-snipe)
-      if (data.newEndsAt) setLiveEndsAt(new Date(data.newEndsAt));
+      if (data.newEndsAt) {
+        const newTime = new Date(data.newEndsAt);
+        setLiveEndsAt(newTime);
+        setRounds((prev) => prev.map(r => r.id === data.auctionId ? { ...r, endsAt: newTime } : r));
+      }
 
       setBids((prev) => {
         const next = [
