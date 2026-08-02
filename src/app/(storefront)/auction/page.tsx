@@ -10,7 +10,7 @@ dayjs.locale("th");
 import {
   Gavel, Clock, Users, Crown, Flame, AlertCircle,
   ChevronLeft, ChevronRight, Trophy,
-  Star, ChevronUp, Server, ShieldCheck, Zap, Sparkles, CheckCircle2, Award, ArrowUpRight, MessageCircle, X
+  Star, ChevronUp, Server, ShieldCheck, Zap, Sparkles, CheckCircle2, Award, ArrowUpRight, MessageCircle, X, HelpCircle
 } from "lucide-react";
 import { useBalance } from "@/contexts/BalanceContext";
 
@@ -230,6 +230,8 @@ export default function AuctionPage() {
   const [claiming, setClaiming] = useState(false);
   const [liveEndsAt, setLiveEndsAt] = useState<Date | null>(null);
   const [endedWinner, setEndedWinner] = useState<EndedWinner | null>(null);
+  const [howToPlay, setHowToPlay] = useState<string>("");
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   const currentRoundRef = useRef<Round | null>(null);
   const minBidStepRef   = useRef(0);
@@ -250,6 +252,15 @@ export default function AuctionPage() {
         setRounds((await res.json() as any[]).map(mapRound));
       }
     } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/public-settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.auction_how_to_play) setHowToPlay(d.auction_how_to_play);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => { fetchRounds(); }, [fetchRounds]);
@@ -478,12 +489,15 @@ export default function AuctionPage() {
                 </span>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs font-extrabold text-white bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
+                <button onClick={() => setShowHowToPlay(true)} className="text-[11px] font-black bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full flex items-center gap-1 shadow-xs transition-colors cursor-pointer">
+                  <HelpCircle size={12} /> วิธีเล่น
+                </button>
+                <span className="hidden sm:inline-flex text-xs font-extrabold text-white bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/20">
                   <Users size={13} className="inline mr-1" /> {totalBids} บิดแล้ว
                 </span>
                 {currentRound.isHot && (
-                  <span className="text-[11px] font-black bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider shadow-xs">
-                    <Flame size={11} className="fill-slate-950" /> HOT
+                  <span className="text-[11px] font-black bg-amber-400 text-slate-950 px-2.5 py-1 rounded-full flex items-center gap-1 uppercase tracking-wider shadow-xs">
+                    <Flame size={12} className="fill-slate-950" /> HOT
                   </span>
                 )}
               </div>
@@ -876,6 +890,41 @@ export default function AuctionPage() {
             >
               ปิดชั่วคราว (จะกลับมาแจ้งเตือนอีกครั้ง)
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── How to play modal ── */}
+      {showHowToPlay && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-5 flex items-center justify-between">
+              <h3 className="text-white font-black text-lg flex items-center gap-2">
+                <HelpCircle size={20} className="text-amber-400" /> วิธีการเล่น
+              </h3>
+              <button onClick={() => setShowHowToPlay(false)} className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors cursor-pointer">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-6 text-sm text-slate-700 leading-relaxed font-medium">
+              {howToPlay.split("\n").map((line, i) => {
+                const parts = line.split(/(\*\*.*?\*\*)/g);
+                return (
+                  <p key={i} className="mb-2 last:mb-0">
+                    {parts.map((p, j) => 
+                      p.startsWith("**") && p.endsWith("**") 
+                        ? <strong key={j} className="font-extrabold text-slate-900">{p.slice(2, -2)}</strong> 
+                        : p
+                    )}
+                  </p>
+                );
+              })}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button onClick={() => setShowHowToPlay(false)} className="px-5 py-2.5 bg-slate-900 hover:bg-black text-white font-bold rounded-xl transition-colors cursor-pointer">
+                เข้าใจแล้ว
+              </button>
+            </div>
           </div>
         </div>
       )}
