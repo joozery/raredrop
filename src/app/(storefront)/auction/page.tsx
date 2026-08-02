@@ -38,9 +38,12 @@ function mapRound(a: any): Round {
 }
 
 // ─── Hooks ───────────────────────────────────────────────────────────────────
+declare global { interface Window { __serverTimeOffset?: number; } }
+const getNow = () => Date.now() + (typeof window !== "undefined" ? (window.__serverTimeOffset || 0) : 0);
+
 function useCountdown(endsAt: Date) {
   const calc = useCallback(() => {
-    const diff = endsAt.getTime() - Date.now();
+    const diff = endsAt.getTime() - getNow();
     if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0, total: 0 };
     return {
       d: Math.floor(diff / 86400000),
@@ -63,7 +66,7 @@ function Gallery({ images, verified }: { images: string[]; verified?: boolean })
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[16/10] border border-slate-200/80 shadow-md group">
+      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-square lg:aspect-[16/10] border border-slate-200/80 shadow-md group">
         {isVid(imgs[idx])
           ? <video key={imgs[idx]} src={imgs[idx]} className="w-full h-full object-cover" autoPlay loop muted playsInline />
           : <img key={imgs[idx]} src={imgs[idx]} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500" onError={(e) => { (e.target as HTMLImageElement).src = "/product/pokemon.webp"; }} />}
@@ -241,7 +244,11 @@ export default function AuctionPage() {
   const fetchRounds = useCallback(async () => {
     try {
       const res = await fetch("/api/auction");
-      if (res.ok) setRounds((await res.json() as any[]).map(mapRound));
+      if (res.ok) {
+        const sTime = res.headers.get("x-server-time");
+        if (sTime) window.__serverTimeOffset = parseInt(sTime) - Date.now();
+        setRounds((await res.json() as any[]).map(mapRound));
+      }
     } finally { setLoading(false); }
   }, []);
 
@@ -321,7 +328,7 @@ export default function AuctionPage() {
     return () => { socket.disconnect(); };
   }, []);
 
-  const now = new Date();
+  const now = new Date(getNow());
   const activeRounds   = rounds.filter((r) => r.status === "active" && r.endsAt > now).sort((a, b) => a.endsAt.getTime() - b.endsAt.getTime());
   const currentRound   = activeRounds[0] ?? null;
   const upcomingRounds = activeRounds.slice(1);
@@ -350,7 +357,7 @@ export default function AuctionPage() {
   const effectiveEndsAt = liveEndsAt ?? currentRound?.endsAt ?? null;
   useEffect(() => {
     if (!effectiveEndsAt) return;
-    const diff = effectiveEndsAt.getTime() - Date.now();
+    const diff = effectiveEndsAt.getTime() - getNow();
     if (diff <= 0) return;
     const auctionId = currentRoundRef.current?.id;
     const titleSnapshot = currentRoundRef.current?.title || "";
@@ -501,7 +508,7 @@ export default function AuctionPage() {
 
                 {/* Mobile Countdown & Current Bid Grid */}
                 <div className="lg:hidden grid grid-cols-2 gap-3">
-                  <div className={`rounded-2xl p-3.5 border ${activeEndsAt.getTime() - Date.now() < 60*10*1000 ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200/80"}`}>
+                  <div className={`rounded-2xl p-3.5 border ${activeEndsAt.getTime() - getNow() < 60*10*1000 ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200/80"}`}>
                     <p className="text-[10px] text-slate-400 font-bold mb-1 flex items-center gap-1">
                       <Clock size={11} /> เวลาที่เหลือ
                     </p>

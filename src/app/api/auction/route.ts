@@ -28,7 +28,7 @@ export async function GET(req: Request) {
                                { endsAt: 1 };
 
     const auctions = await Auction.find(query).sort(sortObj).lean();
-    return NextResponse.json(auctions);
+    return NextResponse.json(auctions, { headers: { "x-server-time": Date.now().toString() } });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
