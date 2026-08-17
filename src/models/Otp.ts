@@ -1,15 +1,21 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IOtp extends Document {
-  email: string;
-  otp: string;
+  email?: string;
+  phone?: string;
+  otp?: string;        // email OTP flow (เก็บ code ตรงๆ)
+  reference?: string;  // phone OTP flow (SepSMS reference สำหรับ verify)
   createdAt: Date;
 }
 
+delete (mongoose.models as any).Otp;
+
 const OtpSchema: Schema = new Schema({
-  email: { type: String, required: true },
-  otp: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now, expires: 300 }, // Expires in 5 minutes
+  email: { type: String },
+  phone: { type: String },
+  otp: { type: String },
+  reference: { type: String },
+  createdAt: { type: Date, default: Date.now, expires: 300 },
 });
 
-export default mongoose.models.Otp || mongoose.model<IOtp>("Otp", OtpSchema);
+export default mongoose.model<IOtp>("Otp", OtpSchema);

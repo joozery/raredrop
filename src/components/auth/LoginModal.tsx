@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mail, Headset, ChevronDown, X, ArrowLeft, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Mail, Phone, KeyRound, Eye, EyeOff, X, ArrowLeft } from 'lucide-react';
 import { signIn } from "next-auth/react";
 import { Turnstile } from "@marsidev/react-turnstile";
 
@@ -8,44 +8,68 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
+type Step = "main" | "password" | "otp" | "phoneOtp";
+type LoginMethod = "email" | "phone";
+
 export function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  const [step, setStep] = useState<"email" | "password" | "otp">("email");
+  const [step, setStep] = useState<Step>("main");
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>("email");
+
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<any>(null);
-  
-  // OTP State
+
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-  // Logo State
+  const [timeLeft, setTimeLeft] = useState(60);
+
   const [logoUrl, setLogoUrl] = useState("https://pub-ee29977ae9524b05b628923eee00188a.r2.dev/logo/logo.png");
 
   useEffect(() => {
     fetch("/api/public-settings", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d) => {
-        if (d.site_logo) setLogoUrl(d.site_logo);
-      })
+      .then((d) => { if (d.site_logo) setLogoUrl(d.site_logo); })
       .catch(() => {});
   }, []);
 
-  const [timeLeft, setTimeLeft] = useState(60);
-
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (step === "otp" && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
+    if ((step === "otp" || step === "phoneOtp") && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft((p) => p - 1), 1000);
     }
     return () => clearInterval(timer);
   }, [step, timeLeft]);
 
-  const sendOtp = async () => {
+  const resetToMain = () => {
+    setStep("main");
+    setErrorMsg("");
+    setTurnstileToken(null);
+    turnstileRef.current?.reset();
+  };
+
+  const verifyTurnstile = async (): Promise<boolean> => {
+    if (!turnstileToken) return false;
+    const res = await fetch("/api/admin/verify-turnstile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: turnstileToken }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      setErrorMsg("กรุณายืนยัน CAPTCHA ใหม่อีกครั้ง");
+      turnstileRef.current?.reset();
+      setTurnstileToken(null);
+      return false;
+    }
+    return true;
+  };
+
+  const sendEmailOtp = async () => {
     setIsLoading(true);
     setErrorMsg("");
     try {
@@ -62,38 +86,57 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       } else {
         setErrorMsg(data.error || "เกิดข้อผิดพลาดในการส่ง OTP");
       }
-    } catch (err) {
+    } catch {
       setErrorMsg("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOtpChange = async (index: number, value: string) => {
+  const sendPhoneOtp = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/auth/send-otp-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStep("phoneOtp");
+        setTimeLeft(60);
+        setOtp(["", "", "", "", "", ""]);
+      } else {
+        setErrorMsg(data.error || "เกิดข้อผิดพลาดในการส่ง OTP");
+      }
+    } catch {
+      setErrorMsg("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpChange = async (index: number, value: string, currentStep: Step) => {
     if (value.length > 1) value = value.slice(-1);
-    
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Move to next input
     if (value !== "" && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
 
-    // Auto submit if all filled
-    if (index === 5 && value !== "" && newOtp.every(v => v !== "")) {
+    if (index === 5 && value !== "" && newOtp.every((v) => v !== "")) {
       setIsLoading(true);
       setErrorMsg("");
       const fullOtp = newOtp.join("");
-      
-      const res = await signIn("credentials", { 
-        email, 
-        password, 
-        otp: fullOtp,
-        redirect: false
-      });
-      
+
+      const creds = currentStep === "phoneOtp"
+        ? { phone, otp: fullOtp, redirect: false }
+        : { email, password, otp: fullOtp, redirect: false };
+
+      const res = await signIn("credentials", creds);
       setIsLoading(false);
 
       if (res?.error) {
@@ -102,14 +145,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         otpRefs.current[0]?.focus();
       } else if (res?.ok) {
         onClose();
-        // Force refresh to update UI state if needed
         window.location.reload();
       }
     }
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
       otpRefs.current[index - 1]?.focus();
     }
   };
@@ -118,24 +160,16 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-0 sm:p-4">
-      {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-        onClick={() => {
-          setStep("email");
-          setErrorMsg("");
-          setTurnstileToken(null);
-          turnstileRef.current?.reset();
-          onClose();
-        }}
+        onClick={resetToMain}
       />
-      
-      {/* Modal Content */}
+
       <div className="relative w-full max-w-[420px] bg-[#F8F9FA] rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0 sm:zoom-in-95 sm:fade-in duration-300 pb-safe flex flex-col min-h-[450px]">
-        
-        {step === "email" && (
+
+        {/* ===== STEP: MAIN ===== */}
+        {step === "main" && (
           <>
-            {/* Header */}
             <div className="flex items-center justify-center p-6 pb-5 border-b border-gray-100">
               <div className="flex flex-col items-center gap-3">
                 <img src={logoUrl} alt="Logo" className="h-10 object-contain drop-shadow-sm" />
@@ -143,30 +177,57 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </div>
             </div>
 
-            {/* Body */}
             <div className="px-6 flex flex-col gap-3">
-              
-              {/* Email Input Field */}
-              <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3 shadow-sm focus-within:border-gray-400 transition-colors">
-                <Mail size={18} className="text-gray-500 shrink-0" />
-                <input 
-                  type="email" 
-                  placeholder="กรอกอีเมลของคุณ" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 bg-transparent border-none outline-none text-[15px] text-gray-900 placeholder:text-gray-400"
-                />
-                {email && (
-                  <button 
-                    onClick={() => setEmail("")}
-                    className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors shrink-0"
-                  >
-                    <X size={12} className="text-gray-600" />
-                  </button>
-                )}
+              {/* Tab switcher */}
+              <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                <button
+                  onClick={() => { setLoginMethod("email"); setErrorMsg(""); }}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${loginMethod === "email" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  อีเมล
+                </button>
+                <button
+                  onClick={() => { setLoginMethod("phone"); setErrorMsg(""); }}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${loginMethod === "phone" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  เบอร์โทร
+                </button>
               </div>
 
-              {/* Turnstile */}
+              {loginMethod === "email" ? (
+                <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3 shadow-sm focus-within:border-gray-400 transition-colors">
+                  <Mail size={18} className="text-gray-500 shrink-0" />
+                  <input
+                    type="email"
+                    placeholder="กรอกอีเมลของคุณ"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="flex-1 bg-transparent border-none outline-none text-[15px] text-gray-900 placeholder:text-gray-400"
+                  />
+                  {email && (
+                    <button onClick={() => setEmail("")} className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors shrink-0">
+                      <X size={12} className="text-gray-600" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3 shadow-sm focus-within:border-gray-400 transition-colors">
+                  <Phone size={18} className="text-gray-500 shrink-0" />
+                  <input
+                    type="tel"
+                    placeholder="กรอกเบอร์โทร (0812345678)"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    className="flex-1 bg-transparent border-none outline-none text-[15px] text-gray-900 placeholder:text-gray-400"
+                  />
+                  {phone && (
+                    <button onClick={() => setPhone("")} className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors shrink-0">
+                      <X size={12} className="text-gray-600" />
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-center">
                 <Turnstile
                   ref={turnstileRef}
@@ -177,50 +238,58 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 />
               </div>
 
-              {/* Continue Button */}
-              <button
-                disabled={!email || !turnstileToken || isLoading}
-                onClick={async () => {
-                  if (!email || !turnstileToken) return;
-                  setIsLoading(true);
-                  setErrorMsg("");
-                  try {
-                    const res = await fetch("/api/admin/verify-turnstile", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ token: turnstileToken }),
-                    });
-                    const data = await res.json();
-                    if (!data.success) {
-                      setErrorMsg("กรุณายืนยัน CAPTCHA ใหม่อีกครั้ง");
-                      turnstileRef.current?.reset();
-                      setTurnstileToken(null);
-                      return;
-                    }
-                    setStep("password");
+              {/* Continue button */}
+              {loginMethod === "email" ? (
+                <button
+                  disabled={!email || !turnstileToken || isLoading}
+                  onClick={async () => {
+                    if (!email || !turnstileToken) return;
+                    setIsLoading(true);
                     setErrorMsg("");
-                  } catch {
-                    setErrorMsg("เกิดข้อผิดพลาด กรุณาลองใหม่");
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                className={`w-full text-white font-bold rounded-xl py-3.5 transition-colors mt-1 shadow-sm ${email && turnstileToken && !isLoading ? "bg-black hover:bg-gray-900" : "bg-black/50 cursor-not-allowed"}`}
-              >
-                {isLoading ? "กำลังตรวจสอบ..." : "ต่อ"}
-              </button>
+                    try {
+                      if (!(await verifyTurnstile())) return;
+                      setStep("password");
+                      setErrorMsg("");
+                    } catch {
+                      setErrorMsg("เกิดข้อผิดพลาด กรุณาลองใหม่");
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  className={`w-full text-white font-bold rounded-xl py-3.5 transition-colors mt-1 shadow-sm ${email && turnstileToken && !isLoading ? "bg-black hover:bg-gray-900" : "bg-black/50 cursor-not-allowed"}`}
+                >
+                  {isLoading ? "กำลังตรวจสอบ..." : "ต่อ"}
+                </button>
+              ) : (
+                <button
+                  disabled={phone.length !== 10 || !turnstileToken || isLoading}
+                  onClick={async () => {
+                    if (phone.length !== 10 || !turnstileToken) return;
+                    setIsLoading(true);
+                    setErrorMsg("");
+                    try {
+                      if (!(await verifyTurnstile())) return;
+                      await sendPhoneOtp();
+                    } catch {
+                      setErrorMsg("เกิดข้อผิดพลาด กรุณาลองใหม่");
+                      setIsLoading(false);
+                    }
+                  }}
+                  className={`w-full text-white font-bold rounded-xl py-3.5 transition-colors mt-1 shadow-sm ${phone.length === 10 && turnstileToken && !isLoading ? "bg-black hover:bg-gray-900" : "bg-black/50 cursor-not-allowed"}`}
+                >
+                  {isLoading ? "กำลังส่ง OTP..." : "ส่ง OTP ทาง SMS"}
+                </button>
+              )}
 
               {errorMsg && <p className="text-red-500 text-xs text-center">{errorMsg}</p>}
 
-              {/* Divider */}
               <div className="flex items-center gap-4 my-2">
                 <div className="flex-1 h-px bg-gray-200"></div>
                 <span className="text-[11px] text-gray-400 font-medium">หรือ</span>
                 <div className="flex-1 h-px bg-gray-200"></div>
               </div>
-              
-              {/* Line Button */}
-              <button 
+
+              <button
                 onClick={() => signIn("line", { callbackUrl: "/" })}
                 className="w-full bg-white border border-gray-100 shadow-sm hover:border-[#00C300] hover:bg-[#00C300]/5 transition-all rounded-xl py-3.5 px-5 flex items-center gap-4 group"
               >
@@ -228,11 +297,10 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   <img src="/banner/cover/line.svg" alt="Line Logo" className="w-full h-full object-contain" />
                 </div>
                 <span className="flex-1 text-center font-bold text-gray-800 text-[14px]">เข้าสู่ระบบด้วย Line</span>
-                <div className="w-6" /> {/* Spacer */}
+                <div className="w-6" />
               </button>
 
-              {/* Google Button */}
-              <button 
+              <button
                 onClick={() => signIn("google", { callbackUrl: "/" })}
                 className="w-full bg-white border border-gray-100 shadow-sm hover:border-blue-500 hover:bg-blue-50 transition-all rounded-xl py-3.5 px-5 flex items-center gap-4 group"
               >
@@ -245,73 +313,50 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   </svg>
                 </div>
                 <span className="flex-1 text-center font-bold text-gray-800 text-[14px]">เข้าสู่ระบบด้วย Google</span>
-                <div className="w-5" /> {/* Spacer */}
+                <div className="w-5" />
               </button>
-
             </div>
-            
+
             <div className="pb-8"></div>
           </>
         )}
-        
+
+        {/* ===== STEP: PASSWORD (email flow) ===== */}
         {step === "password" && (
           <div className="flex-1 flex flex-col relative h-full">
-            {/* Header Step 2 */}
             <div className="flex items-center justify-center p-6 pb-5 relative">
-              <button 
-                onClick={() => setStep("email")}
-                className="absolute left-6 text-gray-900 p-1 hover:bg-gray-100 rounded-full transition-colors"
-                disabled={isLoading}
-              >
+              <button onClick={() => setStep("main")} className="absolute left-6 text-gray-900 p-1 hover:bg-gray-100 rounded-full transition-colors" disabled={isLoading}>
                 <ArrowLeft size={22} strokeWidth={2.5} />
               </button>
               <h2 className="text-xl font-black text-gray-900">ลงทะเบียน</h2>
             </div>
 
-            {/* Body Step 2 */}
             <div className="px-6 flex flex-col gap-4 mt-2">
-              
-              {/* Email Input Field (Readonly) */}
               <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3 shadow-sm">
                 <Mail size={18} className="text-gray-900 shrink-0" strokeWidth={1.5} />
-                <input 
-                  type="email" 
-                  readOnly
-                  value={email}
-                  className="flex-1 bg-transparent border-none outline-none text-[15px] text-gray-900"
-                />
+                <input type="email" readOnly value={email} className="flex-1 bg-transparent border-none outline-none text-[15px] text-gray-900" />
               </div>
 
-              {/* Password Input Field */}
               <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3 shadow-sm focus-within:border-gray-400 transition-colors">
                 <KeyRound size={18} className="text-gray-600 shrink-0" strokeWidth={1.5} />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  placeholder="โปรดตั้งรหัสผ่าน" 
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="โปรดตั้งรหัสผ่าน"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="flex-1 bg-transparent border-none outline-none text-[15px] text-gray-900 placeholder:text-gray-400"
                   disabled={isLoading}
                 />
-                <button 
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0"
-                  disabled={isLoading}
-                >
+                <button onClick={() => setShowPassword(!showPassword)} className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0" disabled={isLoading}>
                   {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
-              
+
               {errorMsg && <p className="text-red-500 text-xs text-center">{errorMsg}</p>}
 
-              {/* Submit Button */}
-              <button 
+              <button
                 disabled={isLoading || password.length < 6}
-                onClick={() => {
-                  if (email && password.length >= 6) {
-                    sendOtp();
-                  }
-                }}
+                onClick={() => { if (email && password.length >= 6) sendEmailOtp(); }}
                 className={`w-full text-white font-bold rounded-xl py-3.5 transition-colors mt-2 shadow-sm ${password.length >= 6 && !isLoading ? "bg-black hover:bg-gray-900" : "bg-[#BDBDBD] cursor-not-allowed"}`}
               >
                 {isLoading ? "กำลังโหลด..." : "ส่งรหัสยืนยัน"}
@@ -322,67 +367,107 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </div>
         )}
 
+        {/* ===== STEP: OTP (email) ===== */}
         {step === "otp" && (
-          <div className="flex-1 flex flex-col relative h-full">
-            {/* Header Step 3 */}
-            <div className="flex items-center justify-center p-6 pb-2 relative">
-              <button 
-                onClick={() => setStep("password")}
-                className="absolute left-6 text-gray-900 p-1 hover:bg-gray-100 rounded-full transition-colors"
-                disabled={isLoading}
-              >
-                <ArrowLeft size={22} strokeWidth={2.5} />
-              </button>
-              <h2 className="text-[19px] font-black text-gray-900 tracking-tight">ยืนยัน อีเมล ของคุณ</h2>
-            </div>
+          <OtpStep
+            title="ยืนยัน อีเมล ของคุณ"
+            description={`ส่งรหัสยืนยันไปที่ ${email} แล้ว`}
+            otp={otp}
+            otpRefs={otpRefs}
+            isLoading={isLoading}
+            errorMsg={errorMsg}
+            timeLeft={timeLeft}
+            onBack={() => setStep("password")}
+            onChange={(i, v) => handleOtpChange(i, v, "otp")}
+            onKeyDown={handleOtpKeyDown}
+            onResend={sendEmailOtp}
+          />
+        )}
 
-            {/* Body Step 3 */}
-            <div className="px-6 flex flex-col mt-4">
-              <p className="text-[13px] text-gray-500 mb-6">
-                ส่งรหัสยืนยันไปที่ {email} แล้ว
-              </p>
-
-              {/* OTP Inputs */}
-              <div className="flex gap-2 justify-between">
-                {otp.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    ref={(el) => { otpRefs.current[idx] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    disabled={isLoading}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    className="w-[14%] aspect-square bg-white border border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 shadow-sm transition-all disabled:bg-gray-50"
-                  />
-                ))}
-              </div>
-              
-              {errorMsg && <p className="text-red-500 text-xs text-center mt-4">{errorMsg}</p>}
-
-              {/* Resend Timer */}
-              <div className="flex justify-end mt-4">
-                <button 
-                  disabled={timeLeft > 0 || isLoading}
-                  onClick={sendOtp}
-                  className={`text-[13px] font-medium transition-colors flex gap-1 ${timeLeft > 0 || isLoading ? "text-gray-400 cursor-not-allowed" : "text-primary hover:text-primary/80"}`}
-                >
-                  {timeLeft > 0 ? (
-                    <><span className="text-blue-500">{timeLeft}s</span> ส่งรหัสอีกครั้ง</>
-                  ) : (
-                    "ส่งรหัสอีกครั้ง"
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="pb-8"></div>
-          </div>
+        {/* ===== STEP: PHONE OTP ===== */}
+        {step === "phoneOtp" && (
+          <OtpStep
+            title="ยืนยันเบอร์โทรของคุณ"
+            description={`ส่งรหัส OTP ไปที่ ${phone} ทาง SMS แล้ว`}
+            otp={otp}
+            otpRefs={otpRefs}
+            isLoading={isLoading}
+            errorMsg={errorMsg}
+            timeLeft={timeLeft}
+            onBack={() => setStep("main")}
+            onChange={(i, v) => handleOtpChange(i, v, "phoneOtp")}
+            onKeyDown={handleOtpKeyDown}
+            onResend={sendPhoneOtp}
+          />
         )}
 
       </div>
+    </div>
+  );
+}
+
+interface OtpStepProps {
+  title: string;
+  description: string;
+  otp: string[];
+  otpRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
+  isLoading: boolean;
+  errorMsg: string;
+  timeLeft: number;
+  onBack: () => void;
+  onChange: (index: number, value: string) => void;
+  onKeyDown: (index: number, e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onResend: () => void;
+}
+
+function OtpStep({ title, description, otp, otpRefs, isLoading, errorMsg, timeLeft, onBack, onChange, onKeyDown, onResend }: OtpStepProps) {
+  return (
+    <div className="flex-1 flex flex-col relative h-full">
+      <div className="flex items-center justify-center p-6 pb-2 relative">
+        <button onClick={onBack} className="absolute left-6 text-gray-900 p-1 hover:bg-gray-100 rounded-full transition-colors" disabled={isLoading}>
+          <ArrowLeft size={22} strokeWidth={2.5} />
+        </button>
+        <h2 className="text-[19px] font-black text-gray-900 tracking-tight">{title}</h2>
+      </div>
+
+      <div className="px-6 flex flex-col mt-4">
+        <p className="text-[13px] text-gray-500 mb-6">{description}</p>
+
+        <div className="flex gap-2 justify-between">
+          {otp.map((digit, idx) => (
+            <input
+              key={idx}
+              ref={(el) => { otpRefs.current[idx] = el; }}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              disabled={isLoading}
+              onChange={(e) => onChange(idx, e.target.value)}
+              onKeyDown={(e) => onKeyDown(idx, e)}
+              className="w-[14%] aspect-square bg-white border border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 shadow-sm transition-all disabled:bg-gray-50"
+            />
+          ))}
+        </div>
+
+        {errorMsg && <p className="text-red-500 text-xs text-center mt-4">{errorMsg}</p>}
+
+        <div className="flex justify-end mt-4">
+          <button
+            disabled={timeLeft > 0 || isLoading}
+            onClick={onResend}
+            className={`text-[13px] font-medium transition-colors flex gap-1 ${timeLeft > 0 || isLoading ? "text-gray-400 cursor-not-allowed" : "text-primary hover:text-primary/80"}`}
+          >
+            {timeLeft > 0 ? (
+              <><span className="text-blue-500">{timeLeft}s</span> ส่งรหัสอีกครั้ง</>
+            ) : (
+              "ส่งรหัสอีกครั้ง"
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="pb-8"></div>
     </div>
   );
 }

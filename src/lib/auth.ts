@@ -7,6 +7,7 @@ import { connectToDatabase } from "./mongoose";
 import User from "@/models/User";
 import Otp from "@/models/Otp";
 import bcrypt from "bcryptjs";
+import { verifySmsOtp } from "./sepsms";
 
 // ใช้ตรวจจับการสมัครหลายบัญชีจาก IP เดียวกัน (ป้องกันปั๊มรางวัลเชิญเพื่อน) — best-effort เท่านั้น
 async function getClientIp(): Promise<string | undefined> {
@@ -34,23 +35,43 @@ export const authOptions: NextAuthOptions = {
       name: "Email",
       credentials: {
         email: { label: "Email", type: "email" },
+        phone: { label: "Phone", type: "text" },
         password: { label: "Password", type: "password" },
         otp: { label: "OTP", type: "text" }
       },
       async authorize(credentials) {
-        if (!credentials?.email) return null;
-        
         await connectToDatabase();
-        
-        // If OTP is provided, verify it (Registration or Login via OTP flow)
+
+        // --- Phone + OTP flow (verify ผ่าน SepSMS) ---
+        if (credentials?.phone && credentials?.otp) {
+          const otpRecord = await Otp.findOne({ phone: credentials.phone });
+          if (!otpRecord?.reference) throw new Error("ไม่พบรหัสอ้างอิง OTP กรุณาขอรหัสใหม่");
+
+          const verified = await verifySmsOtp(otpRecord.reference, credentials.otp);
+          if (!verified) throw new Error("รหัส OTP ไม่ถูกต้อง หรือหมดอายุ");
+          await Otp.deleteOne({ _id: otpRecord._id });
+
+          let user = await User.findOne({ phone: credentials.phone });
+          if (!user) {
+            user = await User.create({
+              name: "ผู้ใช้" + credentials.phone.slice(-4),
+              phone: credentials.phone,
+              signupIp: await getClientIp(),
+            });
+          }
+          return { id: user._id.toString(), name: user.name, email: user.email ?? null, image: user.avatar ?? null };
+        }
+
+        if (!credentials?.email) return null;
+
+        // --- Email + OTP flow (registration / passwordless) ---
         if (credentials.otp) {
            const validOtp = await Otp.findOne({ email: credentials.email, otp: credentials.otp });
            if (!validOtp) {
               throw new Error("รหัส OTP ไม่ถูกต้อง หรือหมดอายุ");
            }
-           // OTP is correct, we can delete it
            await Otp.deleteOne({ _id: validOtp._id });
-           
+
            let user = await User.findOne({ email: credentials.email });
            if (!user) {
               const hashedPassword = credentials.password ? await bcrypt.hash(credentials.password, 10) : undefined;
@@ -61,25 +82,24 @@ export const authOptions: NextAuthOptions = {
                  signupIp: await getClientIp(),
               });
            } else if (credentials.password) {
-              // Update password if they logged in via OTP and provided a new password
               user.password = await bcrypt.hash(credentials.password, 10);
               await user.save();
            }
            return { id: user._id.toString(), name: user.name, email: user.email, image: user.avatar };
-        } else {
-           // Normal password login flow
-           if (!credentials.password) throw new Error("กรุณากรอกรหัสผ่าน");
-           
-           const user = await User.findOne({ email: credentials.email });
-           if (!user) throw new Error("ไม่พบอีเมลนี้ในระบบ");
-           
-           if (!user.password) throw new Error("บัญชีนี้ไม่ได้ตั้งรหัสผ่านไว้ (อาจสมัครผ่าน Google/LINE)");
-           
-           const isMatch = await bcrypt.compare(credentials.password, user.password);
-           if (!isMatch) throw new Error("รหัสผ่านไม่ถูกต้อง");
-           
-           return { id: user._id.toString(), name: user.name, email: user.email, image: user.avatar, role: user.role };
         }
+
+        // --- Normal password login ---
+        if (!credentials.password) throw new Error("กรุณากรอกรหัสผ่าน");
+
+        const user = await User.findOne({ email: credentials.email });
+        if (!user) throw new Error("ไม่พบอีเมลนี้ในระบบ");
+
+        if (!user.password) throw new Error("บัญชีนี้ไม่ได้ตั้งรหัสผ่านไว้ (อาจสมัครผ่าน Google/LINE)");
+
+        const isMatch = await bcrypt.compare(credentials.password, user.password);
+        if (!isMatch) throw new Error("รหัสผ่านไม่ถูกต้อง");
+
+        return { id: user._id.toString(), name: user.name, email: user.email, image: user.avatar, role: user.role };
       }
     })
   ],
@@ -128,18 +148,20 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account }) {
       if (user) {
-        // user is only passed on the first sign in
         try {
            await connectToDatabase();
            let dbUser;
-           if (user.email) {
-             dbUser = await User.findOne({ email: user.email });
-           } else if (account?.provider === "line") {
-             dbUser = await User.findOne({ lineId: user.id });
-           } else if (user.name) {
-             dbUser = await User.findOne({ name: user.name });
+           // ใช้ id จาก authorize ก่อน (ครอบคลุม phone user ที่ไม่มี email)
+           if (user.id) {
+             dbUser = await User.findById(user.id);
            }
-           
+           if (!dbUser && user.email) {
+             dbUser = await User.findOne({ email: user.email });
+           }
+           if (!dbUser && account?.provider === "line") {
+             dbUser = await User.findOne({ lineId: user.id });
+           }
+
            if (dbUser) {
              token.id = dbUser._id.toString();
              token.role = dbUser.role;
