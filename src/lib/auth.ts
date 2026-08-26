@@ -74,13 +74,7 @@ export const authOptions: NextAuthOptions = {
 
            let user = await User.findOne({ email: credentials.email });
            if (!user) {
-              const hashedPassword = credentials.password ? await bcrypt.hash(credentials.password, 10) : undefined;
-              user = await User.create({
-                 name: credentials.email.split("@")[0],
-                 email: credentials.email,
-                 password: hashedPassword,
-                 signupIp: await getClientIp(),
-              });
+              throw new Error("ไม่พบบัญชีอีเมลนี้ในระบบ กรุณาสมัครสมาชิกด้วยเบอร์โทรศัพท์แทน");
            } else if (credentials.password) {
               user.password = await bcrypt.hash(credentials.password, 10);
               await user.save();

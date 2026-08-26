@@ -3,6 +3,7 @@ import { Inter, Noto_Sans_Thai } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { InAppBrowserWarning } from "@/components/layout/InAppBrowserWarning";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -172,6 +173,7 @@ export default async function RootLayout({
             alt=""
           />
         </noscript>
+        <InAppBrowserWarning />
         <Providers>
           {children}
         </Providers>

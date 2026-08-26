@@ -15,6 +15,7 @@ interface Box {
   categoryId?: { _id: string; name: string };
   isOutOfStock?: boolean;
   flashSale?: { salePrice: number; endsAt: string } | null;
+  oddsTag?: string;
 }
 
 interface CategoryOption {
@@ -165,6 +166,11 @@ export default function BoxesPage() {
                   <Flame size={9} className="fill-white" /> ฮิต
                 </span>
               ) : null}
+              {box.oddsTag && (
+                <span className="absolute top-3 right-3 z-10 bg-black/70 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                  {box.oddsTag}
+                </span>
+              )}
               <div className={`aspect-square rounded-xl bg-gray-50 overflow-hidden mb-3 ${box.isOutOfStock ? "grayscale opacity-60" : ""}`}>
                 <MediaImage
                   src={box.image}

@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, FolderTree, Percent,
   Box, Boxes, Diamond, Users, Wallet, UserPlus,
   ArrowRightLeft, Store, ShoppingCart, BarChart3,
-  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert, BookOpen, Gamepad2, MousePointerClick, Sparkles, Calculator, FileText, Gavel, Hexagon
+  Settings, ScrollText, Bell, Calendar, Search, Menu, HelpCircle, ChevronRight, LogOut, Zap, Send, TrendingUp, MessageCircle, Ticket, Gift, ShieldAlert, BookOpen, Gamepad2, MousePointerClick, Sparkles, Calculator, FileText, Gavel, Hexagon, Award
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ const menuGroups = [
       { name: "กล่องสุ่มทั้งหมด", icon: Package, href: "/admin/boxes" },
       { name: "หมวดหมู่", icon: FolderTree, href: "/admin/categories" },
       { name: "อัตราดรอป", icon: Percent, href: "/admin/probabilities" },
+      { name: "กล่องสุ่มฟรีตามเลเวล", icon: Award, href: "/admin/level-boxes" },
     ]
   },
   {

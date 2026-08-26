@@ -253,7 +253,7 @@ function ShopItemCard({ item, onBuy }: { item: ShopItem; onBuy: (item: ShopItem)
       <div className="p-3 flex flex-col flex-1 gap-2">
         <p className="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">{item.title}</p>
         {item.description && (
-          <p className="text-[11px] text-gray-400 line-clamp-2">{item.description}</p>
+          <p className="text-[11px] text-gray-400 line-clamp-2 whitespace-pre-line">{item.description}</p>
         )}
         <div className="mt-auto flex items-center justify-between">
           <span className="font-black text-red-600 text-base">฿{item.price.toLocaleString()}</span>
@@ -619,7 +619,7 @@ export default function ShopPage() {
               <ModalCarousel images={buyModal.images} />
               <div>
                 <p className="font-bold text-gray-900 text-base">{buyModal.title}</p>
-                {buyModal.description && <p className="text-sm text-gray-500 mt-1">{buyModal.description}</p>}
+                {buyModal.description && <p className="text-sm text-gray-500 mt-1 whitespace-pre-line">{buyModal.description}</p>}
               </div>
 
               {buyModal.youtubeUrl && (

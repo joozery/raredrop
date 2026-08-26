@@ -24,6 +24,7 @@ import {
   Calculator,
   Gavel,
   Hexagon,
+  Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -31,6 +32,7 @@ import { MediaImage } from "@/components/ui/MediaImage";
 const menuItems = [
   { name: "หน้าหลัก", icon: Home, href: "/" },
   { name: "กล่องสุ่ม", icon: Package, href: "/boxes" },
+  { name: "กล่องสุ่มฟรีตามเลเวล", icon: Award, href: "/level-boxes" },
   { name: "สุ่มการ์ดพิเศษ", icon: Sparkles, href: "/cards" },
   { name: "เกมรังผึ้ง", icon: Hexagon, href: "/honeycomb" },
   { name: "ร้านค้า", icon: Briefcase, href: "/shop" },

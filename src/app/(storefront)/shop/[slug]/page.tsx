@@ -47,17 +47,75 @@ function ImageCarousel({ images }: { images: string[] }) {
 
 function ModalCarousel({ images }: { images: string[] }) {
   const [idx, setIdx] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   if (!images?.length) return <div className="w-full aspect-square flex items-center justify-center bg-gray-100 rounded-xl"><Package size={50} className="text-gray-300" /></div>;
   return (
-    <div className="relative w-full max-w-[240px] sm:max-w-[320px] mx-auto aspect-square rounded-xl overflow-hidden bg-gray-100 shrink-0">
-      <img src={images[idx]} alt="" className="w-full h-full object-contain mix-blend-multiply" />
-      {images.length > 1 && (
-        <>
-          <button onClick={(e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center z-10"><ChevronLeft size={18} /></button>
-          <button onClick={(e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center z-10"><ChevronRight size={18} /></button>
-        </>
+    <>
+      <div
+        className="relative w-full max-w-[240px] sm:max-w-[320px] mx-auto aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer group shrink-0"
+        onClick={() => setIsFullscreen(true)}
+      >
+        <img src={images[idx]} alt="" className="w-full h-full object-contain mix-blend-multiply" />
+        <div className="absolute top-2 right-2 bg-black/40 backdrop-blur-md px-2 py-1.5 rounded-lg flex items-center gap-1 text-white shadow-sm pointer-events-none">
+          <Search size={12} strokeWidth={2.5} />
+          <span className="text-[10px] font-bold">ขยาย</span>
+        </div>
+        <div className="absolute inset-0 bg-black/0 group-active:bg-black/10 transition-colors pointer-events-none" />
+        {images.length > 1 && (
+          <>
+            <button onClick={(e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"><ChevronLeft size={18} /></button>
+            <button onClick={(e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"><ChevronRight size={18} /></button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
+              {images.map((_, i) => (
+                <button key={i} onClick={() => setIdx(i)} className={`h-1.5 rounded-full transition-all ${i === idx ? "bg-white w-5" : "bg-white/50 w-1.5"}`} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Fullscreen Overlay */}
+      {isFullscreen && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={(e) => { e.stopPropagation(); setIsFullscreen(false); }}
+        >
+          <button
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-colors z-[210]"
+            onClick={(e) => { e.stopPropagation(); setIsFullscreen(false); }}
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={images[idx]}
+            alt=""
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIdx((i) => (i - 1 + images.length) % images.length); }}
+                className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-16 sm:h-16 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors z-[210] backdrop-blur-md"
+              >
+                <ChevronLeft size={32} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIdx((i) => (i + 1) % images.length); }}
+                className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-16 sm:h-16 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors z-[210] backdrop-blur-md"
+              >
+                <ChevronRight size={32} />
+              </button>
+              <div className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex gap-2.5 z-[210] bg-black/30 px-4 py-2.5 rounded-full backdrop-blur-md" onClick={(e) => e.stopPropagation()}>
+                {images.map((_, i) => (
+                  <button key={i} onClick={() => setIdx(i)} className={`h-2 rounded-full transition-all ${i === idx ? "bg-white w-8" : "bg-white/40 w-2 hover:bg-white/80"}`} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -69,6 +127,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
 
   const [items, setItems] = useState<ShopItem[]>([]);
   const [catName, setCatName] = useState("");
+  const [catLoading, setCatLoading] = useState(true);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -95,7 +154,6 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
       const data = await res.json();
       if (Array.isArray(data)) {
         if (data.length === 0) setNotFound(true);
-        else setCatName(slug);
         setItems(data);
       } else {
         setNotFound(true);
@@ -107,16 +165,18 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
 
   // ดึง categories + ชื่อ category จาก slug
   useEffect(() => {
+    setCatLoading(true);
     fetch("/api/shop-categories")
       .then((r) => r.json())
       .then((d) => {
         if (Array.isArray(d)) {
           setCategories(d);
           const cat = d.find((c: any) => c.slug === slug);
-          if (cat) setCatName(cat.name);
+          setCatName(cat?.name || "");
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setCatLoading(false));
   }, [slug]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
@@ -197,10 +257,14 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
           <ChevronLeft size={22} />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-            <ShoppingBag size={22} className="text-red-500" />
-            {catName || slug}
-          </h1>
+          {catLoading ? (
+            <div className="h-7 w-40 bg-gray-100 rounded-lg animate-pulse" />
+          ) : (
+            <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+              <ShoppingBag size={22} className="text-red-500" />
+              {catName || "หมวดหมู่สินค้า"}
+            </h1>
+          )}
           <p className="text-sm text-gray-500 mt-0.5">สินค้าในหมวดนี้ทั้งหมด</p>
         </div>
         <div className="flex items-center gap-2">
@@ -214,7 +278,16 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
       </div>
 
       {/* Category Icons */}
-      {categories.length > 0 && (
+      {catLoading ? (
+        <div className="flex gap-3 overflow-x-auto hide-scrollbar py-2 -mx-1 px-1">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5 shrink-0">
+              <div className="w-14 h-14 rounded-xl bg-gray-100 animate-pulse" />
+              <div className="h-2.5 w-10 bg-gray-100 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      ) : categories.length > 0 && (
         <div className="flex gap-3 overflow-x-auto hide-scrollbar py-2 -mx-1 px-1">
           <Link href="/shop" className="flex flex-col items-center gap-1.5 shrink-0">
             <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 ring-1 ring-gray-200 hover:ring-gray-300 transition-all overflow-hidden">
@@ -299,7 +372,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
               </div>
               <div className="p-3 flex flex-col flex-1 gap-2">
                 <p className="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">{item.title}</p>
-                {item.description && <p className="text-[11px] text-gray-400 line-clamp-2">{item.description}</p>}
+                {item.description && <p className="text-[11px] text-gray-400 line-clamp-2 whitespace-pre-line">{item.description}</p>}
                 <div className="mt-auto flex items-center justify-between">
                   <span className="font-black text-red-600 text-base">฿{item.price.toLocaleString()}</span>
                   <span className="text-[10px] text-gray-400">สต็อก {item.stock}</span>
@@ -335,7 +408,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ slug: s
               <ModalCarousel images={buyModal.images} />
               <div>
                 <p className="font-bold text-gray-900 text-base">{buyModal.title}</p>
-                {buyModal.description && <p className="text-sm text-gray-500 mt-1">{buyModal.description}</p>}
+                {buyModal.description && <p className="text-sm text-gray-500 mt-1 whitespace-pre-line">{buyModal.description}</p>}
               </div>
               {buyModal.requireUid && (
                 <div className="flex flex-col gap-1.5">

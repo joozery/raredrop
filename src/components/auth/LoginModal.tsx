@@ -13,7 +13,7 @@ type LoginMethod = "email" | "phone";
 
 export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [step, setStep] = useState<Step>("main");
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>("email");
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>("phone");
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -178,22 +178,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </div>
 
             <div className="px-6 flex flex-col gap-3">
-              {/* Tab switcher */}
-              <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
-                <button
-                  onClick={() => { setLoginMethod("email"); setErrorMsg(""); }}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${loginMethod === "email" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  อีเมล
-                </button>
-                <button
-                  onClick={() => { setLoginMethod("phone"); setErrorMsg(""); }}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${loginMethod === "phone" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  เบอร์โทร
-                </button>
-              </div>
-
               {loginMethod === "email" ? (
                 <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-3 shadow-sm focus-within:border-gray-400 transition-colors">
                   <Mail size={18} className="text-gray-500 shrink-0" />
@@ -288,6 +272,19 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 <span className="text-[11px] text-gray-400 font-medium">หรือ</span>
                 <div className="flex-1 h-px bg-gray-200"></div>
               </div>
+
+              <button
+                onClick={() => { setLoginMethod(loginMethod === "email" ? "phone" : "email"); setErrorMsg(""); }}
+                className="w-full bg-white border border-gray-100 shadow-sm hover:border-gray-400 hover:bg-gray-50 transition-all rounded-xl py-3.5 px-5 flex items-center gap-4 group"
+              >
+                <div className="w-5 h-5 flex items-center justify-center">
+                  {loginMethod === "email" ? <Phone size={18} className="text-gray-700" /> : <Mail size={18} className="text-gray-700" />}
+                </div>
+                <span className="flex-1 text-center font-bold text-gray-800 text-[14px]">
+                  {loginMethod === "email" ? "เข้าสู่ระบบด้วยเบอร์โทร" : "เข้าสู่ระบบด้วยอีเมล"}
+                </span>
+                <div className="w-5" />
+              </button>
 
               <button
                 onClick={() => signIn("line", { callbackUrl: "/" })}

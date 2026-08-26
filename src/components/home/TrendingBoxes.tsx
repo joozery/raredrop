@@ -14,6 +14,7 @@ interface Box {
   categoryId?: { _id: string; name: string };
   isOutOfStock?: boolean;
   flashSale?: { salePrice: number; endsAt: string } | null;
+  oddsTag?: string;
 }
 
 export default function TrendingBoxes() {
@@ -92,6 +93,11 @@ export default function TrendingBoxes() {
                     {tag}
                   </span>
                 ) : null}
+                {box.oddsTag && (
+                  <span className="absolute top-2 right-2 z-10 bg-black/70 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                    {box.oddsTag}
+                  </span>
+                )}
                 <div className={`w-full aspect-square rounded-lg flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-105 overflow-hidden bg-gray-50 ${box.isOutOfStock ? "grayscale opacity-60" : ""}`}>
                   <MediaImage
                     src={box.image}

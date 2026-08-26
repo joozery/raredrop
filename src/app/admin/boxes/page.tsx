@@ -21,6 +21,7 @@ interface BoxData {
   animation?: string;
   price: number;
   pityThreshold: number;
+  oddsTag?: string;
   categoryId?: CategoryData | string;
   isFeatured: boolean;
   isActive: boolean;
@@ -371,6 +372,18 @@ export default function ManageBoxes() {
                     {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1.5">ป้ายเปอร์เซ็นต์มุมรูป (ไม่บังคับ)</label>
+                <input
+                  type="text"
+                  value={currentBox.oddsTag || ""}
+                  onChange={(e) => setCurrentBox({...currentBox, oddsTag: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-red-500 transition-all font-medium text-slate-800"
+                  placeholder="เช่น 0.15% — เว้นว่างไว้ถ้าไม่ต้องการโชว์ป้าย"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">แสดงเป็นแท็กมุมขวาบนของรูปกล่องสุ่มหน้าบ้าน (หน้าแรก และหน้ารายการกล่องสุ่มทั้งหมด)</p>
               </div>
 
               <div>

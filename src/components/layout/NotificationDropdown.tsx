@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Bell, X, CheckCheck, Info, CheckCircle, AlertTriangle, Inbox } from "lucide-react";
 import Link from "next/link";
 
@@ -35,6 +35,23 @@ const typeBg = {
   success: "bg-emerald-50",
   warning: "bg-amber-50",
 };
+
+function renderWithGemIcon(text: string, gemcoinIcon?: string) {
+  const parts = text.split("💎");
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => (
+    <Fragment key={i}>
+      {part}
+      {i < parts.length - 1 && (
+        gemcoinIcon ? (
+          <img src={gemcoinIcon} alt="gem" className="w-3.5 h-3.5 object-contain inline-block align-text-bottom mx-0.5" />
+        ) : (
+          <span>💎</span>
+        )
+      )}
+    </Fragment>
+  ));
+}
 
 export function NotificationDropdown({ gemcoinIcon }: { gemcoinIcon?: string }) {
   const [open, setOpen] = useState(false);
@@ -122,15 +139,9 @@ export function NotificationDropdown({ gemcoinIcon }: { gemcoinIcon?: string }) 
                     {typeIcon[n.type]}
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs font-bold text-gray-900 leading-snug flex items-center gap-1 ${!n.isRead ? "text-gray-900" : "text-gray-600"}`}>
-                        {n.title.replace(/💎/g, '')}
-                        {n.title.includes('💎') && gemcoinIcon && (
-                          <img src={gemcoinIcon} alt="gem" className="w-4 h-4 object-contain inline-block" />
-                        )}
-                        {n.title.includes('💎') && !gemcoinIcon && (
-                          <span>💎</span>
-                        )}
+                        {renderWithGemIcon(n.title, gemcoinIcon)}
                       </p>
-                      <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{renderWithGemIcon(n.message, gemcoinIcon)}</p>
                       <p className="text-[10px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
                     </div>
                     {!n.isRead && <span className="w-2 h-2 bg-primary rounded-full shrink-0 mt-1" />}

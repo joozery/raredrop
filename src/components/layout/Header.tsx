@@ -56,10 +56,10 @@ export function Header() {
                   <span className="text-xs font-black text-white">{coins.toLocaleString()}</span>
                   <span className="text-[10px] text-gray-400 font-medium">฿</span>
                 </button>
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5">
+                <Link href="/exchange" className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full hover:bg-gray-50 transition-colors">
                   {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-7 h-7 object-contain" /> : <Coins size={24} className="text-purple-600" />}
                   <span className="text-xs font-black text-purple-700">{gemCoins.toLocaleString()}</span>
-                </div>
+                </Link>
               </div>
             )}
             {session && <NotificationDropdown gemcoinIcon={gemcoinIcon} />}
@@ -99,7 +99,7 @@ export function Header() {
                     <span className="text-[10px] text-gray-500">THB</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2.5 border-l border-gray-200 pl-4">
+                <Link href="/exchange" className="flex items-center gap-2.5 border-l border-gray-200 pl-4 hover:opacity-80 transition-opacity">
                   {gemcoinIcon ? <img src={gemcoinIcon} alt="" className="w-10 h-10 object-contain" /> : <Coins size={32} className="text-purple-600" />}
                   <div className="flex flex-col">
                     <span className="font-bold text-purple-700 text-sm leading-none">
@@ -107,7 +107,7 @@ export function Header() {
                     </span>
                     <span className="text-[10px] text-purple-400">GEM</span>
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={() => setIsTopupOpen(true)}
                   className="bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"

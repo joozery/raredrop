@@ -12,6 +12,11 @@ interface LeaderEntry {
   count: number;
 }
 
+const THAI_MONTHS = [
+  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+];
+
 const RANK_STYLE = [
   { bg: "bg-gradient-to-br from-yellow-400 to-amber-500", text: "text-yellow-700", badge: "bg-yellow-400", shadow: "shadow-yellow-200" },
   { bg: "bg-gradient-to-br from-slate-300 to-slate-400", text: "text-slate-600", badge: "bg-slate-300", shadow: "shadow-slate-200" },
@@ -68,9 +73,9 @@ export default function LeaderboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-            <Trophy size={24} className="text-amber-500" /> จัดอันดับเติมเงิน
+            <Trophy size={24} className="text-amber-500" /> ผู้ที่มียอดเติมเงินสูงสุด
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">ผู้ที่มียอดเติมเงินสูงสุดในรอบ 30 วัน</p>
+          <p className="text-sm text-gray-500 mt-0.5">ประจำเดือน{THAI_MONTHS[new Date().getMonth()]}</p>
         </div>
         <button
           onClick={fetchData}

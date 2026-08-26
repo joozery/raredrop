@@ -53,6 +53,7 @@ interface ShopListing {
   requireUid?: boolean;
   uidLabel?: string;
   installmentEnabled?: boolean;
+  installmentMonthlyDisabled?: boolean;
   createdAt: string;
 }
 
@@ -83,12 +84,14 @@ interface ShopListingCardProps {
   setBulkMode: (v: boolean) => void;
   bulkQty: string;
   setBulkQty: (v: string) => void;
+  multiLineMode: boolean;
+  setMultiLineMode: (v: boolean) => void;
 }
 
 function ShopListingCard({
   l, isFirst, isLast, onMoveUp, onMoveDown, categoryName, isExpanded, onToggleExpand, toggleStatus, openEdit, handleDelete,
   addingTo, setAddingTo, newAccountData, setNewAccountData, handleAddAccount, addingAccount, handleRemoveAccount,
-  bulkMode, setBulkMode, bulkQty, setBulkQty,
+  bulkMode, setBulkMode, bulkQty, setBulkQty, multiLineMode, setMultiLineMode,
 }: ShopListingCardProps) {
   const stock = l.accounts.filter((a) => !a.sold).length;
 
@@ -176,15 +179,16 @@ function ShopListingCard({
           {/* Add account form */}
           {addingTo === l._id && (
             <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 flex flex-col gap-2.5">
-              {/* Bulk mode toggle */}
-              <label className="flex items-center gap-2 cursor-pointer select-none">
+              {/* Bulk mode toggle — ทำซ้ำข้อมูลเดิม N ชุด */}
+              <label className={`flex items-center gap-2 select-none ${multiLineMode ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}>
                 <input
                   type="checkbox"
                   checked={bulkMode}
+                  disabled={multiLineMode}
                   onChange={(e) => { setBulkMode(e.target.checked); if (!e.target.checked) setBulkQty("1"); }}
                   className="accent-blue-600 w-3.5 h-3.5 shrink-0"
                 />
-                <span className="text-xs font-bold text-slate-600">กำหนดจำนวนสต็อก (เพิ่มหลายชุดพร้อมกัน)</span>
+                <span className="text-xs font-bold text-slate-600">กำหนดจำนวนสต็อก (ใช้ข้อมูลเดิมซ้ำหลายชุด)</span>
               </label>
 
               {/* Quantity input — แสดงเมื่อติ๊ก bulk mode */}
@@ -203,16 +207,37 @@ function ShopListingCard({
                 </div>
               )}
 
+              {/* Multi-line mode toggle — วางหลายบัญชี 1 บรรทัด = 1 Account */}
+              <label className={`flex items-center gap-2 select-none ${bulkMode ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}>
+                <input
+                  type="checkbox"
+                  checked={multiLineMode}
+                  disabled={bulkMode}
+                  onChange={(e) => setMultiLineMode(e.target.checked)}
+                  className="accent-emerald-600 w-3.5 h-3.5 shrink-0"
+                />
+                <span className="text-xs font-bold text-slate-600">วางหลายบัญชีทีเดียว (1 บรรทัด = 1 Account)</span>
+              </label>
+              {multiLineMode && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                  <span className="text-xs text-emerald-700">
+                    แต่ละบรรทัดจะกลายเป็น Account แยกกัน เช่น <code className="font-mono">username:password</code> — วางทีละบัญชีต่อบรรทัด
+                  </span>
+                </div>
+              )}
+
               <label className="text-xs font-bold text-slate-600">ข้อมูล Account (วางข้อความทั้งก้อน)</label>
               <textarea
                 value={newAccountData}
                 onChange={(e) => setNewAccountData(e.target.value)}
                 rows={8}
-                placeholder={"คลิปYTสอนเข้า\n\nID : หมายเลขไอดี\n\n📧 อีเมลเข้าเกม\nอีเมล: example@gmail.com\nรหัสผ่าน: ..."}
+                placeholder={multiLineMode
+                  ? "username1:password1\nusername2:password2\nusername3:password3"
+                  : "คลิปYTสอนเข้า\n\nID : หมายเลขไอดี\n\n📧 อีเมลเข้าเกม\nอีเมล: example@gmail.com\nรหัสผ่าน: ..."}
                 className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-700 outline-none focus:border-red-400 resize-none"
               />
               <div className="flex gap-2 justify-end">
-                <button onClick={() => { setAddingTo(null); setBulkMode(false); setBulkQty("1"); }} className="text-xs font-bold text-slate-500 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">
+                <button onClick={() => { setAddingTo(null); setBulkMode(false); setBulkQty("1"); setMultiLineMode(false); }} className="text-xs font-bold text-slate-500 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">
                   ยกเลิก
                 </button>
                 <button
@@ -221,7 +246,9 @@ function ShopListingCard({
                   className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 px-3 py-1.5 rounded-lg hover:bg-red-700 disabled:bg-slate-400 transition-colors"
                 >
                   {addingAccount ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                  {bulkMode && Number(bulkQty) > 1 ? `เพิ่ม ${bulkQty} ชุด` : "เพิ่ม"}
+                  {multiLineMode
+                    ? `เพิ่ม ${newAccountData.split("\n").map((l) => l.trim()).filter(Boolean).length} Account`
+                    : bulkMode && Number(bulkQty) > 1 ? `เพิ่ม ${bulkQty} ชุด` : "เพิ่ม"}
                 </button>
               </div>
             </div>
@@ -283,6 +310,7 @@ export default function AdminShopPage() {
   const [addingAccount, setAddingAccount] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkQty, setBulkQty] = useState("1");
+  const [multiLineMode, setMultiLineMode] = useState(false);
 
   // Bulk image upload
   const bulkUploadRef = useRef<HTMLInputElement>(null);
@@ -543,19 +571,24 @@ export default function AdminShopPage() {
   const handleAddAccount = async (listingId: string) => {
     if (!newAccountData.trim()) return;
     setAddingAccount(true);
+    const dataList = multiLineMode
+      ? newAccountData.split("\n").map((l) => l.trim()).filter(Boolean)
+      : null;
     const qty = bulkMode ? Math.max(1, Number(bulkQty) || 1) : 1;
     try {
       const res = await fetch(`/api/admin/shop/${listingId}/accounts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: newAccountData, quantity: qty }),
+        body: JSON.stringify(dataList ? { dataList } : { data: newAccountData, quantity: qty }),
       });
       if (res.ok) {
-        showToast(qty > 1 ? `เพิ่ม ${qty} Account สำเร็จ` : "เพิ่ม Account สำเร็จ");
+        const addedCount = dataList ? dataList.length : qty;
+        showToast(addedCount > 1 ? `เพิ่ม ${addedCount} Account สำเร็จ` : "เพิ่ม Account สำเร็จ");
         setNewAccountData("");
         setAddingTo(null);
         setBulkMode(false);
         setBulkQty("1");
+        setMultiLineMode(false);
         fetchListings();
       } else {
         const d = await res.json();
@@ -780,6 +813,8 @@ export default function AdminShopPage() {
               setBulkMode={setBulkMode}
               bulkQty={bulkQty}
               setBulkQty={setBulkQty}
+              multiLineMode={multiLineMode}
+              setMultiLineMode={setMultiLineMode}
             />
           ))}
         </div>

@@ -19,12 +19,21 @@ export async function POST(
     if (!isAdmin(session)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
-    const { data, quantity } = await req.json();
-    if (!data?.trim()) return NextResponse.json({ error: "data is required" }, { status: 400 });
-    const qty = Math.min(Math.max(1, Number(quantity) || 1), 500);
+    const { data, quantity, dataList } = await req.json();
+
+    let newAccounts: { data: string; sold: boolean }[];
+    if (Array.isArray(dataList) && dataList.length > 0) {
+      // วางหลายบัญชีทีเดียว — 1 รายการ = 1 Account/สต็อก
+      const cleaned = dataList.map((d: string) => String(d).trim()).filter(Boolean).slice(0, 500);
+      if (cleaned.length === 0) return NextResponse.json({ error: "dataList is required" }, { status: 400 });
+      newAccounts = cleaned.map((d: string) => ({ data: d, sold: false }));
+    } else {
+      if (!data?.trim()) return NextResponse.json({ error: "data is required" }, { status: 400 });
+      const qty = Math.min(Math.max(1, Number(quantity) || 1), 500);
+      newAccounts = Array.from({ length: qty }, () => ({ data: data.trim(), sold: false }));
+    }
 
     await connectToDatabase();
-    const newAccounts = Array.from({ length: qty }, () => ({ data: data.trim(), sold: false }));
     const listing = await ShopListing.findByIdAndUpdate(
       id,
       { $push: { accounts: { $each: newAccounts } } },
@@ -37,7 +46,7 @@ export async function POST(
       await sendDiscordStockUpdateBroadcast({
         name: listing.title,
         newStock,
-        addedQty: qty,
+        addedQty: newAccounts.length,
         image: listing.images?.[0],
         productType: "shop",
       });

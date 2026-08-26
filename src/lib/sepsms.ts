@@ -31,7 +31,7 @@ export async function sendSmsOtp(phone: string, sender: string): Promise<string>
   });
 
   const data = await res.json();
-  if (!data.success) {
+  if (!res.ok) {
     throw new Error(data.error?.message || "ส่ง OTP ไม่สำเร็จ");
   }
 
@@ -57,5 +57,5 @@ export async function verifySmsOtp(reference: string, pin: string): Promise<bool
   });
 
   const data = await res.json();
-  return data.success && data.result?.verified === true;
+  return res.ok && data.result?.verified === true;
 }

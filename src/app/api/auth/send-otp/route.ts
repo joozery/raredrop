@@ -26,9 +26,11 @@ export async function POST(req: Request) {
       otp: otpCode,
     });
 
-    console.log("==========================================");
-    console.log(`[DEV ONLY] OTP for ${email} is: ${otpCode}`);
-    console.log("==========================================");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("==========================================");
+      console.log(`[DEV ONLY] OTP for ${email} is: ${otpCode}`);
+      console.log("==========================================");
+    }
 
     const siteNameSetting = await Setting.findOne({ key: "site_name" }).lean();
     const siteName = (siteNameSetting as any)?.value || "RareDrop";

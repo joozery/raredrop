@@ -19,6 +19,7 @@ export interface IBox extends Document {
   animationType?: 'video' | 'roulette';
   animation?: string;
   pityThreshold: number;
+  oddsTag?: string; // ป้ายเปอร์เซ็นต์มุมรูป เช่น "0.15%" — แอดมินกรอกเอง ไม่คำนวณอัตโนมัติ
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +43,7 @@ const BoxSchema: Schema = new Schema({
   animationType: { type: String, enum: ['video', 'roulette'], default: 'video' },
   animation: { type: String },
   pityThreshold: { type: Number, default: 100, min: 1 },
+  oddsTag: { type: String },
 }, { timestamps: true });
 
 if (mongoose.models.Box) {
